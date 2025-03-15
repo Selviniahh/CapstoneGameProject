@@ -79,8 +79,8 @@ void ETG::GameManager::SpawnItems() {
 }
 
 void ETG::GameManager::HandleItemEquip() {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)) {
-        std::cout << "E key pressed" << std::endl; // Debug log
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::F)) {
+        std::cout << "F key pressed" << std::endl; // Debug log
 
         if (CurrentSelectionState == ItemSelectionState::NoneSelected) {
             // No item is selected, try to select the active item first
