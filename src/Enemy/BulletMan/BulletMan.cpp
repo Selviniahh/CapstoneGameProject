@@ -91,7 +91,7 @@ void ETG::BulletMan::Update()
     
     // Calculate rotation to point at the hero
     sf::Vector2f dirToHero = Hero->GetPosition() - Magnum->GetPosition();
-    float angleToHero = atan2f(dirToHero.y, dirToHero.x) * 180.0f / M_PI;
+    float angleToHero = atan2f(dirToHero.y, dirToHero.x) * 180.0f / std::numbers::pi;
     Magnum->Rotation = angleToHero;
     
     // Shooting logic with animation coordination
