@@ -1,20 +1,33 @@
-//
-// Created by Selviniah on 2025-02-08.
-//
-
 #include "EnemyBase.h"
+#include "../Guns/RogueSpecial/RogueSpecial.h"
+#include "../Utils/Math.h"
+#include "../Core/Components/BaseHealthComp.h"
+#include "../Characters/Hand/Hand.h"
+#include "../Characters/Hero.h"
 
-void EnemyBase::Initialize()
+namespace ETG
 {
-    GameObjectBase::Initialize();
-}
+    // Add constructor that initializes everything to nullptr
+    EnemyBase::EnemyBase(): RogueSpecial(nullptr) , HealthComp(nullptr) , Hand(nullptr), Hero(GameState::GetInstance().GetHero())
+    {
+    }
 
-void EnemyBase::Update()
-{
-    GameObjectBase::Update();
-}
+    EnemyBase::~EnemyBase() = default;
 
-void EnemyBase::Draw()
-{
-    GameObjectBase::Draw();
+    void EnemyBase::Initialize()
+    {
+        // Implementation
+    }
+
+    void EnemyBase::Update()
+    {
+        // Implementation
+        GameObjectBase::Update();
+    }
+
+    void EnemyBase::Draw()
+    {
+        // Implementation
+        GameObjectBase::Draw();
+    }
 }

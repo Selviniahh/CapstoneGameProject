@@ -15,6 +15,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/VideoMode.hpp>
+#include "../Enemy/BulletMan/BulletMan.h"
 
 sf::Event ETG::GameManager::GameEvent{};
 using namespace ETG::Globals;
@@ -39,7 +40,8 @@ void ETG::GameManager::Initialize() {
     Scene->SetObjectNameToSelfClassName();
     GameState::GetInstance().SetSceneObj(Scene.get());
 
-    // Initialize UI
+
+    //NOTE: Secondly EngineUI needs to be initialized
     EngineUI.Initialize();
     Globals::Initialize(Window);
     InputManager::InitializeDebugText();
@@ -48,6 +50,10 @@ void ETG::GameManager::Initialize() {
     Hero = ETG::CreateGameObjectDefault<class Hero>(sf::Vector2f{10, 10});
     UI = ETG::CreateGameObjectDefault<UserInterface>();
 
+    BulletMan = ETG::CreateGameObjectDefault<class BulletMan>(sf::Vector2f{50,50});
+    BulletMan->Initialize();
+    
+    //Always initialize debug text last 
     DebugText = std::make_unique<class DebugText>();
 
     // Spawn items
@@ -100,6 +106,7 @@ void ETG::GameManager::Update() {
         InputManager::Update();
         Hero->Update();
         UI->Update();
+        BulletMan->Update();
         HandleItemEquip();
         UpdateItems();
     }
@@ -111,11 +118,13 @@ void ETG::GameManager::Draw() {
 
     // Draw the main game scene
     Window->setView(Globals::MainView);
-    ETG::GlobSpriteBatch.begin();
+    GlobSpriteBatch.begin();
     Hero->Draw();
     if (ActiveItem) ActiveItem->Draw(); // Draw active item
     if (PassiveItem) PassiveItem->Draw();
     ETG::GlobSpriteBatch.end(*Window);
+    BulletMan->Draw();
+    GlobSpriteBatch.end(*Window);
 
     // Draw UI
     Window->setView(Window->getDefaultView());

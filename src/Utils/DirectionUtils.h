@@ -1,8 +1,16 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <SFML/System/Vector2.hpp>
+
 #include "../../src/Managers/StateEnums.h"
 
+namespace ETG
+{
+    class Hero;
+}
+
+//NOTE: For now this class hosts basic enum operations for both hero and enemy. Later on I will decide if it's worth to separate this class
 namespace ETG
 {
     enum class Direction;
@@ -29,12 +37,17 @@ namespace ETG
 
         //DirectionMap's key pair represents minimum and maximum degree range. The value is the corresponding Direction for degree range.
         //In Short, take the map and calculated angle, and return the Found Direction from angle. 
-        static Direction GetDirectionFromAngle(const std::unordered_map<std::pair<int, int>, Direction, PairHash>& DirectionMap, float angle);
-        
-        static IdleEnum GetIdleDirectionEnum(Direction currDir);
-        static RunEnum GetRunEnum(Direction currDir);
+        static Direction GetHeroDirectionFromAngle(const std::unordered_map<std::pair<int, int>, Direction, PairHash>& DirectionMap, float angle);
 
-        static std::string StringifyDirection(Direction dir);
+        //Hero enum related 
+        static HeroIdleEnum GetHeroIdleDirectionEnum(Direction currDir);
+        static HeroRunEnum GetHeroRunEnum(Direction currDir);
+
+        //Enemy BulletMan related 
+        static Direction GetDirectionToHero(const Hero* Hero, sf::Vector2f SelfPosition);
+
+        static BulletManIdleEnum GetBulletManIdleEnum(Direction currDir);
+        static BulletManRunEnum GetBulletManRunEnum(Direction currDir);
     };
     
 }

@@ -10,6 +10,12 @@ BaseMoveComp::BaseMoveComp(float maxSpeed, float acceleration, float deceleratio
 {
 }
 
+void BaseMoveComp::Update()
+{
+    ComponentBase::Update();
+    IsMoving = Velocity != sf::Vector2f{0,0};
+}
+
 void BaseMoveComp::UpdateMovement(const sf::Vector2f& inputDir, sf::Vector2f& position)
 {
     const float deltaTime = ETG::Globals::FrameTick; // delta time from your globals

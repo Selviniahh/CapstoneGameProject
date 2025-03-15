@@ -8,7 +8,7 @@ namespace ETG
 {
     struct PairHash;
     enum class Direction;
-    enum class DashEnum;
+    enum class HeroDashEnum;
     class Hero;
 
     class InputComponent : public ComponentBase
@@ -18,7 +18,7 @@ namespace ETG
 
         void Update(Hero& hero) const;
 
-        static DashEnum GetDashDirectionEnum();
+        static HeroDashEnum GetDashDirectionEnum();
 
         void PopulateSpecificWidgets() override;
 

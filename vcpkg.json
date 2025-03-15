@@ -11,6 +11,27 @@
     {
       "name": "sfml",
       "version": "2.6.2"
+    },
+    {
+      "name": "benchmark",
+      "version": "1.9.1"
+    },
+    {
+      "name": "imgui-sfml",
+      "version": "2.6",
+      "port-version": 1
+    },
+    {
+      "name": "boost-type-index",
+      "version": "1.86.0"
+    },
+    {
+      "name": "boost-describe",
+      "version": "1.86.0"
+    },
+    {
+      "name": "boost-mpl",
+      "version": "1.86.0"
     }
   ]
 }

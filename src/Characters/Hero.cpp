@@ -18,7 +18,7 @@ ETG::Hero::Hero(const sf::Vector2f Position)
     Depth = 2;
     GameState::GetInstance().SetHero(this);
 
-    Hand = ETG::CreateGameObjectAttached<class Hand>(this);
+    Hand = ETG::CreateGameObjectAttached<class Hand>(this, (std::filesystem::path(RESOURCE_PATH) / "Player" / "rogue_hand_001.png").generic_string());
     RogueSpecial = ETG::CreateGameObjectAttached<class RogueSpecial>(this, Hand->GetRelativePosition());
     AnimationComp = ETG::CreateGameObjectAttached<HeroAnimComp>(this);
     AnimationComp->Initialize();
@@ -44,22 +44,21 @@ void ETG::Hero::Update()
     MoveComp->Update();
 
     // Animations - still need direct access to HeroAnimComp for specialized functionality
+    AnimationComp->FlipSpritesY<class RogueSpecial>(CurrentDirection, *RogueSpecial);
+    AnimationComp->FlipSpritesX(CurrentDirection, *this);
     AnimationComp->Update();
 
-    //NOTE: No more manually setting Origin in tick
-    // Origin = AnimationComp->AnimManagerDict[CurrentHeroState].AnimationDict[AnimationComp->CurrentAnimStateKey].Origin;
-
-    // FlipSprites is a specialized method in HeroAnimComp
     //Set hand properties
-    Hand->SetPosition(Position + Hand->HandOffset + AnimationComp->FlipSprites(CurrentDirection, *RogueSpecial));
+    const sf::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(CurrentDirection) ? sf::Vector2f{8.f, 5.f} : sf::Vector2f{-7.f, 5.f};
+    Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
     Hand->Update();
-    
+
     //Gun
     RogueSpecial->SetPosition(Hand->GetPosition() + Hand->GunOffset);
     RogueSpecial->Rotation = MouseAngle;
     RogueSpecial->Update();
     if (IsShooting) RogueSpecial->Shoot();
-    
+
     //Necessary to call end of update because the texture is created at here. 
     GameObjectBase::Update();
 }
@@ -68,11 +67,8 @@ void ETG::Hero::Draw()
 {
     GameObjectBase::Draw();
     RogueSpecial->Draw();
-    
-    //NOTE: Texting new Draw function. 
-    // AnimationComp->Draw(DrawProps.Position, DrawProps.Origin, DrawProps.Scale, DrawProps.Rotation, DrawProps.Depth);
     SpriteBatch::Draw(GetDrawProperties());
-    
+
     Hand->Draw();
 }
 

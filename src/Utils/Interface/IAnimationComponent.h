@@ -10,6 +10,5 @@ namespace ETG
     public:
         virtual ~IAnimationComponent() = default;
         [[nodiscard]] virtual sf::IntRect GetCurrentTextureRect() const = 0;
-        [[nodiscard]] virtual sf::Vector2f GetOrigin() const = 0;
     };
 }

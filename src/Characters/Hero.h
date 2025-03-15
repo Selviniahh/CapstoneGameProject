@@ -39,6 +39,7 @@ namespace ETG
         std::unique_ptr<HeroMoveComp> MoveComp;
         std::unique_ptr<Hand> Hand;
 
+
     private:
         std::unique_ptr<HeroAnimComp> AnimationComp;
         std::unique_ptr<InputComponent> InputComp;

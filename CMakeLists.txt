@@ -61,6 +61,12 @@ add_executable(ETG main.cpp
         src/Engine/UI/UIUtils.cpp
         src/Characters/Hand/Hand.cpp
         src/Characters/Hand/Hand.h
+        src/Enemy/BulletMan/BulletMan.cpp
+        src/Enemy/BulletMan/BulletMan.h
+        src/Enemy/BulletMan/Components/BulletManAnimComp.cpp
+        src/Enemy/BulletMan/Components/BulletManAnimComp.h
+        src/Guns/Magnum/Magnum.cpp
+        src/Guns/Magnum/Magnum.h
         src/Items/ActiveItem.h
         src/Items/ActiveItem.cpp
         src/Items/PassiveItem.h

@@ -28,6 +28,11 @@ namespace ETG
         using GameObjectBase::Rotation; //Make Rotation public in Gunbase
         int Ammo;
 
+        //Gun Animation
+        GunStateEnum CurrentGunState{GunStateEnum::Idle};
+        std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
+
+
     protected:
         // Rotates an offset vector according to the gun's current rotation.
         sf::Vector2f RotateVector(const sf::Vector2f& offset) const;
@@ -57,9 +62,7 @@ namespace ETG
         sf::Vector2f arrowOriginOffset;
         sf::Vector2f arrowPos;
 
-        //Gun Animation
-        std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
-        GunStateEnum CurrentGunState{GunStateEnum::Idle};
+        
 
         BOOST_DESCRIBE_CLASS(GunBase, (GameObjectBase), (),
             (ProjTexture,muzzleFlashAnim, MuzzleFlashEachFrameSpeed, MuzzleFlashPos , MuzzleFlashOffset, pressTime, velocity, maxProjectileRange, timerForVelocity, isAttacking, OriginOffset, ArrowTex,

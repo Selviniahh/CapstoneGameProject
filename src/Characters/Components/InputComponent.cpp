@@ -29,20 +29,20 @@ namespace ETG
 
         // Store on the Hero (or handle in input component)
         hero.MouseAngle = angle;
-        hero.CurrentDirection = DirectionUtils::GetDirectionFromAngle(DirectionMap, angle);
+        hero.CurrentDirection = DirectionUtils::GetHeroDirectionFromAngle(DirectionMap, angle);
     }
 
-    DashEnum InputComponent::GetDashDirectionEnum()
+    HeroDashEnum InputComponent::GetDashDirectionEnum()
     {
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return DashEnum::Dash_BackWard;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return DashEnum::Dash_BackWard;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return DashEnum::Dash_BackWard;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return DashEnum::Dash_BackWard;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) return DashEnum::Dash_Left;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) return DashEnum::Dash_Right;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return DashEnum::Dash_Back;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return DashEnum::Dash_Front;
-        return DashEnum::Unknown;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return HeroDashEnum::Dash_BackWard;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return HeroDashEnum::Dash_BackWard;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return HeroDashEnum::Dash_BackWard;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return HeroDashEnum::Dash_BackWard;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) return HeroDashEnum::Dash_Left;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) return HeroDashEnum::Dash_Right;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) return HeroDashEnum::Dash_Back;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) return HeroDashEnum::Dash_Front;
+        return HeroDashEnum::Unknown;
     }
 
     void InputComponent::PopulateSpecificWidgets()

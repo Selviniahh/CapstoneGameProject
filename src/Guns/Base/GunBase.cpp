@@ -29,11 +29,11 @@ namespace ETG
 
     void GunBase::Initialize()
     {
-        // Set the origin based on the current gun texture.
-        this->Origin = {
-            static_cast<float>(Texture->getSize().x / 2),
-            static_cast<float>(Texture->getSize().y / 2)
-        };
+        //DEPRECATE: Remove this after next commit
+        // this->Origin = {
+        //     static_cast<float>(Texture->getSize().x / 2),
+        //     static_cast<float>(Texture->getSize().y / 2)
+        // };
 
         //The origin manually needs to be given because when gun rotating, it has to rotate around the attachment point which is the handle point of the gun. 
         this->Origin += OriginOffset;

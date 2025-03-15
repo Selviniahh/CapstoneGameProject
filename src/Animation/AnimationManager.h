@@ -16,7 +16,7 @@ struct always_false : std::false_type
 };
 
 //Variant necessary to provide hashing based on the given type.   
-using AnimationKey = std::variant<std::string, int, ETG::RunEnum, ETG::IdleEnum, ETG::DashEnum, ETG::GunStateEnum>;
+using AnimationKey = std::variant<std::string, int, ETG::HeroStateEnum, ETG::HeroRunEnum, ETG::BulletManIdleEnum, ETG::BulletManRunEnum, ETG::HeroIdleEnum, ETG::HeroDashEnum, ETG::GunStateEnum, ETG::EnemyStateEnum>;
 
 // 3) Custom hash + equality
 //Based on given key of variant, convert it to hash

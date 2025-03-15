@@ -5,14 +5,31 @@
 #include "../Utils/DirectionUtils.h"
 #include "../Characters/Components/HeroMoveComp.h"
 #include "../Characters/Hero.h"
+#include "../Utils/StrManipulateUtil.h"
 
 namespace ETG
 {
+    class DebugText;
+    
+    class DebugTextManager
+    {
+        inline static std::vector<std::string> queuedTexts;
+    public:
+        static void QueueText(const std::string& text)
+        {
+            queuedTexts.push_back(text);
+        };
+        static void DrawQueuedTexts(sf::RenderWindow& window);
+        static void ClearQueue()
+        {
+            queuedTexts.clear();
+        };
+    };
+
     class DebugText
     {
     public:
         Hero* HeroPtr = nullptr;
-        // std::unordered_map<std::string,GameObject*> SceneObjects = nullptr;
         
         void Draw(sf::RenderWindow& window)
         {
@@ -54,10 +71,11 @@ namespace ETG
             // const sf::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
             DrawDebugText("View Center: " + std::to_string(Globals::MainView.getCenter().x) + " " + std::to_string(Globals::MainView.getCenter().y), window);
             DrawDebugText("View Size: " + std::to_string(Globals::MainView.getSize().x) + " " + std::to_string(Globals::MainView.getSize().y), window);
-            DrawDebugText("CurrentDirection: " + DirectionUtils::StringifyDirection(Hero::CurrentDirection), window);
+            DrawDebugText("CurrentDirection: " + std::string(EnumToString(Hero::CurrentDirection)), window);
             DrawDebugText(std::string("Is Shooting: ") + (Hero::IsShooting ? "True" : "False"), window);
             DrawDebugText("Hero Velocity: " + std::to_string(HeroPtr->MoveComp->Velocity.x) + " " + std::to_string(HeroPtr->MoveComp->Velocity.y), window);
-            
+
+            DebugTextManager::DrawQueuedTexts(window);
         }
 
         static void DrawDebugText(const std::string& str, sf::RenderWindow& window)
@@ -74,4 +92,13 @@ namespace ETG
             return pos;
         }
     };
+
+    inline void DebugTextManager::DrawQueuedTexts(sf::RenderWindow& window)
+    {
+        for (const auto& text : queuedTexts)
+        {
+            DebugText::DrawDebugText(text, window);
+        }
+        ClearQueue();
+    }
 }

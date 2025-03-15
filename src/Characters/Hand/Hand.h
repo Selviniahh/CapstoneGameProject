@@ -6,7 +6,7 @@ namespace ETG
     class Hand : public GameObjectBase
     {
     public:
-        Hand();
+        Hand(const std::string& handTexture);
 
         sf::Vector2f GunOffset{0, 0}; //2 ,2 
         sf::Vector2f HandOffset{0, 0}; //-2 -1

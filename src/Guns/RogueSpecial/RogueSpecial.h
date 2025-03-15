@@ -6,14 +6,6 @@
 
 namespace ETG
 {
-    class RogueSpecialAnimComp : public BaseAnimComp<GunStateEnum>
-    {
-    public:
-        RogueSpecialAnimComp();
-        void SetAnimations() override;
-        BOOST_DESCRIBE_CLASS(RogueSpecialAnimComp, (BaseAnimComp), (), (), ())
-    };
-    
     class RogueSpecial : public GunBase
     {
     public:
@@ -23,5 +15,13 @@ namespace ETG
         void Initialize() override;
 
         BOOST_DESCRIBE_CLASS(RogueSpecial, (GunBase), (), (), ())
+    };
+
+    class RogueSpecialAnimComp : public BaseAnimComp<GunStateEnum>
+    {
+    public:
+        RogueSpecialAnimComp();
+        void SetAnimations() override;
+        BOOST_DESCRIBE_CLASS(RogueSpecialAnimComp, (BaseAnimComp), (), (), ())
     };
 }
