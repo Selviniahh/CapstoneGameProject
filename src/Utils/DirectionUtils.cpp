@@ -56,7 +56,7 @@ ETG::Direction ETG::DirectionUtils::GetDirectionToHero(const Hero* Hero, sf::Vec
     const sf::Vector2f dirVector = Math::Normalize(Hero->GetPosition() - SelfPosition);
 
     // Calculate angle in degrees (0-360)
-    float angle = atan2(dirVector.y, dirVector.x) * 180.0f / M_PI;
+    float angle = atan2(dirVector.y, dirVector.x) * 180.0f / std::numbers::pi;
     if (angle < 0) angle += 360.0f;
 
     // Map angle to direction (each direction covers 45 degrees) Right is 0 degrees, and we go counter-clockwise
