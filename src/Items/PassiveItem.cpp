@@ -51,3 +51,10 @@ void PassiveItem::PlayEquipSound()
 {
     equipSound.play();
 }
+void PassiveItem::Equip() {
+    // Apply 20% faster fire rate
+    ETG::Hero* hero = ETG::GameState::GetInstance().GetHero();
+    if (hero) {
+        hero->SetFireRateMultiplier(1.2f);
+    }
+}

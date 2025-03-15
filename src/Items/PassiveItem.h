@@ -12,6 +12,7 @@ public:
     void Update() override;
     void Draw() override;
     void PlayEquipSound();
+    void Equip();
 private:
     sf::Sound equipSound;
     sf::SoundBuffer equipSoundBuffer;

@@ -45,13 +45,25 @@ std::unique_ptr<BulletMan> BulletMan;
 
         bool HasFocus = true;
         std::unique_ptr<DebugText> DebugText;
-        // Active and Passive Items
-
         void SpawnItems();
         void SpawnActiveItem(const std::string& texturePath, const sf::Vector2f& position);
         void SpawnPassiveItem(const std::string& texturePath, const sf::Vector2f& position);
         void HandleItemEquip();
+        void EquipActiveItem();
+        void EquipPassiveItem();
+        void UnequipActiveItem();
+        void UnequipPassiveItem();
         void UpdateItems();
+        void ResetItemSelectionState();
+
+        // Active and Passive Items
+enum class ItemSelectionState {
+        NoneSelected,
+        ActiveItemSelected,
+        PassiveItemSelected
+    };
+    ItemSelectionState CurrentSelectionState = ItemSelectionState::NoneSelected;
+
 
     public:
         //Hold only scene objects. Used for displaying details panel

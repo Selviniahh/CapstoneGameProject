@@ -77,14 +77,36 @@ ETG::GunBase* ETG::Hero::GetCurrentHoldingGun() const
     return dynamic_cast<GunBase*>(RogueSpecial.get());
 }
 void ETG::Hero::EquipActiveItem(ActiveItem* item) {
-    EquippedActiveItem = item;
+    if (item) {
+        EquippedActiveItem = item;
+        item->PlayEquipSound();
+    }
 }
 
 void ETG::Hero::EquipPassiveItem(PassiveItem* item) {
-    EquippedPassiveItem = item;
-    // Apply passive effect (e.g., 20% faster fire rate)
+    if (item) {
+        EquippedPassiveItem = item;
+        item->Equip();
+        item->PlayEquipSound();
+    }
+}
+void ETG::Hero::UnequipActiveItem() {
+    EquippedActiveItem = nullptr;
+    // Additional logic to unequip the active item
 }
 
+void ETG::Hero::UnequipPassiveItem() {
+    EquippedPassiveItem = nullptr;
+    // Additional logic to unequip the passive item
+}
+
+bool ETG::Hero::HasActiveItem() const {
+    return EquippedActiveItem != nullptr; // Return true if an active item is equipped
+}
+
+bool ETG::Hero::HasPassiveItem() const {
+    return EquippedPassiveItem != nullptr; // Return true if a passive item is equipped
+}
 
 bool ETG::Hero::IsMouseNearHero(const sf::RenderWindow& window) const {
     // Get the mouse position in the world coordinates
@@ -112,4 +134,8 @@ bool ETG::Hero::IsNearItem(GameObjectBase* item) const {
     // Define proximity threshold (e.g., 50 pixels)
     const float proximityThreshold = 50.0f;
     return distance < proximityThreshold;
+}
+void ETG::Hero::SetFireRateMultiplier(float multiplier) {
+    m_FireRateMultiplier = multiplier;
+    std::cout << "Fire rate multiplier set to: " << m_FireRateMultiplier << std::endl;
 }

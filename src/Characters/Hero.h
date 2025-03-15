@@ -26,12 +26,16 @@ namespace ETG
         GunBase* GetCurrentHoldingGun() const;
         void EquipActiveItem(ActiveItem* item);
         void EquipPassiveItem(PassiveItem* item);
+        void UnequipActiveItem();
+        void UnequipPassiveItem();
+        bool HasActiveItem() const; // Declare HasActiveItem
+        bool HasPassiveItem() const;
         bool IsMouseNearHero(const sf::RenderWindow& window) const ;
         bool IsNearItem(GameObjectBase* item) const;
         static float MouseAngle;
         static Direction CurrentDirection;
         static bool IsShooting;
-
+        void SetFireRateMultiplier(float multiplier);
         HeroStateEnum CurrentHeroState{HeroStateEnum::Idle};
         bool IsDashing = false;
         
@@ -45,6 +49,7 @@ namespace ETG
         std::unique_ptr<InputComponent> InputComp;
         ActiveItem* EquippedActiveItem = nullptr;
         PassiveItem* EquippedPassiveItem = nullptr;
+        float m_FireRateMultiplier = 1.0f;
         BOOST_DESCRIBE_CLASS(Hero,(GameObjectBase),
             (MouseAngle, CurrentDirection, CurrentHeroState, IsDashing, IsDashing ),
             (),
