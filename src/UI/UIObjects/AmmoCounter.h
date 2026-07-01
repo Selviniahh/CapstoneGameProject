@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/Graphics.hpp>
+#include "Platform/Platform.h"
 #include <string>
 #include <filesystem>
 #include "../../Core/GameObjectBase.h"
@@ -10,7 +10,7 @@ namespace ETG
     class AmmoCounter : public GameObjectBase
     {
     public:
-        explicit AmmoCounter(sf::Vector2f position);
+        explicit AmmoCounter(ETG::Vector2f position);
         ~AmmoCounter() override = default;
 
         void Initialize() override;
@@ -20,11 +20,11 @@ namespace ETG
         void SetAmmo(int currentAmmo, int maxAmmo);
 
     private:
-        sf::Text ammoText;
-        sf::Font font;
+        ETG::Text ammoText;
+        ETG::Font font;
         int currentAmmo = 0;
         int maxAmmo = 0;
-        sf::Vector2f screenPosition; // Position on screen
+        ETG::Vector2f screenPosition; // Position on screen
 
         // Update the text content
         void UpdateText();
@@ -32,7 +32,7 @@ namespace ETG
         BOOST_DESCRIBE_CLASS(AmmoCounter, (GameObjectBase),(),(),(currentAmmo, maxAmmo, screenPosition))
     };
 
-    inline AmmoCounter::AmmoCounter(sf::Vector2f position)
+    inline AmmoCounter::AmmoCounter(ETG::Vector2f position)
     {
         AmmoCounter::Initialize();
         ammoText.setPosition(position);
@@ -51,12 +51,12 @@ namespace ETG
         // Setup text properties
         ammoText.setFont(font);
         ammoText.setCharacterSize(30);
-        ammoText.setFillColor(sf::Color::White);
+        ammoText.setFillColor(ETG::Color::White);
         ammoText.setPosition(screenPosition);
         ammoText.setString("0 / 0"); // Default text
 
         //Set origin the center of the enter text
-        const sf::FloatRect bounds = ammoText.getLocalBounds();
+        const ETG::FloatRect bounds = ammoText.getLocalBounds();
         ammoText.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
     }
 
@@ -81,7 +81,7 @@ namespace ETG
     {
         // Draw text directly to the window
         // Note: This doesn't use SpriteBatch since text works differently
-        sf::RenderWindow* window = Globals::Window.get();
+        ETG::RenderWindow* window = Globals::Window.get();
         if (window)
         {
             window->draw(ammoText);

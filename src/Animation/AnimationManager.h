@@ -68,7 +68,7 @@ public:
     AnimationKey LastKey;
     Animation* CurrentAnim = nullptr;
 
-    std::shared_ptr<sf::Texture> LastTexture;
+    std::shared_ptr<ETG::Texture> LastTexture;
 
     // Add an animation to the dictionary
     template <typename T>
@@ -79,17 +79,17 @@ public:
     void Update(T key);
 
     // Draw the last key's animation
-    // void Draw(sf::Vector2f position, float layerDepth);
+    // void Draw(ETG::Vector2f position, float layerDepth);
 
     // Overloaded draw for more complex parameters
-    void Draw(const std::shared_ptr<sf::Texture>& texture, sf::Vector2f position, sf::Color color, float rotation, sf::Vector2f origin, sf::Vector2f scale, float depth);
+    void Draw(const std::shared_ptr<ETG::Texture>& texture, ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, float depth);
 
     // Optionally set origin
     template <typename T>
-    void SetOrigin(T key, sf::Vector2f origin);
+    void SetOrigin(T key, ETG::Vector2f origin);
 
     // Return the current frame as a texture for the last key
-    std::shared_ptr<sf::Texture> GetCurrentFrameAsTexture();
+    std::shared_ptr<ETG::Texture> GetCurrentFrameAsTexture();
     const Animation* GetCurrentAnimation() const;
 
     // Check if the current animation has finished
@@ -130,7 +130,7 @@ void AnimationManager::Update(T key)
     }
 }
 
-inline void AnimationManager::Draw(const std::shared_ptr<sf::Texture>& texture, const sf::Vector2f position, const sf::Color color, const float rotation, const sf::Vector2f origin, const sf::Vector2f scale, const float depth)
+inline void AnimationManager::Draw(const std::shared_ptr<ETG::Texture>& texture, const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth)
 {
     auto it = AnimationDict.find(LastKey);
     if (it != AnimationDict.end())
@@ -140,7 +140,7 @@ inline void AnimationManager::Draw(const std::shared_ptr<sf::Texture>& texture, 
 }
 
 template <typename T>
-void AnimationManager::SetOrigin(T key, const sf::Vector2f origin)
+void AnimationManager::SetOrigin(T key, const ETG::Vector2f origin)
 {
     const AnimationKey variantKey = key;
     const auto it = AnimationDict.find(variantKey);
@@ -150,7 +150,7 @@ void AnimationManager::SetOrigin(T key, const sf::Vector2f origin)
     }
 }
 
-inline std::shared_ptr<sf::Texture> AnimationManager::GetCurrentFrameAsTexture()
+inline std::shared_ptr<ETG::Texture> AnimationManager::GetCurrentFrameAsTexture()
 {
     const auto it = AnimationDict.find(LastKey);
     if (it != AnimationDict.end())

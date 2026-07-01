@@ -3,7 +3,7 @@
 #include <random>
 #include <array>
 #include <iostream>
-#include "SFML/Audio.hpp"
+#include "Platform/Platform.h"
 #include "../../Core/GameObjectBase.h"
 
 //TODO: is active item base class necessary or I should remove it and rename PassiveItemBase to ItemBase and use it as base class for both active and passive classes 
@@ -25,11 +25,11 @@ namespace ETG
         float CoolDownTimer; //Will be increased when the item is in cooldown
         ActiveItemState ActiveItemState{};
 
-        sf::SoundBuffer ActivateSoundBuffer;
-        sf::Sound ActivateSound;
+        ETG::SoundBuffer ActivateSoundBuffer;
+        ETG::Sound ActivateSound;
 
-        sf::SoundBuffer ReadySoundBuffer;
-        sf::Sound ReadySound;
+        ETG::SoundBuffer ReadySoundBuffer;
+        ETG::Sound ReadySound;
 
         virtual void RequestUsage();
         void Update() override;
@@ -39,8 +39,8 @@ namespace ETG
 
         std::string ItemDescription{};
 
-        std::array<sf::SoundBuffer, 2> PickupSoundBuffers;
-        std::array<sf::Sound, 2> PickupSounds;
+        std::array<ETG::SoundBuffer, 2> PickupSoundBuffers;
+        std::array<ETG::Sound, 2> PickupSounds;
 
         //Random number generator
         std::mt19937 rng{std::random_device{}()};

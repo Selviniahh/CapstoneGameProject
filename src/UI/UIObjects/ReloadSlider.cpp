@@ -6,8 +6,8 @@
 
 ETG::ReloadSlider::ReloadSlider()
 {
-    SliderBar = std::make_shared<sf::Texture>();
-    SliderValue = std::make_shared<sf::Texture>();
+    SliderBar = std::make_shared<ETG::Texture>();
+    SliderValue = std::make_shared<ETG::Texture>();
     ReloadSlider::Initialize();
 }
 
@@ -35,7 +35,7 @@ void ETG::ReloadSlider::Initialize()
 void ETG::ReloadSlider::Update()
 {
     // Update position regardless of state
-    SliderBarPros.Position = Hero->GetPosition() + sf::Vector2f{0, -BarOffsetY};
+    SliderBarPros.Position = Hero->GetPosition() + ETG::Vector2f{0, -BarOffsetY};
 
     if (!IsAnimating) return;
 
@@ -72,7 +72,7 @@ void ETG::ReloadSlider::OnReloadComplete()
 void ETG::ReloadSlider::StartAnimation()
 {
     // Set initial positions before starting the animation
-    SliderBarPros.Position = Hero->GetPosition() + sf::Vector2f{0, -BarOffsetY};
+    SliderBarPros.Position = Hero->GetPosition() + ETG::Vector2f{0, -BarOffsetY};
     SliderValProps.Position = SliderBarPros.Position;
 
     // Calculate reload progress
@@ -80,10 +80,10 @@ void ETG::ReloadSlider::StartAnimation()
     {
         // Update the progress bar
         auto [TopLeft, TopRight, BottomLeft, BottomRight] // Four corners
-            = Math::CalculateFourCorner(SliderBarPros.Position, sf::Vector2f(SliderBarPros.Texture->getSize()), SliderBarPros.Origin, SliderBarPros.Scale);
+            = Math::CalculateFourCorner(SliderBarPros.Position, ETG::Vector2f(SliderBarPros.Texture->getSize()), SliderBarPros.Origin, SliderBarPros.Scale);
 
-        const sf::Vector2f LeftMidPos = sf::Vector2f{TopLeft.x / 2, TopLeft.y / 2} + sf::Vector2f{BottomLeft.x / 2, BottomLeft.y / 2};
-        const sf::Vector2f RightMidPos = sf::Vector2f{TopRight.x / 2, TopRight.y / 2} + sf::Vector2f{BottomRight.x / 2, BottomRight.y / 2};
+        const ETG::Vector2f LeftMidPos = ETG::Vector2f{TopLeft.x / 2, TopLeft.y / 2} + ETG::Vector2f{BottomLeft.x / 2, BottomLeft.y / 2};
+        const ETG::Vector2f RightMidPos = ETG::Vector2f{TopRight.x / 2, TopRight.y / 2} + ETG::Vector2f{BottomRight.x / 2, BottomRight.y / 2};
         SliderValProps.Position.x = Math::IntervalLerp(LeftMidPos.x, RightMidPos.x, Gun->ReloadTime, reloadTimer);
         reloadTimer += Globals::FrameTick;
 

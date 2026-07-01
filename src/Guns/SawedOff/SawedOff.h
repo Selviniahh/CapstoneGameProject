@@ -7,7 +7,7 @@ namespace ETG
     class SawedOff : public GunBase
     {
     public:
-        explicit SawedOff(const sf::Vector2f& pos);
+        explicit SawedOff(const ETG::Vector2f& pos);
         ~SawedOff() override = default;
 
         void Initialize() override;

@@ -1,20 +1,24 @@
+#include <SDL3/SDL.h>
 #include "src/Managers/GameManager.h"
 
-int main()
+int main(int argc, char* argv[])
 {
     ETG::GameManager GM{};
 
     while (ETG::GameManager::IsRunning())
     {
-        //Track every Frame 
+        //Track every Frame
         GM.ProcessEvents();
+
+        //The window might have been closed while processing events
+        if (!ETG::GameManager::IsRunning()) break;
 
         //If the window unfocused, sleep the thread
         if (!GM.WindowHasFocus())
         {
-            sf::sleep(sf::milliseconds(10));
+            SDL_Delay(10);
         }
-            
+
         GM.Update();
         GM.Draw();
     }

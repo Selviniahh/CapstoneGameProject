@@ -23,7 +23,7 @@ namespace ETG
 
     public:
         BulletMan* BulletMan{};
-        std::shared_ptr<sf::Texture> Texture; // Add texture field to match BaseAnimComp pattern
+        std::shared_ptr<ETG::Texture> Texture; // Add texture field to match BaseAnimComp pattern
 
         BOOST_DESCRIBE_CLASS(BulletManAnimComp, (BaseAnimComp<EnemyStateEnum>),
             (BulletMan, Texture), (), ())

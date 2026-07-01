@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 #include <complex>
 #include <numbers>
 #include "../Managers/Globals.h"
@@ -33,7 +33,7 @@ public:
     //length: Compute the magnitude of the vector using the formula sqrt(x^2 + y^2)
     // Division: Divide the vector components by the magnitude to scale it to a unit vector (length 1).
     template <typename T>
-    static inline sf::Vector2<T> Normalize(const sf::Vector2<T>& Vector)
+    static inline ETG::Vector2<T> Normalize(const ETG::Vector2<T>& Vector)
     {
         const float length = VectorLength(Vector);
         if (length == 0) throw std::runtime_error("length is 0. Vector is: " + std::to_string(Vector.x) + " " + std::to_string(Vector.y));
@@ -52,24 +52,24 @@ public:
         return (angle * std::numbers::pi) / 180.f;
     }
 
-    static sf::Vector2f RadianToDirection(const float rad)
+    static ETG::Vector2f RadianToDirection(const float rad)
     {
         return {std::cos(rad), std::sin(rad)};
     }
 
     template <typename T>
-    static inline T VectorSizeSquared(const sf::Vector2<T>& Vector)
+    static inline T VectorSizeSquared(const ETG::Vector2<T>& Vector)
     {
         return Vector.x * Vector.x + Vector.y * Vector.y;
     }
 
-    static float Length(const sf::Vector2f& vector)
+    static float Length(const ETG::Vector2f& vector)
     {
         return std::sqrt(vector.x * vector.x + vector.y * vector.y);
     }
 
     template <typename T>
-    static float VectorLength(sf::Vector2<T> vector)
+    static float VectorLength(ETG::Vector2<T> vector)
     {
         return std::sqrt(VectorSizeSquared(vector));
     }
@@ -126,7 +126,7 @@ public:
     // direction: Normalized direction vector
     // amount: Maximum force at peak
     // returns: The velocity to apply for this frame
-    static sf::Vector2f ApplyBellCurveForce(const float progress, const sf::Vector2f& direction, const float amount, const float deltaTime)
+    static ETG::Vector2f ApplyBellCurveForce(const float progress, const ETG::Vector2f& direction, const float amount, const float deltaTime)
     {
         // Calculate force using bell curve (peaks at 0.5 progress)
         const float force = BellCurve(progress) * amount;
@@ -135,7 +135,7 @@ public:
         return direction * force * deltaTime;
     }
 
-    static float AngleBetween(const sf::Vector2f& from, const sf::Vector2f& to)
+    static float AngleBetween(const ETG::Vector2f& from, const ETG::Vector2f& to)
     {
         float deltaY = to.y - from.y;
         float deltaX = to.x - from.x;
@@ -145,10 +145,10 @@ public:
 
     //-----------------------------Transformations-----------------------------------------------------
 
-    [[nodiscard]] static sf::Vector2f RotateVector(const float rotation, const sf::Vector2f scale, const sf::Vector2f& offset)
+    [[nodiscard]] static ETG::Vector2f RotateVector(const float rotation, const ETG::Vector2f scale, const ETG::Vector2f& offset)
     {
         const float angleRad = rotation * (std::numbers::pi / 180.f);
-        sf::Vector2f scaledOffset(offset.x * scale.x, offset.y * scale.y);
+        ETG::Vector2f scaledOffset(offset.x * scale.x, offset.y * scale.y);
 
         return {
             scaledOffset.x * std::cos(angleRad) - scaledOffset.y * std::sin(angleRad),
@@ -158,19 +158,19 @@ public:
 
     struct FourCorner
     {
-        sf::Vector2f TopLeft{};
-        sf::Vector2f TopRight{};
-        sf::Vector2f BottomLeft{};
-        sf::Vector2f BottomRight{};
+        ETG::Vector2f TopLeft{};
+        ETG::Vector2f TopRight{};
+        ETG::Vector2f BottomLeft{};
+        ETG::Vector2f BottomRight{};
     };
 
 
-    [[nodiscard]] static FourCorner CalculateFourCorner(sf::Vector2f& pos, const sf::Vector2f& size, const sf::Vector2f& origin, const sf::Vector2f& scale = {1.f, 1.f})
+    [[nodiscard]] static FourCorner CalculateFourCorner(ETG::Vector2f& pos, const ETG::Vector2f& size, const ETG::Vector2f& origin, const ETG::Vector2f& scale = {1.f, 1.f})
     {
         FourCorner Corners;
 
         //Calculate the scaled size firstly
-        const sf::Vector2f scaledSize = {size.x * scale.x, size.y * scale.y};
+        const ETG::Vector2f scaledSize = {size.x * scale.x, size.y * scale.y};
 
         //Calculate corners using the scaled size
         Corners.TopLeft = {pos.x, pos.y}; // Top-left
@@ -179,7 +179,7 @@ public:
         Corners.BottomRight = {pos.x + scaledSize.x, pos.y + scaledSize.y}; // Bottom-right
 
         //Origin also always affected by scale
-        sf::Vector2f scaledOrigin = {origin.x * scale.x, origin.y * scale.y};
+        ETG::Vector2f scaledOrigin = {origin.x * scale.x, origin.y * scale.y};
         Corners.TopLeft -= scaledOrigin;
         Corners.TopRight -= scaledOrigin;
         Corners.BottomLeft -= scaledOrigin;

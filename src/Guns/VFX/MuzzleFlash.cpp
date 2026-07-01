@@ -53,7 +53,7 @@ namespace ETG
         if (!isActive || !Animation.Texture) return;
 
         // Draw the muzzle flash animation
-        Animation.Draw(Animation.Texture, Position, sf::Color::White, Rotation, Origin, Scale, Depth);
+        Animation.Draw(Animation.Texture, Position, ETG::Color::White, Rotation, Origin, Scale, Depth);
     }
 
     // Update position based on parent if available
@@ -66,13 +66,13 @@ namespace ETG
             const float angle = parentProps.Rotation * (std::numbers::pi / 180.0f);
 
             // Create a copy of the attachment offset
-            sf::Vector2f offsetToUse = attachmentOffset;
+            ETG::Vector2f offsetToUse = attachmentOffset;
 
             // If the parent is flipped vertically, flip the Y component of the offset
             if (parentProps.Scale.y < 0) offsetToUse.y = -offsetToUse.y;
 
             // Calculate rotated offset with the potentially flipped Y value
-            const sf::Vector2f rotatedOffset = {
+            const ETG::Vector2f rotatedOffset = {
                 offsetToUse.x * std::cos(angle) - offsetToUse.y * std::sin(angle),
                 offsetToUse.x * std::sin(angle) + offsetToUse.y * std::cos(angle)
             };

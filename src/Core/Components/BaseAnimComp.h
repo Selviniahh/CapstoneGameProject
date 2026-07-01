@@ -36,10 +36,10 @@ namespace ETG
         template <typename DirectionEnum>
         void AddAnimationsForState(StateEnum state, const std::vector<Animation>& animations);
 
-        void AddGunAnimationForState(StateEnum state, const Animation& animation, bool IsManualOrigin = false, sf::Vector2f origin = {});
+        void AddGunAnimationForState(StateEnum state, const Animation& animation, bool IsManualOrigin = false, ETG::Vector2f origin = {});
 
         // Implement IAnimationComponent interface
-        [[nodiscard]] sf::IntRect GetCurrentTextureRect() const override { return CurrTexRect; }
+        [[nodiscard]] ETG::IntRect GetCurrentTextureRect() const override { return CurrTexRect; }
         [[nodiscard]] const Animation* GetAnimation() const override {return GetCurrentAnimation();};
         [[nodiscard]] const Animation* GetCurrentAnimation() const;
 
@@ -65,8 +65,8 @@ namespace ETG
 
     private:
         //These private fields just to be displayed in UI. Do not consider to make them public to access something. If there's a variable at here that you want to access, there'll always be a way other than making this public
-        std::shared_ptr<sf::Texture> CurrentTex;
-        sf::IntRect CurrTexRect;
+        std::shared_ptr<ETG::Texture> CurrentTex;
+        ETG::IntRect CurrTexRect;
 
         BOOST_DESCRIBE_CLASS(BaseAnimComp, (ComponentBase), (CurrentState), (), (CurrentTex, CurrTexRect))
     };
@@ -123,7 +123,7 @@ namespace ETG
             // Only set the origin if the animation has valid frames
             if (!animations[i].FrameRects.empty())
             {
-                animManager.SetOrigin(enumKeys[i], sf::Vector2f{
+                animManager.SetOrigin(enumKeys[i], ETG::Vector2f{
                                           (float)animations[i].FrameRects[0].width / 2, //x
                                           (float)animations[i].FrameRects[0].height / 2 //y
                                       });
@@ -134,7 +134,7 @@ namespace ETG
     }
 
     template <typename StateEnum>
-    void BaseAnimComp<StateEnum>::AddGunAnimationForState(StateEnum state, const Animation& animation, const bool IsManualOrigin, sf::Vector2f origin)
+    void BaseAnimComp<StateEnum>::AddGunAnimationForState(StateEnum state, const Animation& animation, const bool IsManualOrigin, ETG::Vector2f origin)
     {
         auto animManager = AnimationManager{};
         animManager.AddAnimation(state, animation); // Using the state enum itself as the key
@@ -149,7 +149,7 @@ namespace ETG
             //IF manually origin is not given, by default set the origin to be the center of the first frame
             else
             {
-                animManager.SetOrigin(state, sf::Vector2f{
+                animManager.SetOrigin(state, ETG::Vector2f{
                                           (float)animation.FrameRects[0].width / 2,
                                           (float)animation.FrameRects[0].height / 2
                                       });
@@ -180,7 +180,7 @@ namespace ETG
         //Logic is simple. If facing right, let the scale be 1.0, if it is not facing right, make -1.0
         auto flipObjectScale = [facingRight, flipX, flipY](auto& obj)
         {
-            sf::Vector2f scale = obj.GetScale();
+            ETG::Vector2f scale = obj.GetScale();
             if (flipX) scale.x = facingRight ? std::abs(scale.x) : -std::abs(scale.x);
             if (flipY) scale.y = facingRight ? std::abs(scale.y) : -std::abs(scale.y);
 

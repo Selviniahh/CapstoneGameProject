@@ -8,7 +8,7 @@
 
 ETG::FrameLeftProgressBar::FrameLeftProgressBar()
 {
-    Texture = std::make_shared<sf::Texture>();
+    Texture = std::make_shared<ETG::Texture>();
     if (!Texture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "FrameLeftProgressBar.png").generic_string()))
         throw std::runtime_error("Failed to load FrameLeftProgressBar texture");
 
@@ -48,9 +48,9 @@ void ETG::FrameLeftProgressBar::Update()
         if (activeItem->ActiveItemState == ActiveItemState::Consuming)
         {
             //Set active item color back to normal 
-            activeItem->SetColor(sf::Color{94,94,94});
+            activeItem->SetColor(ETG::Color{94,94,94});
             CurrProgressY = Math::IntervalLerp(TotalProgressLength, 0.f, activeItem->TotalConsumeTime, activeItem->ConsumeTimer);
-            progressRect.setFillColor(sf::Color::White);
+            progressRect.setFillColor(ETG::Color::White);
             progressRect.setPosition(ProgBottomCenter);
             progressRect.setSize({maxWidth, -CurrProgressY});
             progressRect.setOrigin(progressRect.getSize().x / 2, 0);
@@ -62,14 +62,14 @@ void ETG::FrameLeftProgressBar::Update()
         {
             //If the item is ready, do not draw the frame left progress bar UI
             if (activeItem->ActiveItemState == ActiveItemState::Ready) IsVisible = false;
-            activeItem->SetColor(sf::Color::White);
+            activeItem->SetColor(ETG::Color::White);
         }
 
         //NOTE: COOLDOWN STATE: Progress increases from bottom (0%) to top (100%)
         else if (activeItem->ActiveItemState == ActiveItemState::Cooldown)
         {
             //During cooldown, both item and progress bar needs to be gray
-            activeItem->SetColor(sf::Color{94,94,94});
+            activeItem->SetColor(ETG::Color{94,94,94});
             CurrProgressY = Math::IntervalLerp(0.f, TotalProgressLength, activeItem->TotalCooldownTime, activeItem->CoolDownTimer);
             progressRect.setPosition(ProgBottomCenter);
             progressRect.setSize({maxWidth, -CurrProgressY});
@@ -85,7 +85,7 @@ void ETG::FrameLeftProgressBar::Draw()
     GameObjectBase::Draw();
 
     // Draw rectangle with higher depth to ensure it appears on top
-    sf::RenderWindow* window = GameState::GetInstance().GetRenderWindow();
+    ETG::RenderWindow* window = GameState::GetInstance().GetRenderWindow();
     if (window && activeItem && activeItem->ActiveItemState != ActiveItemState::Ready)
     {
         // Fallback direct drawing in case SpriteBatch method fails

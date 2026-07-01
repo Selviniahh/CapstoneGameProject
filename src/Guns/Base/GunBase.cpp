@@ -14,7 +14,7 @@
 
 namespace ETG
 {
-    GunBase::GunBase(const sf::Vector2f Position,
+    GunBase::GunBase(const ETG::Vector2f Position,
                      const float fireRate,
                      const float shotSpeed,
                      const float range,
@@ -48,9 +48,9 @@ namespace ETG
         MagazineSize = BaseMagazineSize;
         MagazineAmmo = MagazineSize; //Magazine needs to start with Magazine Ammo
 
-        if (!Texture) Texture = std::make_shared<sf::Texture>();
-        if (!ProjTexture) ProjTexture = std::make_shared<sf::Texture>();
-        if (!Texture) Texture = std::make_shared<sf::Texture>();
+        if (!Texture) Texture = std::make_shared<ETG::Texture>();
+        if (!ProjTexture) ProjTexture = std::make_shared<ETG::Texture>();
+        if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ArrowComp) ArrowComp = CreateGameObjectAttached<class ArrowComp>(this, (std::filesystem::path(RESOURCE_PATH) / "Projectiles" / "Arrow.png").string());
         if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this, "Guns/RogueSpecial/MuzzleFlash/", "RS_muzzleflash_001", "png", 0.10f);
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
@@ -229,12 +229,12 @@ namespace ETG
         RestartCurrentAnimStateAnimation();
 
         //Calculate spawn position
-        const sf::Vector2f spawnPos = ArrowComp->GetPosition();
+        const ETG::Vector2f spawnPos = ArrowComp->GetPosition();
 
         //Calculate velocity
         const float rad = Math::AngleToRadian(projectileAngle);
-        const sf::Vector2f direction = Math::RadianToDirection(rad);
-        const sf::Vector2f projVelocity = direction * ShotSpeed;
+        const ETG::Vector2f direction = Math::RadianToDirection(rad);
+        const ETG::Vector2f projVelocity = direction * ShotSpeed;
 
         //Spawn a projectile NOTE: I decided to instead spawn projectiles attached to fired gun. That's because in collision resolution, I need to know the owner gun of the projectile and from that learn whether it's a hero's or enemy's projectile
         //projectile.

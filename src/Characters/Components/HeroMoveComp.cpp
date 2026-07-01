@@ -83,7 +83,7 @@ namespace ETG
         const float dashProgress = DashTimer / DashDuration;
 
         //Use bell curve to get velocity
-        const sf::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Globals::FrameTick);
+        const ETG::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Globals::FrameTick);
 
         HeroPtr->SetPosition(HeroPtr->GetPosition() + dashVelocity);
 
@@ -94,7 +94,7 @@ namespace ETG
     void HeroMoveComp::UpdateMovement()
     {
         // Determine input direction.
-        sf::Vector2f inputDir(0.f, 0.f);
+        ETG::Vector2f inputDir(0.f, 0.f);
         if (InputManager::IsMoving() && !HeroPtr->AnimationComp->IsDashing && HeroPtr->GetState() != HeroStateEnum::Die && HeroPtr->GetState() != HeroStateEnum::Hit)
         {
             inputDir = InputManager::direction;
@@ -112,7 +112,7 @@ namespace ETG
         }
 
         // Use the base helper to update velocity and position.
-        BaseMoveComp::UpdateMovement(inputDir, const_cast<sf::Vector2f&>(HeroPtr->GetPosition()));
+        BaseMoveComp::UpdateMovement(inputDir, const_cast<ETG::Vector2f&>(HeroPtr->GetPosition()));
     }
 
     bool HeroMoveComp::IsDashAvailable() const

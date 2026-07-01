@@ -9,21 +9,16 @@ class AnimationManager;
 #include "../../Animation/Animation.h"
 #include "../../Animation/AnimationManager.h"
 
-namespace sf
-{
-    class Texture;
-    template<typename T> struct Rect;
-    typedef Rect<int> IntRect;
-}
+#include "Platform/Platform.h"
 
 namespace UIUtils
 {
-    void DisplayIntRectangle(sf::IntRect& rect);
+    void DisplayIntRectangle(ETG::IntRect& rect);
     void DisplayAnimation(const char* label, Animation& value);
-    void DisplayTexture(const std::shared_ptr<sf::Texture>& value);
+    void DisplayTexture(const std::shared_ptr<ETG::Texture>& value);
     void DisplayAnimationKey(const AnimationKey& key);
     void DisplayAnimationManager(const char* label, AnimationManager& manager);
-    void DisplayColorPicker(const char* label, sf::Color& color);
+    void DisplayColorPicker(const char* label, ETG::Color& color);
 
     void BeginProperty(const char* label);
     void EndProperty();

@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <SDL3/SDL_events.h>
 #include "Globals.h"
 #include "../Engine/Engine.h"
 
@@ -26,7 +27,7 @@ namespace ETG
         void ProcessEvents();
         [[nodiscard]] bool WindowHasFocus() const { return HasFocus; }
 
-        //I might delete this later on 
+        //I might delete this later on
         static bool IsRunning() { return Globals::Window->isOpen(); }
         void Update();
         void Draw();
@@ -37,12 +38,12 @@ namespace ETG
         std::unique_ptr<Scene> Scene;
         std::unique_ptr<BulletMan> BulletMan;
 
-        std::unique_ptr<PlatinumBullets> PlatinumBullets; 
-        std::unique_ptr<DoubleShoot> DoubleShoot; 
+        std::unique_ptr<PlatinumBullets> PlatinumBullets;
+        std::unique_ptr<DoubleShoot> DoubleShoot;
         std::unique_ptr<AK47> Ak47;
         std::unique_ptr<SawedOff> SawedOff;
         std::unique_ptr<Magnum> Magnum;
-        
+
         Engine EngineUI{};
 
         bool HasFocus = true;
@@ -51,7 +52,7 @@ namespace ETG
     public:
         //Hold only scene objects. Used for displaying details panel
         std::unordered_map<std::string,GameObjectBase*> SceneObjects;
-        
-        static sf::Event GameEvent;
+
+        static SDL_Event GameEvent;
     };
 }

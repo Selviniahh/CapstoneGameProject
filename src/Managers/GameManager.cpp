@@ -1,5 +1,5 @@
-#include <imgui-SFML.h>
-#include <SFML/Window.hpp>
+#include <SDL3/SDL.h>
+#include <imgui_impl_sdl3.h>
 #include "GameManager.h"
 #include "DebugTexts.h"
 #include "InputManager.h"
@@ -17,7 +17,7 @@
 #include "../Guns/Magnum/Magnum.h"
 
 
-sf::Event ETG::GameManager::GameEvent{};
+SDL_Event ETG::GameManager::GameEvent{};
 using namespace ETG::Globals;
 
 ETG::GameManager::~GameManager() = default;
@@ -30,9 +30,14 @@ ETG::GameManager::GameManager()
 void ETG::GameManager::Initialize()
 {
     //During development for different resolution and size monitors, Window mode will be half of host's window size
-    const auto VideoMode = sf::VideoMode::getDesktopMode();
-    Window = std::make_shared<sf::RenderWindow>(sf::VideoMode(VideoMode.width / 1.2, VideoMode.height / 1.2), "SFML example");
-    // Window = std::make_shared<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), "SFML example", sf::Style::Fullscreen);
+    if (!SDL_WasInit(SDL_INIT_VIDEO)) SDL_InitSubSystem(SDL_INIT_VIDEO);
+    int desktopWidth = 1280, desktopHeight = 720;
+    if (const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()))
+    {
+        desktopWidth = desktopMode->w;
+        desktopHeight = desktopMode->h;
+    }
+    Window = std::make_shared<ETG::RenderWindow>(static_cast<unsigned>(desktopWidth / 1.2), static_cast<unsigned>(desktopHeight / 1.2), "Enter The Gungeon Clone (SDL3)");
     Window->requestFocus();
     Window->setFramerateLimit(Globals::FPS);
     GameState::GetInstance().SetRenderWindow(Window.get());
@@ -41,7 +46,7 @@ void ETG::GameManager::Initialize()
     GameState::GetInstance();
     GameState::GetInstance().SetSceneObjs(SceneObjects);
 
-    //What's going on at here is only applicable for Scene object. 
+    //What's going on at here is only applicable for Scene object.
     Scene = std::make_unique<class Scene>();
     Scene->SetObjectNameToSelfClassName();
     GameState::GetInstance().SetSceneObj(Scene.get());
@@ -49,29 +54,29 @@ void ETG::GameManager::Initialize()
 
     //NOTE: Secondly EngineUI needs to be initialized
     EngineUI.Initialize();
-    
+
     Globals::Initialize(Window);
     InputManager::InitializeDebugText();
-    
-    Hero = ETG::CreateGameObjectDefault<class Hero>(sf::Vector2f{10,10});
+
+    Hero = ETG::CreateGameObjectDefault<class Hero>(ETG::Vector2f{10,10});
 
     UI = ETG::CreateGameObjectDefault<UserInterface>();
-    
-    //Always initialize debug text last 
+
+    //Always initialize debug text last
     DebugText = std::make_unique<class DebugText>();
 
-    BulletMan = ETG::CreateGameObjectDefault<class BulletMan>(sf::Vector2f{50,50});
+    BulletMan = ETG::CreateGameObjectDefault<class BulletMan>(ETG::Vector2f{50,50});
     PlatinumBullets = ETG::CreateGameObjectDefault<class PlatinumBullets>();
     DoubleShoot = ETG::CreateGameObjectDefault<class DoubleShoot>();
-    Ak47 = ETG::CreateGameObjectDefault<class AK47>(sf::Vector2f{-100,100});
-    SawedOff = ETG::CreateGameObjectDefault<class SawedOff>(sf::Vector2f{-150,100});
-    Magnum = ETG::CreateGameObjectDefault<class Magnum>(sf::Vector2f{-200,100});
+    Ak47 = ETG::CreateGameObjectDefault<class AK47>(ETG::Vector2f{-100,100});
+    SawedOff = ETG::CreateGameObjectDefault<class SawedOff>(ETG::Vector2f{-150,100});
+    Magnum = ETG::CreateGameObjectDefault<class Magnum>(ETG::Vector2f{-200,100});
 
 
     //TODO: Work on safely destroying and error resolution for accessing destroyed object
     // DestroyGameObject(Hero);
 
-    
+
 }
 
 void ETG::GameManager::Update()
@@ -121,7 +126,7 @@ void ETG::GameManager::Draw()
     UI->Draw();
     ETG::GlobSpriteBatch.end(*Window);
 
-    //NOTE: non batch draws here. 
+    //NOTE: non batch draws here.
     // DebugText->Draw(*Window);
     EngineUI.Draw();
 
@@ -131,34 +136,44 @@ void ETG::GameManager::Draw()
 
 void ETG::GameManager::ProcessEvents()
 {
-    while (Window->pollEvent(GameEvent))
+    //Reset per-frame input accumulators
+    InputManager::MouseWheelDelta = 0.f;
+
+    SDL_Event event;
+    while (Window->pollEvent(event))
     {
-        if (GameEvent.type == sf::Event::LostFocus) HasFocus = false;
-        if (GameEvent.type == sf::Event::GainedFocus) HasFocus = true;
-        if (GameEvent.type == sf::Event::Closed)
+        GameEvent = event;
+
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) HasFocus = false;
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) HasFocus = true;
+        if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
-            Font.reset();
+            Globals::Font.reset();
             Window->close();
             return;
         }
 
         // Handle window resize
-        // Inside GameManager::ProcessEvents
-        if (GameEvent.type == sf::Event::Resized)
+        if (event.type == SDL_EVENT_WINDOW_RESIZED)
         {
             // Update the global screen size
-            ScreenSize = {GameEvent.size.width, GameEvent.size.height};
+            ScreenSize = {static_cast<unsigned>(event.window.data1), static_cast<unsigned>(event.window.data2)};
 
             // Optionally update the default view if you rely on it
-            sf::View defaultView(sf::FloatRect(0.f, 0.f, GameEvent.size.width, GameEvent.size.height));
-            Window->setView(defaultView);
+            Window->setView(Window->getDefaultView());
 
             //TODO: When the window is resized, I need to recalculate every position of every UI object.
             // Recalculate UI positions based on the new screen size.
             // UI->Initialize(); // or UI.UpdatePositions(); if you separate the logic.
         }
 
+        //Accumulate mouse wheel movement for this frame (used for gun switching)
+        if (event.type == SDL_EVENT_MOUSE_WHEEL)
+        {
+            InputManager::MouseWheelDelta += event.wheel.y;
+        }
+
         //Poll and process events for ImGUI
-        ImGui::SFML::ProcessEvent(*Window, GameEvent);
+        ImGui_ImplSDL3_ProcessEvent(&event);
     }
 }

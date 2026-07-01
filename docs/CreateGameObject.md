@@ -13,7 +13,7 @@ std::unique_ptr<Hero> Hero;
 std::unique_ptr<UserInterface> UI;
 
 UI = ETG::CreateGameObjectDefault<UserInterface>();
-Hero = ETG::CreateGameObjectDefault<class Hero>(sf::Vector2f{10,10});
+Hero = ETG::CreateGameObjectDefault<class Hero>(ETG::Vector2f{10,10});
 ```
 
 The objects not attached to anything will be attached to `Scene` object by default.

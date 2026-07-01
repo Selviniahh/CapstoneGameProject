@@ -10,12 +10,12 @@
 
 ETG::ProjectileBase::~ProjectileBase() = default;
 
-ETG::ProjectileBase::ProjectileBase(const sf::Texture& texture, const sf::Vector2f spawnPos, const sf::Vector2f velocity, const float range, const float rotation, const float damage, const float force)
+ETG::ProjectileBase::ProjectileBase(const ETG::Texture& texture, const ETG::Vector2f spawnPos, const ETG::Vector2f velocity, const float range, const float rotation, const float damage, const float force)
 {
     Position = spawnPos;
     ProjVelocity = velocity;
     Range = range;
-    Texture = std::make_shared<sf::Texture>(texture);
+    Texture = std::make_shared<ETG::Texture>(texture);
     Rotation = rotation;
     Damage = damage;
     Force = force;
@@ -25,7 +25,7 @@ ETG::ProjectileBase::ProjectileBase(const sf::Texture& texture, const sf::Vector
 
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.0f;
-    CollisionComp->CollisionVisualizationColor = sf::Color::Blue;
+    CollisionComp->CollisionVisualizationColor = ETG::Color::Blue;
     CollisionComp->SetCollisionEnabled(true);
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
@@ -59,7 +59,7 @@ void ETG::ProjectileBase::Update()
     TimerComp->Update();
     CollisionComp->Update();
 
-    const sf::Vector2f movement = Globals::FrameTick * ProjVelocity;
+    const ETG::Vector2f movement = Globals::FrameTick * ProjVelocity;
     Position += movement;
 
     //Calculate distance traveled so far
@@ -81,7 +81,7 @@ void ETG::ProjectileBase::Draw()
     IsVisible = true;
     if (CollisionComp) CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
     auto& DrawableProps = GetDrawProperties();
-    sf::Sprite frame;
+    ETG::Sprite frame;
     frame.setTexture(*Texture);
     frame.setOrigin(frame.getTexture()->getSize().x / 2, frame.getTexture()->getSize().y / 2);
     frame.setPosition(DrawableProps.Position);

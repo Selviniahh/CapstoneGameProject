@@ -16,7 +16,7 @@ void ETG::ImGuiSetRelativeOrientation(GameObjectBase* obj)
     if (ImGui::InputFloat2("##PosX", &obj->RelativePos.x, "%.3f"))
     {
         //Revert what I've done last time and then apply RelativePos again
-        const sf::Vector2f delta = {obj->RelativePos.x - obj->PrevRelativePos.x, obj->RelativePos.y - obj->PrevRelativePos.y};
+        const ETG::Vector2f delta = {obj->RelativePos.x - obj->PrevRelativePos.x, obj->RelativePos.y - obj->PrevRelativePos.y};
         obj->DrawProps.Position += delta;
         obj->PrevRelativePos = obj->RelativePos;
     }
@@ -27,7 +27,7 @@ void ETG::ImGuiSetRelativeOrientation(GameObjectBase* obj)
     ImGui::SameLine();
     if (ImGui::InputFloat2("##Scale", &obj->RelativeScale.x, "%.3f"))
     {
-        const sf::Vector2f delta{obj->RelativeScale.x - obj->PrevRelativeScale.x, obj->RelativeScale.y - obj->PrevRelativeScale.y};
+        const ETG::Vector2f delta{obj->RelativeScale.x - obj->PrevRelativeScale.x, obj->RelativeScale.y - obj->PrevRelativeScale.y};
         obj->DrawProps.Scale += delta;
         obj->PrevRelativeScale = obj->RelativeScale;
     }
@@ -115,7 +115,7 @@ void ETG::ShowImGuiWidget<std::string>(const char* label, std::string& value)
 }
 
 template <>
-void ETG::ShowImGuiWidget<std::shared_ptr<sf::Texture>>(const char* label, std::shared_ptr<sf::Texture>& value)
+void ETG::ShowImGuiWidget<std::shared_ptr<ETG::Texture>>(const char* label, std::shared_ptr<ETG::Texture>& value)
 {
     BeginProperty(label);
 
@@ -125,7 +125,7 @@ void ETG::ShowImGuiWidget<std::shared_ptr<sf::Texture>>(const char* label, std::
 }
 
 template <>
-void ETG::ShowImGuiWidget<sf::Vector2<float>>(const char* label, sf::Vector2<float>& value)
+void ETG::ShowImGuiWidget<ETG::Vector2<float>>(const char* label, ETG::Vector2<float>& value)
 {
     BeginProperty(label);
     ImGui::InputFloat2("##vector2", &value.x);
@@ -133,7 +133,7 @@ void ETG::ShowImGuiWidget<sf::Vector2<float>>(const char* label, sf::Vector2<flo
 }
 
 template <>
-void ETG::ShowImGuiWidget<sf::Vector2<unsigned>>(const char* label, sf::Vector2u& value)
+void ETG::ShowImGuiWidget<ETG::Vector2<unsigned>>(const char* label, ETG::Vector2u& value)
 {
     BeginProperty(label);
         
@@ -174,7 +174,7 @@ void ETG::ShowImGuiWidget<Animation>(const char* label, Animation& value)
 }
 
 template <>
-void ETG::ShowImGuiWidget<sf::Rect<int>>(const char* label, sf::Rect<int>& value)
+void ETG::ShowImGuiWidget<ETG::Rect<int>>(const char* label, ETG::Rect<int>& value)
 {
     // BeginProperty(label);
     if (ImGui::TreeNode(label))
@@ -193,7 +193,7 @@ void ETG::ShowImGuiWidget<AnimationManager>(const char* label, AnimationManager&
 }
 
 template <>
-void ETG::ShowImGuiWidget<sf::Color>(const char* label, sf::Color& color)
+void ETG::ShowImGuiWidget<ETG::Color>(const char* label, ETG::Color& color)
 {
     UIUtils::DisplayColorPicker(label, color);
 }

@@ -3,7 +3,7 @@
 #include <random>
 #include <array>
 #include <iostream>
-#include "SFML/Audio.hpp"
+#include "Platform/Platform.h"
 #include "../../Core/GameObjectBase.h"
 
 namespace ETG
@@ -16,7 +16,7 @@ namespace ETG
         explicit PassiveItemBase(const std::string& resourcePath)
         {
             //Load the texture
-            Texture = std::make_shared<sf::Texture>();
+            Texture = std::make_shared<ETG::Texture>();
 
             if (!Texture->loadFromFile(resourcePath))
                 std::cerr << "Failed to load hand texture" << std::endl;
@@ -38,8 +38,8 @@ namespace ETG
     protected:
         //Why did I choose array over vector? std::aray is fixed-size with zero overhead. There's no dynamic memory allocation.
         //It's stack allocated. So use std::array if the collection size is known at compile time
-        std::array<sf::SoundBuffer, 2> PickupSoundBuffers;
-        std::array<sf::Sound, 2> Sounds;
+        std::array<ETG::SoundBuffer, 2> PickupSoundBuffers;
+        std::array<ETG::Sound, 2> Sounds;
 
         //Random number generator
         std::mt19937 rng{std::random_device{}()};

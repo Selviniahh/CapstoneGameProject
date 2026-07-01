@@ -35,8 +35,8 @@ namespace ETG
         ActiveItemBase* itemContent = nullptr;
         DrawProperties contentDrawProps{};
         
-        std::shared_ptr<sf::Texture> FullFrameTexture;
-        std::shared_ptr<sf::Texture> FrameWithProgBarTexture;
+        std::shared_ptr<ETG::Texture> FullFrameTexture;
+        std::shared_ptr<ETG::Texture> FrameWithProgBarTexture;
         float contentScale = 3.0f; // Default scale factor for contents
     };
 }

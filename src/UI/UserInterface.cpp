@@ -32,7 +32,7 @@ namespace ETG
         UpdateGunUIProperties();
         InitializeAmmoBar();
 
-        auto ammoCounterPos = sf::Vector2f{RightGunFrame->GetPosition().x - 15, RightGunFrame->GetPosition().y - 100};
+        auto ammoCounterPos = ETG::Vector2f{RightGunFrame->GetPosition().x - 15, RightGunFrame->GetPosition().y - 100};
         ammoCounter = ETG::CreateGameObjectAttached<AmmoCounter>(this, ammoCounterPos);
     }
 
@@ -99,7 +99,7 @@ namespace ETG
         const float RightFrameOffsetX = GameScreenSize.x * (RightFrameOffsetPerc.x / 100);
         const float RightFrameOffsetY = GameScreenSize.y * (RightFrameOffsetPerc.y / 100);
 
-        const sf::Vector2f RightFramePosition = {
+        const ETG::Vector2f RightFramePosition = {
             (GameScreenSize.x - RightFrameOffsetX - RightGunFrame->Texture->getSize().x / 2),
             (GameScreenSize.y - RightFrameOffsetY - RightGunFrame->Texture->getSize().y / 2)
         };
@@ -115,7 +115,7 @@ namespace ETG
         const float LeftFrameOffsetX = GameScreenSize.x * (LeftFrameOffsetPerc.x / 100);
         const float LeftFrameOffsetY = GameScreenSize.y * (LeftFrameOffsetPerc.y / 100);
 
-        const sf::Vector2f LeftFramePosition = {
+        const ETG::Vector2f LeftFramePosition = {
             (LeftFrameOffsetX + LeftActiveItemFrame->Texture->getSize().x / 2),
             (GameScreenSize.y - LeftFrameOffsetY - LeftActiveItemFrame->Texture->getSize().y / 2)
         };
@@ -150,7 +150,7 @@ namespace ETG
         ammoIndicators = CreateGameObjectAttached<AmmoIndicatorsUI>(this);
         ammoIndicators->SetGun(CurrentGun);
         ammoIndicators->SetBottomBar(ammoBarBottom.get());
-        ammoBarBottom->SetPosition({ammoBarBottom->GetPosition() + sf::Vector2f{0, ammoIndicators->EachAmmoSpacing}}); //TODO: Not sure to remove this line or not
+        ammoBarBottom->SetPosition({ammoBarBottom->GetPosition() + ETG::Vector2f{0, ammoIndicators->EachAmmoSpacing}}); //TODO: Not sure to remove this line or not
 
         // Set callback for updating the top bar position
         ammoIndicators->SetTopBarPositionCallback([this](float topY)
@@ -173,7 +173,7 @@ namespace ETG
         int counter = 1;
         for (const auto& items : GameState::GetInstance().GetEquippedPassiveItems())
         {
-            const sf::Vector2f pos = {
+            const ETG::Vector2f pos = {
                 InitialLeftOffsetX + (LeftXOffsetPerItem * counter++),
                 GameScreenSize.y - InitialLeftOffsetY
             };

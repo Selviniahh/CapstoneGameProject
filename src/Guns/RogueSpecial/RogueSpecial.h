@@ -9,7 +9,7 @@ namespace ETG
     class RogueSpecial : public GunBase
     {
     public:
-        explicit RogueSpecial(const sf::Vector2f& Position);
+        explicit RogueSpecial(const ETG::Vector2f& Position);
         ~RogueSpecial() override = default;
 
         void Initialize() override;

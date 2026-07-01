@@ -16,7 +16,7 @@ ETG::DoubleShoot::DoubleShoot() : ActiveItemBase((std::filesystem::path(RESOURCE
     CollisionComp->SetCollisionEnabled(true);
     Position = {100, -70};
 
-    Origin = sf::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
+    Origin = ETG::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
 
     DoubleShoot::Initialize();
 }

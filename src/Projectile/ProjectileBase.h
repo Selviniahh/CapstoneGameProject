@@ -11,13 +11,13 @@ namespace ETG
     public:
         ProjectileBase() = default;
         ~ProjectileBase() override;
-        ProjectileBase(const sf::Texture& texture, sf::Vector2f spawnPos, sf::Vector2f velocity, float range, float rotation, float damage = 1.f, float force = 1.f);
+        ProjectileBase(const ETG::Texture& texture, ETG::Vector2f spawnPos, ETG::Vector2f velocity, float range, float rotation, float damage = 1.f, float force = 1.f);
 
         void Initialize() override;
         void Update() override;
         void Draw() override;
 
-        sf::Vector2f ProjVelocity;
+        ETG::Vector2f ProjVelocity;
         float Range;
         float Damage;
         float Force; //knockback amount

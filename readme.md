@@ -1,6 +1,6 @@
 # Enter the Gungeon Clone
 
-A clone of the game Enter the Gungeon built with SFML. It aims to replicate the original game, featuring modern C++ design, clean modular code, and a reflection system that lets you easily modify any initialized game object's variables. 
+A clone of the game Enter the Gungeon built with SDL3. It aims to replicate the original game, featuring modern C++ design, clean modular code, and a reflection system that lets you easily modify any initialized game object's variables. 
 
 [![Watch the video](https://img.youtube.com/vi/lgvuDcSot1w/0.jpg)](https://youtu.be/lgvuDcSot1w)
 
@@ -10,33 +10,28 @@ A clone of the game Enter the Gungeon built with SFML. It aims to replicate the 
 
 # How to build
 ## Prerequisites
-- CMake
+- CMake (3.28+)
 - Ninja Build System
-- A C++ compiler
-- vcpkg (for dependency management)
+- A C++ compiler with C++23 support
 
-Please follow each step carefully to ensure a successful build.
+No package manager is required: SDL3 and Boost are downloaded automatically by CMake (FetchContent), while Dear ImGui and stb are vendored under `external/`.
 
 ```
-git clone https://github.com/microsoft/vcpkg.git
-.\vcpkg\bootstrap-vcpkg.bat
 git clone https://github.com/Selviniahh/CapstoneGameProject.git
 cd CapstoneGameProject
-mkdir build
-set VCPKG_CMAKE=..\vcpkg\scripts\buildsystems\vcpkg.cmake
 cmake -G Ninja -B build
 cmake --build build --config Release
-.\build\bin\Release\ETG.exe
+.\build\bin\ETG.exe
 ```
 
 ### Other Platforms
-The build process is similar on Linux and macOS. Adjust the environment variables and toolchain settings as necessary.
+The build process is similar on Linux and macOS. On Linux, install the usual SDL build dependencies first (X11/Wayland development headers, e.g. `libxcursor-dev libxi-dev libxrandr-dev libxtst-dev libxkbcommon-dev libgl1-mesa-dev libasound2-dev`).
 
 # Dependencies
 
-- SFML
-- ImGui
-- ImGui-SFML
+- SDL3 (window, rendering, input, audio)
+- Dear ImGui (with the SDL3 + SDL_Renderer3 backends)
+- stb (stb_image, stb_truetype, stb_vorbis for asset decoding)
 - boost-type-index
 - boost-describe
 - boost-mpl

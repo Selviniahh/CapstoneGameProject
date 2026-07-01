@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
+#include "Platform/Platform.h"
 
 namespace ETG
 {
@@ -20,24 +20,27 @@ namespace ETG
         inline static Hero* HeroPtr = nullptr;
 
     public:
-        inline static sf::Vector2f direction{};
+        inline static ETG::Vector2f direction{};
         inline static float ZoomScale{};
-        inline static sf::Text debugText;
-        inline static sf::Vector2f textPos{0.f, -20.f}; // Start within the window
+        inline static ETG::Text debugText;
+        inline static ETG::Vector2f textPos{0.f, -20.f}; // Start within the window
         inline static bool LeftClickRequired;
 
+        //Mouse wheel movement accumulated for the current frame (set by GameManager::ProcessEvents)
+        inline static float MouseWheelDelta = 0.f;
+
         //Relative to view's top left (0,0)
-        inline static sf::Vector2f ViewLocalMousePos;
+        inline static ETG::Vector2f ViewLocalMousePos;
 
         //Mouse world position that doesn't account for View's transformations  
-        inline static sf::Vector2f WorldMousePos;
+        inline static ETG::Vector2f WorldMousePos;
 
-        static sf::Vector2f GetDirection() { return direction; }
-        static bool IsMoving() { return direction != sf::Vector2f(0.f, 0.f); }
+        static ETG::Vector2f GetDirection() { return direction; }
+        static bool IsMoving() { return direction != ETG::Vector2f(0.f, 0.f); }
 
         static void Update();
         static void InitializeDebugText();
-        static float GetZoomScale(const sf::View& currentView, const sf::RenderWindow& window);
+        static float GetZoomScale(const ETG::View& currentView, const ETG::RenderWindow& window);
 
         static float AdjustMoveFactor();
 
@@ -47,7 +50,7 @@ namespace ETG
         static float GetMouseAngleRelativeToHero();
 
         //I spent so much time to correctly get mouse position after zoom or move with View.  
-        static sf::Vector2f GetRelativeMousePos();
+        static ETG::Vector2f GetRelativeMousePos();
 
     private:
         //Private constructor to prevent instantiation

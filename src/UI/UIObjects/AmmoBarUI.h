@@ -1,6 +1,6 @@
 #pragma once
 #include "../../Core/GameObjectBase.h"
-#include <SFML/Graphics/Texture.hpp>
+#include "Platform/Platform.h"
 
 namespace ETG
 {
@@ -10,7 +10,7 @@ namespace ETG
     {
     private:
         // Textures
-        std::shared_ptr<sf::Texture> ammoBarTexture;
+        std::shared_ptr<ETG::Texture> ammoBarTexture;
 
     public:
         AmmoBarUI();

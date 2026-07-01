@@ -17,7 +17,7 @@ namespace ETG
     {
         CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
         CollisionComp->CollisionRadius = 4.f;
-        CollisionComp->CollisionVisualizationColor = sf::Color::Magenta;
+        CollisionComp->CollisionVisualizationColor = ETG::Color::Magenta;
         CollisionComp->SetCollisionEnabled(true);
 
         MoveComp = ETG::CreateGameObjectAttached<EnemyMoveCompBase>(this);
@@ -70,7 +70,7 @@ namespace ETG
             // Set enemy state to die
             SetState(EnemyStateEnum::Die);
             Depth = std::numeric_limits<float>::max(); //set depth to max value so that it will be drawn bottom of everything
-            const sf::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
+            const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
             MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
 
             //Clear the delegates to not let any interaction
@@ -127,7 +127,7 @@ namespace ETG
 
         // Check if this is a hero projectile
         // Calculate force direction (from projectile to enemy)
-        const sf::Vector2f forceDirection = Math::Normalize(this->Position - projectile->GetPosition());
+        const ETG::Vector2f forceDirection = Math::Normalize(this->Position - projectile->GetPosition());
 
         // Get force from projectile
         const float forceMagnitude = projectile->Force;

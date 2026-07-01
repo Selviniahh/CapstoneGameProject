@@ -17,7 +17,7 @@ float ETG::Hero::MouseAngle = 0;
 ETG::Direction ETG::Hero::CurrentDirection{};
 bool ETG::Hero::IsShooting{};
 
-ETG::Hero::Hero(const sf::Vector2f Position)
+ETG::Hero::Hero(const ETG::Vector2f Position)
 {
     this->Position = Position;
     Depth = -1;
@@ -59,7 +59,7 @@ void ETG::Hero::Initialize()
         if (CurrentHeroState == HeroStateEnum::Die) return;
 
         this->SetState(HeroStateEnum::Hit);
-        const sf::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
+        const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
         MoveComp->ApplyForce(knockbackDir, forceMagnitude, 0.2f);
     });
 
@@ -127,7 +127,7 @@ void ETG::Hero::UpdateAnimations()
 
 void ETG::Hero::UpdateHand() const
 {
-    const sf::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(CurrentDirection) ? sf::Vector2f{8.f, 5.f} : sf::Vector2f{-7.f, 5.f};
+    const ETG::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(CurrentDirection) ? ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-7.f, 5.f};
     Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
     Hand->Update();
 
@@ -159,7 +159,7 @@ void ETG::Hero::HandleShooting() const
 
 void ETG::Hero::HandleActiveItem() const
 {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && CurrActiveItem && CanUseActiveItems())
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Space) && CurrActiveItem && CanUseActiveItems())
     {
         CurrActiveItem->RequestUsage();
     }

@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/describe.hpp>
 #include <boost/type_index.hpp>
-#include <imgui-SFML.h>
+#include "Platform/Platform.h"
 #include <imgui.h>
 #include "UI/EngineUI.h"
 #include "../Utils/StrManipulateUtil.h"

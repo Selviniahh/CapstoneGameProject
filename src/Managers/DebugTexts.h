@@ -19,7 +19,7 @@ namespace ETG
         {
             queuedTexts.push_back(text);
         };
-        static void DrawQueuedTexts(sf::RenderWindow& window);
+        static void DrawQueuedTexts(ETG::RenderWindow& window);
         static void ClearQueue()
         {
             queuedTexts.clear();
@@ -31,7 +31,7 @@ namespace ETG
     public:
         Hero* HeroPtr = nullptr;
         
-        void Draw(sf::RenderWindow& window)
+        void Draw(ETG::RenderWindow& window)
         {
             if (!HeroPtr) HeroPtr = GameState::GetInstance().GetHero();
             // if (!SceneObjects) SceneObjects = &GameState::GetInstance().GetSceneObj();
@@ -45,7 +45,7 @@ namespace ETG
             DrawDebugText("Direction: " + std::to_string(InputManager::direction.x) + ", " + std::to_string(InputManager::direction.y), window);
 
             //Mouse position that my monitor's top left point will be (0,0)
-            DrawDebugText("Screen Mouse Position: " + std::to_string(sf::Mouse::getPosition().x) + ", " + std::to_string(sf::Mouse::getPosition().y), window);
+            DrawDebugText("Screen Mouse Position: " + std::to_string(ETG::Mouse::getPosition().x) + ", " + std::to_string(ETG::Mouse::getPosition().y), window);
 
             //NOTE: IMPORTANT!!! Mouse position relative to view. This is so important because when hero rotating around mouse, if view zoomed or moved, we need to take View into account
             DrawDebugText("View Relative Mouse world Position: " + std::to_string(InputManager::ViewLocalMousePos.x) + " " + std::to_string(InputManager::ViewLocalMousePos.y), window);
@@ -56,7 +56,7 @@ namespace ETG
             DrawDebugText("View ignored relative Mouse world Position AKA World Mouse Pos: " + std::to_string(InputManager::WorldMousePos.x) + " " + std::to_string(InputManager::WorldMousePos.y), window);
 
             //Mouse Relative to hero
-            DrawDebugText("Mouse Relative to Hero: " + std::to_string(sf::Mouse::getPosition().x - HeroPtr->GetPosition().x) + ", " + std::to_string(sf::Mouse::getPosition().y - HeroPtr->GetPosition().y), window);
+            DrawDebugText("Mouse Relative to Hero: " + std::to_string(ETG::Mouse::getPosition().x - HeroPtr->GetPosition().x) + ", " + std::to_string(ETG::Mouse::getPosition().y - HeroPtr->GetPosition().y), window);
 
             // Moving state
             DrawDebugText("Moving: " + std::string(InputManager::IsMoving() ? "true" : "false"), window);
@@ -66,7 +66,7 @@ namespace ETG
             DrawDebugText("Hero position: " + std::to_string(HeroPtr->GetPosition().x) + " " + std::to_string(HeroPtr->GetPosition().y), window);
             DrawDebugText("Zoom Scale: " + std::to_string(InputManager::ZoomScale), window);
 
-            // const sf::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
+            // const ETG::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
             DrawDebugText("View Center: " + std::to_string(Globals::MainView.getCenter().x) + " " + std::to_string(Globals::MainView.getCenter().y), window);
             DrawDebugText("View Size: " + std::to_string(Globals::MainView.getSize().x) + " " + std::to_string(Globals::MainView.getSize().y), window);
             DrawDebugText("CurrentDirection: " + std::string(EnumToString(Hero::CurrentDirection)), window);
@@ -76,7 +76,7 @@ namespace ETG
             DebugTextManager::DrawQueuedTexts(window);
         }
 
-        static void DrawDebugText(const std::string& str, sf::RenderWindow& window)
+        static void DrawDebugText(const std::string& str, ETG::RenderWindow& window)
         {
             if (!window.isOpen()) return; //For no reason, suddenly I had to write this otherwise, the game starts crashing when I close the game
             InputManager::debugText.setString(str);
@@ -84,14 +84,14 @@ namespace ETG
             window.draw(InputManager::debugText);
         }
 
-        static sf::Vector2f& SetDebugTextPos(sf::Vector2f& pos)
+        static ETG::Vector2f& SetDebugTextPos(ETG::Vector2f& pos)
         {
             pos.y += 20.f; // Increment Y position for next line
             return pos;
         }
     };
 
-    inline void DebugTextManager::DrawQueuedTexts(sf::RenderWindow& window)
+    inline void DebugTextManager::DrawQueuedTexts(ETG::RenderWindow& window)
     {
         for (const auto& text : queuedTexts)
         {

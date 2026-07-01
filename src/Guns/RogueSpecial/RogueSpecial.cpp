@@ -3,7 +3,7 @@
 #include "../../Core/Factory.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
 
-ETG::RogueSpecial::RogueSpecial(const sf::Vector2f& Position) : GunBase(Position,
+ETG::RogueSpecial::RogueSpecial(const ETG::Vector2f& Position) : GunBase(Position,
 0.35f,
 200.f,
 300.f,
@@ -66,13 +66,13 @@ void ETG::RogueSpecialAnimComp::SetAnimations()
 {
     //Idle Animation
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial", "RogueSpecial_Idle", "png", 0.15f, true)};
-    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim, true, sf::Vector2f{1,10});
+    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim, true, ETG::Vector2f{1,10});
 
     //Shoot animations
     const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial/Fire", "knav3_fire_001", "png", 0.15f)};
-    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim, true, sf::Vector2f{1,10});
+    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim, true, ETG::Vector2f{1,10});
 
     //Reload Animation
     const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial", "RogueSpecial_Reload", "png", 0.15f, true)};
-    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim, true, sf::Vector2f{1,10});
+    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim, true, ETG::Vector2f{1,10});
 }

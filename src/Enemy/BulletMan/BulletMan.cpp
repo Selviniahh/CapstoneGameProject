@@ -1,6 +1,6 @@
 #include "BulletMan.h"
 #include <filesystem>
-#include<SFML/Graphics/Texture.hpp>
+#include "Platform/Platform.h"
 #include "../../Core/Factory.h"
 #include "../../Managers/DebugTexts.h"
 #include "../../Managers/SpriteBatch.h"
@@ -17,7 +17,7 @@ namespace ETG
     class Magnum;
 }
 
-ETG::BulletMan::BulletMan(const sf::Vector2f& position)
+ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
 {
     this->Position = position;
     Depth = 4;
@@ -73,15 +73,15 @@ void ETG::BulletMan::UpdateAnimations()
 void ETG::BulletMan::UpdateHandAndGunPositions() const
 {
     //Set hand properties
-    const sf::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(EnemyDir) ? 
-        sf::Vector2f{8.f, 5.f} : sf::Vector2f{-8.f, 5.f};
+    const ETG::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(EnemyDir) ? 
+        ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-8.f, 5.f};
     Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
     Hand->Update();
 
     if (Hand && Gun)
     {
         // Position the gun relative to the hand.
-        const sf::Vector2f handPos = Hand->GetPosition();
+        const ETG::Vector2f handPos = Hand->GetPosition();
         Gun->SetPosition(handPos + Hand->GunOffset);
 
         // Aim the gun toward the hero.

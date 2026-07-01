@@ -50,12 +50,12 @@ namespace ETG
     inline void ReloadText::Initialize()
     {
         Hero = GameState::GetInstance().GetHero();
-        Texture = std::make_shared<sf::Texture>();
+        Texture = std::make_shared<ETG::Texture>();
         Texture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "ReloadText.png").generic_string());
         Origin.x = Texture->getSize().x / 2;
         Origin.y = Texture->getSize().y / 2;
-        Scale = sf::Vector2f{0.2f, 0.2f};
-        Color = sf::Color{255, 255, 255, 255};
+        Scale = ETG::Vector2f{0.2f, 0.2f};
+        Color = ETG::Color{255, 255, 255, 255};
         GameObjectBase::Initialize();
     }
 
@@ -87,7 +87,7 @@ namespace ETG
     inline void ReloadText::Update()
     {
         if (!NeedsReload) return;
-        Position = Hero->GetPosition() + sf::Vector2f{0, TextureYOffset};
+        Position = Hero->GetPosition() + ETG::Vector2f{0, TextureYOffset};
 
         Color.a = Math::SinWaveLerp(25.f, 255.f, BlinkInterval, blinkTimer);
         GameObjectBase::Update();

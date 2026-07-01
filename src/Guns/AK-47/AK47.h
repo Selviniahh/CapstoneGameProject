@@ -7,7 +7,7 @@ namespace ETG
     class AK47 : public GunBase
     {
     public:
-        explicit AK47(const sf::Vector2f& pos);
+        explicit AK47(const ETG::Vector2f& pos);
         ~AK47() override = default;
 
         void Initialize() override;

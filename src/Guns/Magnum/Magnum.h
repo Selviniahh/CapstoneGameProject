@@ -7,7 +7,7 @@ namespace ETG
     class Magnum : public GunBase
     {
     public:
-        explicit Magnum(const sf::Vector2f& pos);
+        explicit Magnum(const ETG::Vector2f& pos);
         ~Magnum() override = default;
         
         void Initialize() override;

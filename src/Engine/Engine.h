@@ -33,7 +33,7 @@ private:
     void DisplayHierarchy(ETG::GameObjectBase* object);
 
     ImFont* SegoeFont{};
-    sf::Vector2f windowSize;
+    ETG::Vector2f windowSize;
     ETG::GameObjectBase* SelectedObj = nullptr;
 
     std::unordered_set<ETG::GameObjectBase*> OwnerObjects;

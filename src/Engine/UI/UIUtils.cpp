@@ -3,7 +3,7 @@
 #include "../../Animation/Animation.h"
 #include "../../Utils/StrManipulateUtil.h"
 
-void UIUtils::DisplayIntRectangle(sf::IntRect& rect)
+void UIUtils::DisplayIntRectangle(ETG::IntRect& rect)
 {
     BeginProperty("Size");
     int size[2] = {rect.width, rect.height};
@@ -94,12 +94,12 @@ void UIUtils::DisplayAnimation(const char* label, Animation& value)
 }
 
 
-void UIUtils::DisplayTexture(const std::shared_ptr<sf::Texture>& value)
+void UIUtils::DisplayTexture(const std::shared_ptr<ETG::Texture>& value)
 {
     if (value)
     {
-        // Get the native OpenGL texture handle from SFML
-        const ImTextureID textId = value->getNativeHandle();
+        // The SDL_Renderer ImGui backend uses SDL_Texture* as the texture identifier
+        const auto textId = reinterpret_cast<ImTextureID>(value->getNativeHandle());
 
         float texWidth = static_cast<float>(value->getSize().x);
         float texHeight = static_cast<float>(value->getSize().y);
@@ -214,9 +214,9 @@ void UIUtils::DisplayAnimationManager(const char* label, AnimationManager& manag
     }
 }
 
-void UIUtils::DisplayColorPicker(const char* label, sf::Color& color)
+void UIUtils::DisplayColorPicker(const char* label, ETG::Color& color)
 {
-    // Convert sf::Color (0-255) to ImGui color format (0.0f-1.0f)
+    // Convert ETG::Color (0-255) to ImGui color format (0.0f-1.0f)
     float colorArray[4] = {
         color.r / 255.0f,
         color.g / 255.0f,
@@ -270,10 +270,10 @@ void UIUtils::DisplayColorPicker(const char* label, sf::Color& color)
         
         if (changed)
         {
-            color.r = static_cast<sf::Uint8>(colorArray[0] * 255.0f + 0.5f);
-            color.g = static_cast<sf::Uint8>(colorArray[1] * 255.0f + 0.5f);
-            color.b = static_cast<sf::Uint8>(colorArray[2] * 255.0f + 0.5f);
-            color.a = static_cast<sf::Uint8>(colorArray[3] * 255.0f + 0.5f);
+            color.r = static_cast<std::uint8_t>(colorArray[0] * 255.0f + 0.5f);
+            color.g = static_cast<std::uint8_t>(colorArray[1] * 255.0f + 0.5f);
+            color.b = static_cast<std::uint8_t>(colorArray[2] * 255.0f + 0.5f);
+            color.a = static_cast<std::uint8_t>(colorArray[3] * 255.0f + 0.5f);
         }
         
         ImGui::EndPopup();

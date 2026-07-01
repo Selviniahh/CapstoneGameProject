@@ -21,26 +21,26 @@ void ETG::InputManager::Update()
     const float adjustedMoveFactor = AdjustMoveFactor();
 
     //Calculate directions. It can only be -1 or 1 
-    direction = sf::Vector2f(0.f, 0.f);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) direction.x--;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) direction.x++;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) direction.y--;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) direction.y++;
+    direction = ETG::Vector2f(0.f, 0.f);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A)) direction.x--;
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D)) direction.x++;
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::W)) direction.y--;
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::S)) direction.y++;
 
     //shooting
-    Hero::IsShooting = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+    Hero::IsShooting = ETG::Mouse::isButtonPressed(ETG::Mouse::Left);
 
     //Camera Effects:
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)) Globals::MainView.zoom(1.0f - adjustedZoomFactor);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) Globals::MainView.zoom(1.0f + adjustedZoomFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::E)) Globals::MainView.zoom(1.0f - adjustedZoomFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Q)) Globals::MainView.zoom(1.0f + adjustedZoomFactor);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) Globals::MainView.move(0, -adjustedMoveFactor);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) Globals::MainView.move(0, +adjustedMoveFactor);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) Globals::MainView.move(+adjustedMoveFactor, 0);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) Globals::MainView.move(-adjustedMoveFactor, 0);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Up)) Globals::MainView.move(0, -adjustedMoveFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Down)) Globals::MainView.move(0, +adjustedMoveFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Right)) Globals::MainView.move(+adjustedMoveFactor, 0);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Left)) Globals::MainView.move(-adjustedMoveFactor, 0);
 
     ViewLocalMousePos = GetRelativeMousePos();
-    WorldMousePos = Globals::Window->mapPixelToCoords(sf::Mouse::getPosition(*Globals::Window), Globals::MainView);
+    WorldMousePos = Globals::Window->mapPixelToCoords(ETG::Mouse::getPosition(*Globals::Window), Globals::MainView);
 }
 
 
@@ -48,16 +48,16 @@ void ETG::InputManager::InitializeDebugText()
 {
     debugText.setFont(*Globals::Font);
     debugText.setCharacterSize(16);
-    debugText.setFillColor(sf::Color::Yellow);
+    debugText.setFillColor(ETG::Color::Yellow);
 }
 
-float ETG::InputManager::GetZoomScale(const sf::View& currentView, const sf::RenderWindow& window)
+float ETG::InputManager::GetZoomScale(const ETG::View& currentView, const ETG::RenderWindow& window)
 {
     //Default view size
-    sf::Vector2f defSize = window.getDefaultView().getSize();
+    ETG::Vector2f defSize = window.getDefaultView().getSize();
 
     //Get current view size
-    sf::Vector2f currSize = currentView.getSize();
+    ETG::Vector2f currSize = currentView.getSize();
 
     return defSize.x / currSize.x;
 }
@@ -81,17 +81,17 @@ float ETG::InputManager::AdjustZoomFactor()
 
 float ETG::InputManager::GetMouseAngleRelativeToHero()
 {
-    const sf::Vector2f diff = WorldMousePos - HeroPtr->GetPosition();
+    const ETG::Vector2f diff = WorldMousePos - HeroPtr->GetPosition();
     return std::atan2(diff.y, diff.x);
 }
 
-sf::Vector2f ETG::InputManager::GetRelativeMousePos()
+ETG::Vector2f ETG::InputManager::GetRelativeMousePos()
 {
     //Mouse world position
-    const sf::Vector2f MousePos = Globals::Window->mapPixelToCoords(sf::Mouse::getPosition(*Globals::Window), Globals::MainView);
+    const ETG::Vector2f MousePos = Globals::Window->mapPixelToCoords(ETG::Mouse::getPosition(*Globals::Window), Globals::MainView);
 
     // Calculate the top-left corner of the view in world coordinates
-    const sf::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
+    const ETG::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
 
     // Subtract the view's top-left to get relative mouse position
     return MousePos - viewTopLeft;

@@ -17,13 +17,13 @@ namespace ETG
         const std::string ResPath = RESOURCE_PATH;
 
         // Load textures
-        ammoBarTexture = std::make_shared<sf::Texture>();
+        ammoBarTexture = std::make_shared<ETG::Texture>();
         
         if (!ammoBarTexture->loadFromFile(ResPath + "/UI/AmmoBarUI.png"))
             throw std::runtime_error("Failed to load AmmoBarUI.png");
 
         // Set up initial draw properties
-        const sf::Vector2u barSize = ammoBarTexture->getSize();
+        const ETG::Vector2u barSize = ammoBarTexture->getSize();
 
         // Set up ammo bar draw properties
         Texture = ammoBarTexture;

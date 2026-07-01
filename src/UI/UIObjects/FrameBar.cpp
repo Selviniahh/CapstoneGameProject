@@ -7,9 +7,9 @@ namespace ETG
 {
     FrameBar::FrameBar(const std::string& texturePath, const BarType type) : barType(type)
     {
-        Texture = std::make_shared<sf::Texture>();
-        FullFrameTexture = std::make_shared<sf::Texture>();
-        FrameWithProgBarTexture = std::make_shared<sf::Texture>();
+        Texture = std::make_shared<ETG::Texture>();
+        FullFrameTexture = std::make_shared<ETG::Texture>();
+        FrameWithProgBarTexture = std::make_shared<ETG::Texture>();
         
         if (!Texture->loadFromFile(texturePath))
             throw std::runtime_error("Failed to load Frame texture from: " + texturePath);

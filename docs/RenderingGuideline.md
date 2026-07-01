@@ -6,7 +6,7 @@ Here’s a revised and improved version of your rendering guidelines with cleare
 
 ## **Why Use SpriteBatch?**
 - **Performance**: Reduces draw calls by grouping sprites with the same texture into a single batch.
-- **Best Practice**: Direct calls to `Window->draw()` are **prohibited** except for non-batched debug elements (e.g., `sf::Text`, `sf::RectangleShape`).
+- **Best Practice**: Direct calls to `Window->draw()` are **prohibited** except for non-batched debug elements (e.g., `ETG::Text`, `ETG::RectangleShape`).
 
 ---
 
@@ -72,7 +72,7 @@ The `GameManager::Draw()` method is structured into **3 phases** to handle diffe
 - **Purpose**: Debug elements (text, shapes) drawn directly.
 - **Workflow**:
   ```cpp
-  DebugText::Draw(*Window); // Direct draw (SFML handles text batching)
+  DebugText::Draw(*Window); // Direct draw (text is drawn immediately)
   ```
 
 ---
@@ -80,7 +80,7 @@ The `GameManager::Draw()` method is structured into **3 phases** to handle diffe
 ## **Example: GameManager.cpp**
 ```cpp
 void ETG::GameManager::Draw() {
-    Window->clear(sf::Color::Black);
+    Window->clear(ETG::Color::Black);
 
     // Phase 1: Scaled (Game World)
     Window->setView(Globals::MainView); // Zoomed view
@@ -96,7 +96,7 @@ void ETG::GameManager::Draw() {
     SpriteBatch.end(*Window);
 
     // Phase 3: Non-Batched (Debug)
-    DebugText::Draw(*Window); // Direct draw (uses SFML's internal batching)
+    DebugText::Draw(*Window); // Direct draw (drawn immediately through the platform layer)
 
     Window->display();
 }
@@ -117,11 +117,11 @@ void ETG::GameManager::Draw() {
 ---
 
 ## **Debugging Exceptions**
-- **Debug Text**: Uses `sf::Text` directly. SFML batches text internally if the same font/size is used.
+- **Debug Text**: Uses `ETG::Text` directly. The platform layer renders text with a single SDL_RenderGeometry call per string.
 - **Shapes/Lines**: Use sparingly. For example:
   ```cpp
   // ❌ Avoid (not batched):
-  sf::RectangleShape rect;
+  ETG::RectangleShape rect;
   Window->draw(rect);
   
   // ✅ Better: Convert to a sprite or use a batched quad.
@@ -135,7 +135,7 @@ void ETG::GameManager::Draw() {
 2. **Minimize Texture Swaps**:
     - Group sprites by texture within a batch (e.g., render all "hero" sprites before "enemies").
 3. **Profile Performance**:
-    - Use SFML’s `sf::RenderWindow::draw()` stats to track draw calls.
+    - Track SDL_RenderGeometry calls per frame to measure batching efficiency.
 
 ---
 

@@ -34,7 +34,7 @@ void ETG::GameObjectBase::VisualizeOrigin() const
 {
     if (DrawOriginPoint)
     {
-        Globals::DrawSinglePixelAtLoc(DrawProps.Position, sf::Vector2i(1, 1), Rotation);
+        Globals::DrawSinglePixelAtLoc(DrawProps.Position, ETG::Vector2i(1, 1), Rotation);
     }
 }
 
@@ -63,7 +63,7 @@ void ETG::GameObjectBase::ComputeDrawProperties()
     DrawProps.Color = Color;
 }
 
-sf::FloatRect ETG::GameObjectBase::GetBounds() const
+ETG::FloatRect ETG::GameObjectBase::GetBounds() const
 {
     if (AnimInterface)
     {
@@ -96,7 +96,7 @@ sf::FloatRect ETG::GameObjectBase::GetBounds() const
     };
 }
 
-void ETG::GameObjectBase::DrawBounds(sf::Color color) const
+void ETG::GameObjectBase::DrawBounds(ETG::Color color) const
 {
     if (!DrawBound) return;
     GlobSpriteBatch.drawRectOutline(GetBounds(), color, 1.0f, 0);

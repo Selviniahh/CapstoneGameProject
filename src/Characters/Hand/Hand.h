@@ -8,8 +8,8 @@ namespace ETG
     public:
         Hand();
 
-        sf::Vector2f GunOffset{0,0}; //2 ,2 
-        sf::Vector2f HandOffset{0,0}; //-2 -1
+        ETG::Vector2f GunOffset{0,0}; //2 ,2 
+        ETG::Vector2f HandOffset{0,0}; //-2 -1
 
         void Initialize() override;
         void Draw() override;

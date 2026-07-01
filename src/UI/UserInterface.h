@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <SFML/Graphics/Texture.hpp>
+#include "Platform/Platform.h"
 #include "../Core/GameObjectBase.h"
 #include "UIObjects/AmmoBarUI.h"
 #include "UIObjects/AmmoCounter.h"
@@ -38,8 +38,8 @@ namespace ETG
 
 
         // Configuration
-        sf::Vector2f RightFrameOffsetPerc{4, 3.5};
-        sf::Vector2f LeftFrameOffsetPerc{1, 3.5};
+        ETG::Vector2f RightFrameOffsetPerc{4, 3.5};
+        ETG::Vector2f LeftFrameOffsetPerc{1, 3.5};
 
         //Ammo display at right UI
         float AmmoBarOffsetPercX = 2.f;
@@ -51,7 +51,7 @@ namespace ETG
         float InitialLeftOffsetY = 18.f;
 
         //Get WindowSize - EngineUISize to calculate GameScreen
-        sf::Vector2f GameScreenSize;
+        ETG::Vector2f GameScreenSize;
 
     public:
         UserInterface();

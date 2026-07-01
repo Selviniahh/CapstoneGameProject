@@ -1,30 +1,93 @@
 cmake_minimum_required(VERSION 3.28)
-if (NOT DEFINED ENV{VCPKG_CMAKE})
-    message(FATAL_ERROR "VCPKG_CMAKE environment variable is not set.")
-endif ()
 
-# Check if CMAKE_TOOLCHAIN_FILE was provided via command line
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    # If not provided via command line, check for environment variable
-    if(DEFINED ENV{VCPKG_CMAKE})
-        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_CMAKE}" CACHE STRING "Vcpkg toolchain file")
-        message(STATUS "Using toolchain file from VCPKG_CMAKE environment variable: ${CMAKE_TOOLCHAIN_FILE}")
-    else()
-        # Neither command line nor environment variable was provided
-        message(FATAL_ERROR "CMAKE_TOOLCHAIN_FILE was not provided via command line and VCPKG_CMAKE environment variable is not set.")
-    endif()
-else()
-    # Toolchain file was provided via command line
-    message(STATUS "Using toolchain file provided via command line: ${CMAKE_TOOLCHAIN_FILE}")
-endif()
-
-project(ETG LANGUAGES CXX)
+project(ETG LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(GNUInstallDirs)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+
+# ------------------------------------------------------------------------------
+# Dependencies (no package manager required)
+#  - SDL3: fetched from the official release tarball and built from source
+#  - Dear ImGui (+ SDL3 backends): vendored under external/imgui
+#  - stb (image/vorbis/truetype decoding): vendored under external/stb
+#  - Boost (header-only: type_index, describe, mpl): fetched release tarball
+# ------------------------------------------------------------------------------
+include(FetchContent)
+
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        SDL3
+        URL https://www.libsdl.org/release/SDL3-3.4.12.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(SDL3)
+
+# Boost: the release tarball ships all headers pre-assembled under boost/.
+# The three libraries used here (type_index, describe, mpl) are header-only.
+FetchContent_Declare(
+        boost_headers
+        URL https://archives.boost.io/release/1.91.0/source/boost_1_91_0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(boost_headers)
+
+add_library(boost_header_only INTERFACE)
+target_include_directories(boost_header_only SYSTEM INTERFACE ${boost_headers_SOURCE_DIR})
+add_library(Boost::type_index ALIAS boost_header_only)
+add_library(Boost::describe ALIAS boost_header_only)
+add_library(Boost::mpl ALIAS boost_header_only)
+
+# Dear ImGui with the SDL3 + SDL_Renderer3 backends (vendored)
+set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
+add_library(imgui STATIC
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdlrenderer3.cpp
+)
+target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends)
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
+
+# stb single-header libraries (implementations live in src/Platform/StbImpl.cpp)
+add_library(stb INTERFACE)
+target_include_directories(stb SYSTEM INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
+
+find_package(Threads REQUIRED)
+
+# ------------------------------------------------------------------------------
+# Sources
+# ------------------------------------------------------------------------------
+set(PLATFORM_SOURCES
+        src/Platform/Vector2.h
+        src/Platform/Rect.h
+        src/Platform/Color.h
+        src/Platform/View.h
+        src/Platform/Texture.cpp
+        src/Platform/Texture.h
+        src/Platform/Sprite.h
+        src/Platform/RenderWindow.cpp
+        src/Platform/RenderWindow.h
+        src/Platform/Shapes.h
+        src/Platform/Input.cpp
+        src/Platform/Input.h
+        src/Platform/Audio.cpp
+        src/Platform/Audio.h
+        src/Platform/Text.cpp
+        src/Platform/Text.h
+        src/Platform/Platform.h
+        src/Platform/StbImpl.cpp
+)
 
 set(CORE_SOURCES
         src/Core/GameObjectBase.cpp
@@ -154,16 +217,9 @@ set(UTILS_SOURCES
         src/Utils/Interface/IGunModifier.h
 )
 
-find_package(SFML CONFIG REQUIRED system window graphics network audio)
-find_package(benchmark CONFIG REQUIRED)
-find_package(Threads REQUIRED)
-find_package(ImGui-SFML CONFIG REQUIRED)
-find_package(boost_type_index CONFIG REQUIRED)
-find_package(boost_describe CONFIG REQUIRED)
-find_package(boost_mpl REQUIRED CONFIG)
-
-# Create a master STATIC library for all SFML-dependent code
+# Create a master STATIC library for all SDL-dependent code
 add_library(etgcore STATIC
+        ${PLATFORM_SOURCES}
         ${CORE_SOURCES}
         ${ENGINE_SOURCES}
         ${ANIMATION_SOURCES}
@@ -181,17 +237,22 @@ target_compile_definitions(etgcore PRIVATE
         RESOURCE_PATH="../../Resources"
 )
 
+# The codebase uses members that shadow their own type names (e.g. `Engine* Engine;`),
+# which GCC rejects by default while MSVC/Clang accept it.
+add_library(etg_compile_flags INTERFACE)
+target_compile_options(etg_compile_flags INTERFACE
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-changes-meaning>
+)
+target_link_libraries(etgcore PUBLIC etg_compile_flags)
+
 # Include directories
 target_include_directories(etgcore PUBLIC src)
 
 # Link everything to the static library
 target_link_libraries(etgcore PUBLIC
-        sfml-system
-        sfml-graphics
-        sfml-window
-        sfml-audio
-        sfml-network
-        ImGui-SFML::ImGui-SFML
+        SDL3::SDL3
+        imgui
+        stb
         Boost::type_index
         Boost::describe
         Boost::mpl
@@ -200,7 +261,7 @@ target_link_libraries(etgcore PUBLIC
 add_library(utils STATIC ${UTILS_SOURCES})
 target_compile_definitions(utils PRIVATE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_include_directories(utils PUBLIC src)
-target_link_libraries(utils PUBLIC Boost::type_index)
+target_link_libraries(utils PUBLIC Boost::type_index Boost::describe Boost::mpl SDL3::SDL3 imgui etg_compile_flags)
 
 add_library(modifiers INTERFACE)
 target_sources(modifiers INTERFACE ${MODIFIERS_SOURCES})
@@ -214,16 +275,10 @@ target_link_libraries(ETG PRIVATE
         etgcore  # Our consolidated static library
         utils
         modifiers
-        sfml-audio
-        sfml-graphics
-        sfml-network
-        sfml-system
-        sfml-window
-        benchmark::benchmark
-        ImGui-SFML::ImGui-SFML
+        SDL3::SDL3
+        imgui
         Boost::type_index
         Boost::describe
         Boost::mpl
-        $<$<PLATFORM_ID:Windows>:sfml-main>
         Threads::Threads
 )

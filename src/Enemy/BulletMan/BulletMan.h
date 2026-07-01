@@ -12,7 +12,7 @@ namespace ETG
     class BulletMan : public EnemyBase
     {
     public:
-        explicit BulletMan(const sf::Vector2f& position);
+        explicit BulletMan(const ETG::Vector2f& position);
         ~BulletMan() override;
         void Initialize() override;
         void Update() override;

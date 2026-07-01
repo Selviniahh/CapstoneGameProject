@@ -26,8 +26,8 @@ namespace ETG
         void OnReloadStart(bool isReloading);
         void OnReloadComplete();
         
-        std::shared_ptr<sf::Texture> SliderBar;
-        std::shared_ptr<sf::Texture> SliderValue;
+        std::shared_ptr<ETG::Texture> SliderBar;
+        std::shared_ptr<ETG::Texture> SliderValue;
         float reloadTimer = 0.0f;
 
         DrawProperties SliderBarPros;

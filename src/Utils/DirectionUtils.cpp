@@ -20,9 +20,9 @@ void ETG::DirectionUtils::PopulateDirectionRanges(DirectionMap mapToFill)
     mapToFill[{337, 360}] = Direction::Right;
 }
 
-ETG::Direction ETG::DirectionUtils::GetDirectionToHero(const Hero* Hero, const sf::Vector2f SelfPosition)
+ETG::Direction ETG::DirectionUtils::GetDirectionToHero(const Hero* Hero, const ETG::Vector2f SelfPosition)
 {
-    const sf::Vector2f dirVector = Math::Normalize(Hero->GetPosition() - SelfPosition);
+    const ETG::Vector2f dirVector = Math::Normalize(Hero->GetPosition() - SelfPosition);
 
     // Calculate angle in degrees (0-360)
     float angle = atan2(dirVector.y, dirVector.x) * 180.0f / std::numbers::pi;
@@ -142,44 +142,44 @@ ETG::BulletManDeathEnum ETG::DirectionUtils::GetBulletManDeathEnum(Direction cur
 //Do not put any breakpoint at this function otherwise Key presses that captured in above GetDashDirectionEnum won't be captured during debugging. 
 ETG::HeroDashEnum ETG::DirectionUtils::GetDashDirectionEnum()
 {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
     {
         LastDashDirection = Direction::BackDiagonalRight;
         return HeroDashEnum::Dash_BackWard;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
     {
         LastDashDirection = Direction::BackDiagonalLeft;
         return HeroDashEnum::Dash_BackWard;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
     {
         LastDashDirection = Direction::FrontHandLeft;
 
         return HeroDashEnum::Dash_Right;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
     {
         LastDashDirection = Direction::FrontHandRight;
         return HeroDashEnum::Dash_Right;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A))
     {
         LastDashDirection = Direction::Left;
         return HeroDashEnum::Dash_Left;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D))
     {
         LastDashDirection = Direction::Right;
         return HeroDashEnum::Dash_Right;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
     {
         LastDashDirection = Direction::BackHandRight;
         return HeroDashEnum::Dash_Back;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
     {
         LastDashDirection = Direction::Front_For_Dash;
         return HeroDashEnum::Dash_Front;
@@ -187,7 +187,7 @@ ETG::HeroDashEnum ETG::DirectionUtils::GetDashDirectionEnum()
     return HeroDashEnum::Unknown;
 }
 
-sf::Vector2f ETG::DirectionUtils::GetDashDirectionVector() //Normalized vectors will be 0.707113562
+ETG::Vector2f ETG::DirectionUtils::GetDashDirectionVector() //Normalized vectors will be 0.707113562
 {
     switch (LastDashDirection)
     {
@@ -195,10 +195,10 @@ sf::Vector2f ETG::DirectionUtils::GetDashDirectionVector() //Normalized vectors 
     case Direction::Right: return {1.0f, 0.0f};
     case Direction::BackHandRight: return {0.0f, -1.0f};
     case Direction::BackHandLeft: return {0.0f, -1.0f};
-    case Direction::FrontHandRight: return Math::Normalize(sf::Vector2f{1.0f, 1.0f});
-    case Direction::FrontHandLeft: return Math::Normalize(sf::Vector2f{-1.0f, 1.0f}); //-0.7071 + 0.7
-    case Direction::BackDiagonalRight: return Math::Normalize(sf::Vector2f{1.0f, -1.0f});; //0.7 -0.7
-    case Direction::BackDiagonalLeft: return Math::Normalize(sf::Vector2f{-1.0, -1.0f}); //-0.7 -0.7
+    case Direction::FrontHandRight: return Math::Normalize(ETG::Vector2f{1.0f, 1.0f});
+    case Direction::FrontHandLeft: return Math::Normalize(ETG::Vector2f{-1.0f, 1.0f}); //-0.7071 + 0.7
+    case Direction::BackDiagonalRight: return Math::Normalize(ETG::Vector2f{1.0f, -1.0f});; //0.7 -0.7
+    case Direction::BackDiagonalLeft: return Math::Normalize(ETG::Vector2f{-1.0, -1.0f}); //-0.7 -0.7
     case Direction::Front_For_Dash: return {0, 1};
     default:
         return {0.0f, 0.0f};

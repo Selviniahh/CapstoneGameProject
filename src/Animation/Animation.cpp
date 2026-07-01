@@ -6,7 +6,7 @@
 #include "../Managers/SpriteBatch.h"
 #include <memory>
 
-Animation::Animation(const std::shared_ptr<sf::Texture>& texture, const float eachFrameSpeed, const int frameX, const int frameY, const int row)
+Animation::Animation(const std::shared_ptr<ETG::Texture>& texture, const float eachFrameSpeed, const int frameX, const int frameY, const int row)
     : FrameX(frameX), FrameY(frameY), FrameInterval(eachFrameSpeed), Texture(texture)
 {
     //This line fixed very very important bug. Since last month, sometimes just one animation frame not playing and sometimes all animation frames are working. The problem was just order of initialization in constructor
@@ -44,15 +44,15 @@ void Animation::Update()
     CurrRect = FrameRects[CurrentFrame];
 }
 
-void Animation::Draw(const sf::Vector2f position, const float layerDepth, const float rotation) const
+void Animation::Draw(const ETG::Vector2f position, const float layerDepth, const float rotation) const
 {
     if (!Active || !Texture) return;
 
-    sf::Sprite frame;
+    ETG::Sprite frame;
     frame.setTexture(*Texture);
     frame.setTextureRect(FrameRects[CurrentFrame]);
     frame.setPosition(position);
-    frame.setColor(sf::Color::White);
+    frame.setColor(ETG::Color::White);
     frame.setRotation(rotation);
     frame.setOrigin(Origin);
     frame.setScale(ETG::Globals::DefaultScale * flipX, ETG::Globals::DefaultScale);
@@ -60,11 +60,11 @@ void Animation::Draw(const sf::Vector2f position, const float layerDepth, const 
     ETG::GlobSpriteBatch.Draw(frame, layerDepth);
 }
 
-void Animation::Draw(const std::shared_ptr<sf::Texture>& texture, const sf::Vector2f position, const sf::Color color, const float rotation, const sf::Vector2f origin, const sf::Vector2f scale, const float depth) const
+void Animation::Draw(const std::shared_ptr<ETG::Texture>& texture, const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth) const
 {
     if (!Active || !Texture) return;
 
-    sf::Sprite frame;
+    ETG::Sprite frame;
     frame.setTexture(*Texture);
     frame.setTextureRect(FrameRects[CurrentFrame]);
     frame.setPosition(position);
@@ -82,7 +82,7 @@ void Animation::Restart()
     AnimTimeLeft = FrameInterval;
 }
 
-std::shared_ptr<sf::Texture> Animation::GetCurrentFrameAsTexture() const
+std::shared_ptr<ETG::Texture> Animation::GetCurrentFrameAsTexture() const
 {
     if (!Texture) return nullptr;
 
@@ -92,12 +92,12 @@ std::shared_ptr<sf::Texture> Animation::GetCurrentFrameAsTexture() const
     // Create texture if it doesn't exist yet
     if (!textureCache[CurrentFrame] || textureCache[CurrentFrame]->getSize().x == 0)
     {
-        const sf::IntRect sourceRectangle = FrameRects[CurrentFrame];
-        sf::Image frameImage;
+        const ETG::IntRect sourceRectangle = FrameRects[CurrentFrame];
+        ETG::Image frameImage;
         frameImage.create(sourceRectangle.width, sourceRectangle.height);
         frameImage.copy(Texture->copyToImage(), 0, 0, sourceRectangle);
 
-        textureCache[CurrentFrame] = std::make_shared<sf::Texture>();
+        textureCache[CurrentFrame] = std::make_shared<ETG::Texture>();
         textureCache[CurrentFrame]->loadFromImage(frameImage);
     }
     return textureCache[CurrentFrame];
@@ -140,7 +140,7 @@ bool Animation::IsPlayingLastFrame() const
 
 Animation Animation::CreateSpriteSheet(const std::string& RelativePath, const std::string& FileName, const std::string& Extension, const float eachFrameSpeed, bool IsSingleSprite)
 {
-    std::vector<sf::Image> imageArr;
+    std::vector<ETG::Image> imageArr;
     int counter = 0;
     int totalWidth = 0, maxHeight = 0;
     std::string basePath = (std::filesystem::path(RESOURCE_PATH) / RelativePath / FileName).string();
@@ -165,7 +165,7 @@ Animation Animation::CreateSpriteSheet(const std::string& RelativePath, const st
     // Load all the given textures 
     while (true)
     {
-        sf::Image singleImage;
+        ETG::Image singleImage;
         filePath = IsSingleSprite ? basePath + "." + Extension : basePath + std::to_string(counter) + "." + Extension;
         if (!std::filesystem::exists(filePath)) break;
 
@@ -180,22 +180,22 @@ Animation Animation::CreateSpriteSheet(const std::string& RelativePath, const st
     }
 
     // Create the spritesheet as image
-    sf::Image spriteImage;
-    spriteImage.create(totalWidth, maxHeight, sf::Color::Transparent);
+    ETG::Image spriteImage;
+    spriteImage.create(totalWidth, maxHeight, ETG::Color::Transparent);
 
     // Copy images into the image
     unsigned int xOffset = 0;
-    std::vector<sf::Rect<int>> customFrameRects;
+    std::vector<ETG::Rect<int>> customFrameRects;
     for (auto& image : imageArr)
     {
         spriteImage.copy(image, xOffset, 0);
         // Create frame rect based on the actual image size
-        sf::IntRect frameRect(xOffset, 0, image.getSize().x, image.getSize().y);
+        ETG::IntRect frameRect(xOffset, 0, image.getSize().x, image.getSize().y);
         customFrameRects.push_back(frameRect);
         xOffset += image.getSize().x;
     }
 
-    auto spriteTex = std::make_shared<sf::Texture>();
+    auto spriteTex = std::make_shared<ETG::Texture>();
     spriteTex->loadFromImage(spriteImage);
 
     Animation anim(spriteTex, eachFrameSpeed, int(imageArr.size()), 1);

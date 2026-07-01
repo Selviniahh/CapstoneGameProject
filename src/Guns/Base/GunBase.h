@@ -1,11 +1,11 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <SFML/Graphics.hpp>
+#include "Platform/Platform.h"
 #include "GunBase.h"
 #include <boost/describe.hpp>
-#include <SFML/Audio/Sound.hpp>
-#include <SFML/Audio/SoundBuffer.hpp>
+#include "Platform/Platform.h"
+#include "Platform/Platform.h"
 #include "../../Animation/Animation.h"
 #include "../../Core/GameObjectBase.h"
 #include "../../Core/Components/ArrowComp.h"
@@ -26,7 +26,7 @@ namespace ETG
     class GunBase : public GameObjectBase
     {
     public:
-        GunBase(sf::Vector2f Position, float fireRate, float shotSpeed, float range, float timerForVelocity, float depth, int ammoSize, int magazineSize, float reloadTime,
+        GunBase(ETG::Vector2f Position, float fireRate, float shotSpeed, float range, float timerForVelocity, float depth, int ammoSize, int magazineSize, float reloadTime,
                 float damage = 1.0f, float force = 1.0f, float spread = 0.0f);
 
         ~GunBase() override;
@@ -94,7 +94,7 @@ namespace ETG
         int MagazineSize{}; //Total bullets per magazine
         int MagazineAmmo{}; //Current magazine ammo count (this will be subtracted and reset)
 
-        std::shared_ptr<sf::Texture> ProjTexture;
+        std::shared_ptr<ETG::Texture> ProjTexture;
         std::unique_ptr<ReloadSlider> ReloadSlider;
         EventDelegate<bool> OnAmmoRunOut;
         EventDelegate<bool> OnReloadInvoke;
@@ -108,18 +108,18 @@ namespace ETG
         std::unique_ptr<MuzzleFlash> MuzzleFlash;
 
         //Gun needs to have custom Origin offset cuz, it needs to be attached to Hero's hand
-        sf::Vector2f OriginOffset;
+        ETG::Vector2f OriginOffset;
 
         //Gun Animation
         std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
 
     private:
         //Sounds
-        sf::SoundBuffer ShootSoundBuffer;
-        sf::Sound ShootSound;
+        ETG::SoundBuffer ShootSoundBuffer;
+        ETG::Sound ShootSound;
 
-        sf::SoundBuffer ReloadSoundBuffer;
-        sf::Sound ReloadSound;
+        ETG::SoundBuffer ReloadSoundBuffer;
+        ETG::Sound ReloadSound;
 
         float ShootSoundVolume = 10;
         float ReloadSoundVolume = 10;

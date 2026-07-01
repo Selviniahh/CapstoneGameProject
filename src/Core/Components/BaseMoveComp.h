@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 #include "../ComponentBase.h"
 #include "../Events/EventDelegate.h"
 
@@ -18,15 +18,15 @@ namespace ETG
         float Deceleration; // Deceleration rate when no input
 
         // Current velocity
-        sf::Vector2f Velocity;
+        ETG::Vector2f Velocity;
 
         void Update() override;
 
         // Movement function
-        void UpdateMovement(const sf::Vector2f& inputDir, sf::Vector2f& position);
+        void UpdateMovement(const ETG::Vector2f& inputDir, ETG::Vector2f& position);
 
         // Force handling
-        void ApplyForce(const sf::Vector2f& forceDirection, float magnitude, float forceDuration);
+        void ApplyForce(const ETG::Vector2f& forceDirection, float magnitude, float forceDuration);
         void UpdateForce();
 
         
@@ -36,7 +36,7 @@ namespace ETG
         float ForceMagnitude = 0.0f;
         float ForceTimer = 0.0f;
         float ForceMaxDuration = 0.0f; //will be set by the ApplyForce function
-        sf::Vector2f ForceDirection = {0.0f, 0.0f};
+        ETG::Vector2f ForceDirection = {0.0f, 0.0f};
         bool IsBeingForced = false;
 
         // Events for force application

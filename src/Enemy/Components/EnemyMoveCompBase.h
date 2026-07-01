@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/describe/class.hpp>
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 
 #include "../../Core/Components/BaseMoveComp.h"
 
@@ -28,7 +28,7 @@ namespace ETG
         virtual void UpdateAIMovement();
 
         // Get the direction to the hero
-        sf::Vector2f GetDirectionToHero() const;
+        ETG::Vector2f GetDirectionToHero() const;
         float GetDistanceToHero() const;
         
         Hero* Hero; // Static pointer to the hero for all enemies

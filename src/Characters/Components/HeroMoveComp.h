@@ -36,7 +36,7 @@ namespace ETG
 
         float DashCooldownTimer = 0.f; //After each dash this will be assigned to `DashCooldown` and once it gets 0, dash will be available again
         float DashTimer = 0.f; //Current Dash duration timer
-        sf::Vector2f DashDirection; //This will set (-1, 1) based on DashDirectionEnum 
+        ETG::Vector2f DashDirection; //This will set (-1, 1) based on DashDirectionEnum 
 
         BOOST_DESCRIBE_CLASS(HeroMoveComp, (BaseMoveComp),
                              (HeroPtr, DashAmount, DashCooldown, DashDuration), (), ())

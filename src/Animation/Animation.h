@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/Graphics/Texture.hpp>
+#include "Platform/Platform.h"
 #include <memory>
 #include <boost/describe/class.hpp>
 
@@ -12,7 +12,7 @@ private:
     int CurrentFrame = 0;
     int FrameX;
     int FrameY;
-    mutable std::vector<std::shared_ptr<sf::Texture>> textureCache;
+    mutable std::vector<std::shared_ptr<ETG::Texture>> textureCache;
 
     float OriginalFrameInterval{}; // Store original interval when paused
     bool IsOnLastFrame = false;    // Track if we're paused on last frame
@@ -20,16 +20,16 @@ private:
 public:
     std::string AnimPathName;
     float FrameInterval{};
-    sf::IntRect CurrRect;
-    std::shared_ptr<sf::Texture> Texture;
-    mutable sf::Vector2f Origin;
-    std::vector<sf::Rect<int>> FrameRects;
+    ETG::IntRect CurrRect;
+    std::shared_ptr<ETG::Texture> Texture;
+    mutable ETG::Vector2f Origin;
+    std::vector<ETG::Rect<int>> FrameRects;
     bool IsValid = true;
     float flipX = 1.0f;
     bool Active = true;
 
     //NOTE: Rule of Five: Destructor, Copy Constructor, Copy Assignment, Move Constructor, Move Assignment
-    Animation(const std::shared_ptr<sf::Texture>& texture, float eachFrameSpeed, int frameX, int frameY, int row = 1);
+    Animation(const std::shared_ptr<ETG::Texture>& texture, float eachFrameSpeed, int frameX, int frameY, int row = 1);
     ~Animation() = default;
     Animation(const Animation& other) = default; // Copy constructor
     Animation(Animation&& other) = default; // Move constructor
@@ -41,12 +41,12 @@ public:
 
     /// \brief decrement `AnimTimeLeft` If AnimTimeLeft is 0, increment CurrentFrame, restart CurrentFrame counter
     void Update();
-    void Draw(sf::Vector2f position, float layerDepth, float rotation = 0) const;
-    void Draw(const std::shared_ptr<sf::Texture>& texture, sf::Vector2f position, sf::Color color, float rotation, sf::Vector2f origin, sf::Vector2f scale, const float depth) const;
+    void Draw(ETG::Vector2f position, float layerDepth, float rotation = 0) const;
+    void Draw(const std::shared_ptr<ETG::Texture>& texture, ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, const float depth) const;
 
     /// Restart the animation. Set `CurrentFrame` = 0, `AnimTimeLeft` = `EachFrameSpeed`
     void Restart();
-    std::shared_ptr<sf::Texture> GetCurrentFrameAsTexture() const;
+    std::shared_ptr<ETG::Texture> GetCurrentFrameAsTexture() const;
     bool IsAnimationFinished() const;
     float GetTotalAnimationTime() const; //NOTE: If there are 5 frames and each frame interval is 0.1 then this will return (5 * 0.1 = 0.5)
     void PlayOnlyLastFrame(); //Jump to last frame and pause the animation there

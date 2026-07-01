@@ -58,7 +58,7 @@ namespace ETG
         if (magazineSize <= 0) return;
 
         // Get position for bottom bar
-        const sf::Vector2f bottomPos = bottomBar->GetPosition();
+        const ETG::Vector2f bottomPos = bottomBar->GetPosition();
 
         // Calculate spacing based on projectile texture size
         const float ammoHeight = static_cast<float>(currentGun->ProjTexture->getSize().y);
@@ -88,12 +88,12 @@ namespace ETG
             if (i >= currMagAmmoSize)
             {
                 // Used or empty ammo
-                props.Color = sf::Color(255, 255, 255, 128); // 50% alpha for empty slots
+                props.Color = ETG::Color(255, 255, 255, 128); // 50% alpha for empty slots
             }
             else
             {
                 // Available ammo
-                props.Color = sf::Color::White;
+                props.Color = ETG::Color::White;
             }
 
             ammoIndicatorProps.push_back(props);

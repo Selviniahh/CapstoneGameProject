@@ -15,7 +15,7 @@ namespace ETG
         UpdateForce();
     }
 
-    void BaseMoveComp::UpdateMovement(const sf::Vector2f& inputDir, sf::Vector2f& position)
+    void BaseMoveComp::UpdateMovement(const ETG::Vector2f& inputDir, ETG::Vector2f& position)
     {
         // Don't process normal movement when being forced
         if (IsBeingForced) return;
@@ -23,10 +23,10 @@ namespace ETG
         const float deltaTime = Globals::FrameTick; // delta time from your globals
 
         //There's a movement input
-        if (inputDir != sf::Vector2f(0.f, 0.f))
+        if (inputDir != ETG::Vector2f(0.f, 0.f))
         {
             // Accelerate: add (normalized input * acceleration * dt)
-            const sf::Vector2f normDir = Math::Normalize(inputDir);
+            const ETG::Vector2f normDir = Math::Normalize(inputDir);
             Velocity += normDir * Acceleration * deltaTime;
 
             // Clamp speed to MaxSpeed.
@@ -44,7 +44,7 @@ namespace ETG
             const float decAmount = Deceleration * deltaTime;
             if (decAmount > currentSpeed)
             {
-                Velocity = sf::Vector2f(0.f, 0.f);
+                Velocity = ETG::Vector2f(0.f, 0.f);
             }
             else
             {
@@ -56,7 +56,7 @@ namespace ETG
         position += Velocity * deltaTime;
     }
 
-    void BaseMoveComp::ApplyForce(const sf::Vector2f& forceDirection, const float magnitude, const float forceDuration)
+    void BaseMoveComp::ApplyForce(const ETG::Vector2f& forceDirection, const float magnitude, const float forceDuration)
     {
         // Set force parameters
         ForceDirection = forceDirection;
@@ -90,7 +90,7 @@ namespace ETG
             // Force effect is done
             IsBeingForced = false;
             OnForceEnd.Broadcast();
-            Velocity = sf::Vector2f(0.f, 0.f); // Reset velocity after force ends so based on acceleration it will slowly build up velocity in every force
+            Velocity = ETG::Vector2f(0.f, 0.f); // Reset velocity after force ends so based on acceleration it will slowly build up velocity in every force
             
         }
     }

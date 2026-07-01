@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 #include "../Core/GameObjectBase.h"
 #include "../Managers/Enum/StateEnums.h"
 #include "../Core/Factory.h"
@@ -23,7 +23,7 @@ namespace ETG
     class Hero : public GameObjectBase
     {
     public:
-        explicit Hero(sf::Vector2f Position);
+        explicit Hero(ETG::Vector2f Position);
         ~Hero() override;
         void UpdateComponents();
         void UpdateAnimations();

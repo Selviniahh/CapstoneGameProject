@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/Graphics.hpp>
+#include "Platform/Platform.h"
 #include "../../Core/Components/BaseAnimComp.h"
 #include "../../Characters/Hero.h"
 #include "../../Core/Events/EventDelegate.h"

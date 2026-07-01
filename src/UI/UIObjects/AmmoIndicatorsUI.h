@@ -1,6 +1,6 @@
 #pragma once
 #include "../../Core/GameObjectBase.h"
-#include <SFML/Graphics/Texture.hpp>
+#include "Platform/Platform.h"
 #include <memory>
 #include <vector>
 #include <functional>

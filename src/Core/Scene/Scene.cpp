@@ -47,7 +47,7 @@ namespace ETG
     void Scene::SpawnBulletMan(float x, float y)
     {
         // Create a new BulletMan at the specified position
-        auto newEnemy = ETG::CreateGameObjectDefault<BulletMan>(sf::Vector2f{x, y});
+        auto newEnemy = ETG::CreateGameObjectDefault<BulletMan>(ETG::Vector2f{x, y});
 
         // Check if creation was successful
         if (newEnemy)

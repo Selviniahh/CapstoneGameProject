@@ -1,6 +1,8 @@
 #include <iostream>
-#include <imgui-SFML.h>
 #include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+#include <SDL3/SDL.h>
 #include "Engine.h"
 #include "../Characters/Hero.h"
 #include "../Managers/GameManager.h"
@@ -21,8 +23,16 @@ using namespace ETG;
 
 void Engine::Initialize()
 {
-    //Initialize Imgui-SFML after creating the window
-    if (!ImGui::SFML::Init(*Window)) throw std::runtime_error("Cannot initialize ImGUI with the given Window");
+    //Initialize ImGui with the SDL3 window and renderer
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+
+    if (!ImGui_ImplSDL3_InitForSDLRenderer(Window->getNativeWindow(), Window->getNativeRenderer()))
+        throw std::runtime_error("Cannot initialize ImGUI with the given Window");
+    if (!ImGui_ImplSDLRenderer3_Init(Window->getNativeRenderer()))
+        throw std::runtime_error("Cannot initialize the ImGUI SDL_Renderer backend");
+
     GameState::GetInstance().SetEngine(this);
 
     GameState::GetInstance().SetEngineUISize(&windowSize);
@@ -35,27 +45,38 @@ void Engine::Initialize()
 
 void Engine::Update()
 {
-    //Update ImGUI-SFML with the frame delta time
-    ImGui::SFML::Update(*Window, ElapsedTimeClock);
+    //Start a new ImGui frame
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+
+    //Some SDL video drivers (headless dummy/offscreen, or during resolution changes) report a
+    //zero pixel size, which would trip ImGui's sanity asserts. Fall back to safe values.
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.DisplayFramebufferScale.x <= 0.0f || io.DisplayFramebufferScale.y <= 0.0f)
+        io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    if (io.DisplaySize.x < 0.0f || io.DisplaySize.y < 0.0f)
+        io.DisplaySize = ImVec2(0.0f, 0.0f);
+
+    ImGui::NewFrame();
 
     // Begin a new ImGui window docked to the right
     // Only set position and size when first creating the window
     ImGui::SetNextWindowPos(ImVec2((float)Window->getSize().x - windowSize.x, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(windowSize), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(windowSize.x, windowSize.y), ImGuiCond_FirstUseEver);
 
     // Use no flags to allow all default window behaviors (dragging, resizing)
     ImGui::Begin("Details Pane", nullptr);
 
     //If window is updated, need to assign to this variable so Game UI can be updated
-    windowSize = ImGui::GetWindowSize();
+    const ImVec2 currWindowSize = ImGui::GetWindowSize();
+    windowSize = {currWindowSize.x, currWindowSize.y};
 
     UpdateDetailsPanel();
 
-    const ImGuiIO& io = ImGui::GetIO();
     PreviousGameFocus = CurrentGameFocus;
-    CurrentGameFocus = !(ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || 
-                         ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || 
-                         io.WantCaptureMouse || 
+    CurrentGameFocus = !(ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) ||
+                         ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) ||
+                         io.WantCaptureMouse ||
                          io.WantCaptureKeyboard);
 
     //The end
@@ -78,8 +99,8 @@ bool Engine::IsGameWindowFocused()
         InputManager::LeftClickRequired = true;
 
     // Process events to check for mouse release
-    if (InputManager::LeftClickRequired && GameManager::GameEvent.type == sf::Event::MouseButtonReleased &&
-        ETG::GameManager::GameEvent.mouseButton.button == sf::Mouse::Left)
+    if (InputManager::LeftClickRequired && GameManager::GameEvent.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+        ETG::GameManager::GameEvent.button.button == SDL_BUTTON_LEFT)
     {
         InputManager::LeftClickRequired = false;
     }
@@ -95,10 +116,11 @@ bool Engine::IsGameWindowFocused()
 void Engine::Draw()
 {
     //Render
-    ImGui::SFML::Render(*Window);
+    ImGui::Render();
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), Window->getNativeRenderer());
 }
 
-//Probably the way I am making selection is wrong. Fix it with the convenient way ImGUI handled before 
+//Probably the way I am making selection is wrong. Fix it with the convenient way ImGUI handled before
 
 void Engine::UpdateDetailsPanel()
 {
@@ -139,7 +161,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
 {
     ImGui::PushID(object);
 
-    //Is current object has any children prepare to make it expandible node tree instead of just selectable. 
+    //Is current object has any children prepare to make it expandible node tree instead of just selectable.
     bool currObjHasChildren = false;
     for (const auto& [name, sceneObj] : GameState::GetInstance().GetSceneObjs())
     {
@@ -154,7 +176,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
     if (object == GameState::GetInstance().GetSceneObj()) flags |= ImGuiTreeNodeFlags_DefaultOpen; //Default expand the scene objects
     if (SelectedObj == object) flags |= ImGuiTreeNodeFlags_Selected;
 
-    //Create tree node if the object has children. If not create single selectable widget 
+    //Create tree node if the object has children. If not create single selectable widget
     bool isOpen;
     currObjHasChildren
         ? isOpen = ImGui::TreeNodeEx(object->GetObjectName().c_str(), flags)
@@ -232,5 +254,5 @@ void Engine::LoadFont()
     const std::filesystem::path FontPath = std::filesystem::path(RESOURCE_PATH) / "Fonts" / "SegoeUI.ttf";
     SegoeFont = io.Fonts->AddFontFromFileTTF(FontPath.generic_string().data(), 18.f);
     if (SegoeFont == nullptr) throw std::runtime_error("Failed to load font from " + FontPath.generic_string());
-    if (!ImGui::SFML::UpdateFontTexture()) throw std::runtime_error("Font cannot be load.");
+    //NOTE: With ImGui 1.92+ and the SDL_Renderer3 backend, the font atlas texture is managed automatically
 }

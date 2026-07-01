@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
 #include <string>
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 #include "../../src/Managers/Enum/StateEnums.h"
 
 //NOTE: For now this class hosts basic enum operations for both hero and enemy. Later on I will decide if it's worth to separate this class
@@ -44,10 +44,10 @@ namespace ETG
         static HeroIdleEnum GetHeroIdleDirectionEnum(Direction currDir);
         static HeroRunEnum GetHeroRunEnum(Direction currDir);
         static HeroDashEnum GetDashDirectionEnum();
-        static sf::Vector2f GetDashDirectionVector();
+        static ETG::Vector2f GetDashDirectionVector();
 
         //Enemy BulletMan related 
-        static Direction GetDirectionToHero(const Hero* Hero, sf::Vector2f SelfPosition);
+        static Direction GetDirectionToHero(const Hero* Hero, ETG::Vector2f SelfPosition);
 
         static BulletManIdleEnum GetBulletManIdleEnum(Direction currDir);
         static BulletManRunEnum GetBulletManRunEnum(Direction currDir);

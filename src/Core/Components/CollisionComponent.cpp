@@ -96,10 +96,10 @@ namespace ETG
         if (!Owner) return;
 
         // Get basic bounds from owner that not expanded yet. 
-        const sf::FloatRect baseBounds = Owner->GetBounds();
+        const ETG::FloatRect baseBounds = Owner->GetBounds();
 
         // Expand by radius
-        ExpandedBounds = sf::FloatRect(
+        ExpandedBounds = ETG::FloatRect(
             baseBounds.left - CollisionRadius,
             baseBounds.top - CollisionRadius,
             baseBounds.width + (2 * CollisionRadius),
@@ -114,10 +114,10 @@ namespace ETG
         return ExpandedBounds.intersects(other->GetCollisionBounds());
     }
 
-    sf::Vector2f CollisionComponent::CalculateImpactPoint(const CollisionComponent* other) const
+    ETG::Vector2f CollisionComponent::CalculateImpactPoint(const CollisionComponent* other) const
     {
-        sf::FloatRect intersection;
-        sf::FloatRect otherObjBounds = other->GetCollisionBounds();
+        ETG::FloatRect intersection;
+        ETG::FloatRect otherObjBounds = other->GetCollisionBounds();
 
         if (ExpandedBounds.intersects(otherObjBounds, intersection))
         {
@@ -130,27 +130,27 @@ namespace ETG
         return {0, 0};
     }
 
-    void CollisionComponent::Visualize(sf::RenderWindow& window)
+    void CollisionComponent::Visualize(ETG::RenderWindow& window)
     {
         if (!ShowCollisionBounds || !CollisionEnabled || !Owner || !Owner->IsVisible) return;
 
         // Draw the original bounds and expanded bounds
-        sf::FloatRect baseBounds = Owner->GetBounds();
+        ETG::FloatRect baseBounds = Owner->GetBounds();
 
         // Original bounds in white
-        sf::RectangleShape baseRect;
+        ETG::RectangleShape baseRect;
         baseRect.setPosition(baseBounds.left, baseBounds.top);
-        baseRect.setSize(sf::Vector2f(baseBounds.width, baseBounds.height));
-        baseRect.setFillColor(sf::Color::Transparent);
-        baseRect.setOutlineColor(sf::Color::White);
+        baseRect.setSize(ETG::Vector2f(baseBounds.width, baseBounds.height));
+        baseRect.setFillColor(ETG::Color::Transparent);
+        baseRect.setOutlineColor(ETG::Color::White);
         baseRect.setOutlineThickness(1.0f);
         window.draw(baseRect);
 
         // Expanded bounds in configured color
-        sf::RectangleShape expandedRect;
+        ETG::RectangleShape expandedRect;
         expandedRect.setPosition(ExpandedBounds.left, ExpandedBounds.top);
-        expandedRect.setSize(sf::Vector2f(ExpandedBounds.width, ExpandedBounds.height));
-        expandedRect.setFillColor(sf::Color::Transparent);
+        expandedRect.setSize(ETG::Vector2f(ExpandedBounds.width, ExpandedBounds.height));
+        expandedRect.setFillColor(ETG::Color::Transparent);
         expandedRect.setOutlineColor(CollisionVisualizationColor);
         expandedRect.setOutlineThickness(1.0f);
         window.draw(expandedRect);
@@ -167,38 +167,33 @@ namespace ETG
 
                 if (DrawImpactPoint)
                 {
-                    sf::CircleShape circle;
+                    ETG::CircleShape circle;
                     circle.setOrigin(5.0f, 5.0f);
                     circle.setRadius(5);
                     circle.setPosition(CalculateImpactPoint(otherComp));
-                    circle.setFillColor(sf::Color::Green);
-                    if (circle.getPosition() != sf::Vector2f{0, 0})
+                    circle.setFillColor(ETG::Color::Green);
+                    if (circle.getPosition() != ETG::Vector2f{0, 0})
                         Globals::Window->draw(circle);
                 }
             }
         }
     }
 
-    void CollisionComponent::DrawCollisionLineBetweenCenter(sf::RenderWindow& window, const CollisionComponent* otherComp) const
+    void CollisionComponent::DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const
     {
         // Draw a line connecting the centers
-        sf::Vector2f selfCenter(
+        ETG::Vector2f selfCenter(
             ExpandedBounds.left + ExpandedBounds.width / 2,
             ExpandedBounds.top + ExpandedBounds.height / 2
         );
 
-        sf::FloatRect otherBounds = otherComp->GetCollisionBounds();
-        sf::Vector2f otherCenter(
+        ETG::FloatRect otherBounds = otherComp->GetCollisionBounds();
+        ETG::Vector2f otherCenter(
             otherBounds.left + otherBounds.width / 2,
             otherBounds.top + otherBounds.height / 2
         );
 
-        sf::Vertex line[] = {
-            sf::Vertex(selfCenter, sf::Color::Red),
-            sf::Vertex(otherCenter, sf::Color::Red)
-        };
-
-        window.draw(line, 2, sf::Lines);
+        window.drawLine(selfCenter, otherCenter, ETG::Color::Red);
     }
 
     std::vector<CollisionComponent*>& CollisionComponent::GetRegistry()

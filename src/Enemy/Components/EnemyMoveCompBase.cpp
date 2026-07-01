@@ -41,7 +41,7 @@ namespace ETG
         if (!OwnerEnemy || !Hero->IsValid() || !OwnerEnemy->CanMove()) return;
 
         // Calculate direction and distance to hero
-        const sf::Vector2f directionToHero = GetDirectionToHero();
+        const ETG::Vector2f directionToHero = GetDirectionToHero();
         const float distanceToHero = GetDistanceToHero();
 
         // Update enemy's direction
@@ -54,7 +54,7 @@ namespace ETG
             if (distanceToHero > StopDistance)
             {
                 MaxSpeed = MovementSpeed;
-                sf::Vector2f position = OwnerEnemy->GetPosition();
+                ETG::Vector2f position = OwnerEnemy->GetPosition();
                 UpdateMovement(directionToHero, position);
                 OwnerEnemy->SetPosition(position);
             }
@@ -74,7 +74,7 @@ namespace ETG
             MaxSpeed = MovementSpeed;
 
             // Update movement
-            sf::Vector2f position = OwnerEnemy->GetPosition();
+            ETG::Vector2f position = OwnerEnemy->GetPosition();
             UpdateMovement(directionToHero, position);
             OwnerEnemy->SetPosition(position);
         }
@@ -88,7 +88,7 @@ namespace ETG
         }
     }
 
-    sf::Vector2f EnemyMoveCompBase::GetDirectionToHero() const
+    ETG::Vector2f EnemyMoveCompBase::GetDirectionToHero() const
     {
         if (!Hero->IsValid() || !OwnerEnemy) return {0, 0};
 

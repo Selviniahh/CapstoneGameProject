@@ -16,15 +16,15 @@ namespace ETG
         void Update() override;
 
     public:
-        sf::Vector2f arrowOriginOffset;
-        sf::Vector2f arrowOffset;
+        ETG::Vector2f arrowOriginOffset;
+        ETG::Vector2f arrowOffset;
 
         BOOST_DESCRIBE_CLASS(ArrowComp, (ComponentBase), (arrowOriginOffset, arrowOffset),(),())
     };
 
     inline ArrowComp::ArrowComp(const std::string& texturePath)
     {
-        if (!Texture) Texture = std::make_shared<sf::Texture>();
+        if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!Texture->loadFromFile(texturePath))
             throw std::runtime_error(texturePath + " not found");
 

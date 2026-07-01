@@ -1,20 +1,15 @@
 #pragma once
-#include <imgui-SFML.h>
+#include "Platform/Platform.h"
 #include <imgui.h>
 #include <iostream>
 #include <memory>
 #include <boost/type_index.hpp>
-#include <SFML/System/Vector2.hpp>
+#include "Platform/Platform.h"
 
 #include "UIUtils.h"
 #include "../../Utils/StrManipulateUtil.h"
 
 class Animation;
-
-namespace sf
-{
-    class Texture;
-}
 
 namespace ETG
 {
@@ -42,17 +37,17 @@ namespace ETG
     template <>
     void ShowImGuiWidget<std::string>(const char* label, std::string& value);
 
-    //shared-ptr<sf::Texture>
+    //shared-ptr<ETG::Texture>
     template <>
-    void ShowImGuiWidget<std::shared_ptr<sf::Texture>>(const char* label, std::shared_ptr<sf::Texture>& value);
+    void ShowImGuiWidget<std::shared_ptr<ETG::Texture>>(const char* label, std::shared_ptr<ETG::Texture>& value);
 
     //vector2<float>
     template <>
-    void ShowImGuiWidget<sf::Vector2<float>>(const char* label, sf::Vector2<float>& value);
+    void ShowImGuiWidget<ETG::Vector2<float>>(const char* label, ETG::Vector2<float>& value);
 
     //sf::vector2<Vector2u>
     template <>
-    void ShowImGuiWidget<sf::Vector2u>(const char* label, sf::Vector2u& value);
+    void ShowImGuiWidget<ETG::Vector2u>(const char* label, ETG::Vector2u& value);
 
     //float
     template <>
@@ -62,9 +57,9 @@ namespace ETG
     template <>
     void ShowImGuiWidget<Animation>(const char* label, Animation& value);
 
-    //sf::Rect<int>
+    //ETG::Rect<int>
     template <>
-    void ShowImGuiWidget<sf::Rect<int>>(const char* label, sf::Rect<int>& value);
+    void ShowImGuiWidget<ETG::Rect<int>>(const char* label, ETG::Rect<int>& value);
 
     //AnimationManager
     template <>
@@ -72,7 +67,7 @@ namespace ETG
 
     //Color
     template <>
-    void ShowImGuiWidget<sf::Color>(const char* label, sf::Color& color);
+    void ShowImGuiWidget<ETG::Color>(const char* label, ETG::Color& color);
 
     template <typename T>
     void ShowImGuiWidgetImpl(const char* label, T& value, std::false_type);

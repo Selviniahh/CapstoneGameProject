@@ -1,5 +1,9 @@
 #include "SpriteBatch.h"
 
+#include <algorithm>
+#include <cmath>
+#include <numbers>
+#include <SDL3/SDL.h>
 #include "Globals.h"
 #include "../Utils/TextureUtils.h"
 
@@ -15,11 +19,60 @@ void ETG::SpriteBatch::begin()
     sprites.clear();
 }
 
-void ETG::SpriteBatch::end(sf::RenderWindow& window)
+void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
+{
+    const ETG::Texture* texture = sprite.getTexture();
+    if (!texture) return;
+
+    const ETG::IntRect& texRect = sprite.getTextureRect();
+    const ETG::Vector2f& position = sprite.getPosition();
+    const ETG::Vector2f& scale = sprite.getScale();
+    const ETG::Vector2f& origin = sprite.getOrigin();
+    const ETG::Color& color = sprite.getColor();
+
+    //Same transform order as SFML: translate(position) * rotate * scale * translate(-origin)
+    const float rad = sprite.getRotation() * (std::numbers::pi_v<float> / 180.f);
+    const float cosR = std::cos(rad);
+    const float sinR = std::sin(rad);
+
+    const auto transformPoint = [&](const float localX, const float localY) -> ETG::Vector2f
+    {
+        const float x = (localX - origin.x) * scale.x;
+        const float y = (localY - origin.y) * scale.y;
+        return {
+            position.x + x * cosR - y * sinR,
+            position.y + x * sinR + y * cosR
+        };
+    };
+
+    const auto w = static_cast<float>(texRect.width);
+    const auto h = static_cast<float>(texRect.height);
+
+    // Texture coordinates (pixels)
+    const auto left = static_cast<float>(texRect.left);
+    const float right = left + w;
+    const auto top = static_cast<float>(texRect.top);
+    const float bottom = top + h;
+
+    SpriteQuad quad{
+        Vertex{transformPoint(0.f, 0.f), {left, top}, color},
+        Vertex{transformPoint(w, 0.f), {right, top}, color},
+        Vertex{transformPoint(w, h), {right, bottom}, color},
+        Vertex{transformPoint(0.f, h), {left, bottom}, color},
+        texture, depth, drawCounter++
+    };
+
+    sprites.push_back(quad);
+}
+
+void ETG::SpriteBatch::end(ETG::RenderWindow& window)
 {
     if (sprites.empty()) return;
 
-    // Sort sprites by draw order. If draw order same, draw the one has higher order. 
+    SDL_Renderer* renderer = window.getNativeRenderer();
+    if (!renderer) return;
+
+    // Sort sprites by draw order. If draw order same, draw the one has higher order.
     std::ranges::sort(sprites,
                       [](const SpriteQuad& a, const SpriteQuad& b)
                       {
@@ -28,44 +81,75 @@ void ETG::SpriteBatch::end(sf::RenderWindow& window)
                           return a.depth > b.depth;
                       });
 
-    const sf::Texture* currentTexture = sprites[0].texture;
-    sf::VertexArray va(sf::Quads);
-    va.resize(sprites.size() * 4); // Reserve if possible
+    std::vector<SDL_Vertex> vertices;
+    std::vector<int> indices;
+    vertices.reserve(sprites.size() * 4);
+    indices.reserve(sprites.size() * 6);
+
+    const auto flush = [&](const ETG::Texture* texture)
+    {
+        if (vertices.empty()) return;
+        SDL_RenderGeometry(renderer, texture ? texture->getNativeHandle() : nullptr,
+                           vertices.data(), static_cast<int>(vertices.size()),
+                           indices.data(), static_cast<int>(indices.size()));
+        vertices.clear();
+        indices.clear();
+    };
+
+    const ETG::Texture* currentTexture = sprites[0].texture;
 
     for (const auto& quad : sprites)
     {
         if (quad.texture != currentTexture)
         {
-            window.draw(va, currentTexture);
-            va.clear();
+            flush(currentTexture);
             currentTexture = quad.texture;
         }
 
-        va.append(quad.v0);
-        va.append(quad.v1);
-        va.append(quad.v2);
-        va.append(quad.v3);
+        const ETG::Vector2u texSize = quad.texture->getSize();
+        const float texW = texSize.x > 0 ? static_cast<float>(texSize.x) : 1.f;
+        const float texH = texSize.y > 0 ? static_cast<float>(texSize.y) : 1.f;
+
+        const Vertex* quadVertices[4] = {&quad.v0, &quad.v1, &quad.v2, &quad.v3};
+        const int base = static_cast<int>(vertices.size());
+
+        for (const Vertex* v : quadVertices)
+        {
+            const ETG::Vector2f screenPos = window.worldToScreen(v->position);
+            SDL_Vertex sdlVertex;
+            sdlVertex.position = SDL_FPoint{screenPos.x, screenPos.y};
+            sdlVertex.color = SDL_FColor{v->color.r / 255.f, v->color.g / 255.f, v->color.b / 255.f, v->color.a / 255.f};
+            sdlVertex.tex_coord = SDL_FPoint{v->texCoords.x / texW, v->texCoords.y / texH};
+            vertices.push_back(sdlVertex);
+        }
+
+        indices.push_back(base + 0);
+        indices.push_back(base + 1);
+        indices.push_back(base + 2);
+        indices.push_back(base + 0);
+        indices.push_back(base + 2);
+        indices.push_back(base + 3);
     }
 
-    window.draw(va, currentTexture);
+    flush(currentTexture);
 }
 
-void ETG::SpriteBatch::SimpleDraw(const std::shared_ptr<sf::Texture>& tex, const sf::Vector2f& pos, float Rotation, sf::Vector2f origin, float Scale, float depth)
+void ETG::SpriteBatch::SimpleDraw(const std::shared_ptr<ETG::Texture>& tex, const ETG::Vector2f& pos, float Rotation, ETG::Vector2f origin, float Scale, float depth)
 {
-    sf::Sprite frame;
+    ETG::Sprite frame;
     frame.setTexture(*tex);
     frame.setScale(Scale, Scale);
     frame.setPosition(pos); // Position it at the specified location
     frame.setRotation(Rotation);
     frame.setOrigin(origin);
-    frame.setColor(sf::Color::White);
+    frame.setColor(ETG::Color::White);
 
     GlobSpriteBatch.Draw(frame, depth);
 }
 
 void ETG::SpriteBatch::Draw(const GameObjectBase::DrawProperties& DrawProperties)
 {
-    sf::Sprite frame;
+    ETG::Sprite frame;
     frame.setTexture(*DrawProperties.Texture);
     frame.setScale(DrawProperties.Scale);
     frame.setPosition(DrawProperties.Position); // Position it at the specified location
@@ -73,51 +157,50 @@ void ETG::SpriteBatch::Draw(const GameObjectBase::DrawProperties& DrawProperties
     frame.setOrigin(DrawProperties.Origin);
     frame.setColor(DrawProperties.Color);
     GlobSpriteBatch.Draw(frame, DrawProperties.Depth);
-
 }
 
-void ETG::SpriteBatch::AddDebugCircle(const sf::Vector2f& pos, const float radius, const sf::Color& color, const float thickness)
+void ETG::SpriteBatch::AddDebugCircle(const ETG::Vector2f& pos, const float radius, const ETG::Color& color, const float thickness)
 {
-    sf::CircleShape circle{radius};
+    ETG::CircleShape circle{radius};
     circle.setPosition(pos.x - radius, pos.y - radius);
-    circle.setFillColor(sf::Color::Transparent);
+    circle.setFillColor(ETG::Color::Transparent);
     circle.setOutlineColor(color);
     circle.setOutlineThickness(thickness);
     Globals::Window->draw(circle);
 }
 
 
-void ETG::SpriteBatch::drawRectOutline(const sf::FloatRect& rect, const sf::Color& color, float thickness, float depth)
+void ETG::SpriteBatch::drawRectOutline(const ETG::FloatRect& rect, const ETG::Color& color, float thickness, float depth)
 {
     // Get a shared pixel texture
-    static std::shared_ptr<sf::Texture> pixelTex = GetPixelTexture();
-    
+    static std::shared_ptr<ETG::Texture> pixelTex = GetPixelTexture();
+
     // Top edge
-    sf::Sprite topEdge;
+    ETG::Sprite topEdge;
     topEdge.setTexture(*pixelTex);
     topEdge.setPosition(rect.left, rect.top);
     topEdge.setScale(rect.width, thickness);
     topEdge.setColor(color);
     Draw(topEdge, depth);
-    
+
     // Bottom edge
-    sf::Sprite bottomEdge;
+    ETG::Sprite bottomEdge;
     bottomEdge.setTexture(*pixelTex);
     bottomEdge.setPosition(rect.left, rect.top + rect.height - thickness);
     bottomEdge.setScale(rect.width, thickness);
     bottomEdge.setColor(color);
     Draw(bottomEdge, depth);
-    
+
     // Left edge
-    sf::Sprite leftEdge;
+    ETG::Sprite leftEdge;
     leftEdge.setTexture(*pixelTex);
     leftEdge.setPosition(rect.left, rect.top);
     leftEdge.setScale(thickness, rect.height);
     leftEdge.setColor(color);
     Draw(leftEdge, depth);
-    
+
     // Right edge
-    sf::Sprite rightEdge;
+    ETG::Sprite rightEdge;
     rightEdge.setTexture(*pixelTex);
     rightEdge.setPosition(rect.left + rect.width - thickness, rect.top);
     rightEdge.setScale(thickness, rect.height);

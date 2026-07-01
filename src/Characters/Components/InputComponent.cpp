@@ -29,7 +29,7 @@ namespace ETG
         HandleDash(hero);
 
         //Reload the gun if R pressed and hero is not dashing 
-        if (!hero.AnimationComp->IsDashing && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+        if (!hero.AnimationComp->IsDashing && ETG::Keyboard::isKeyPressed(ETG::Keyboard::R))
         {
             hero.CurrentGun->Reload();
         }
@@ -58,7 +58,7 @@ namespace ETG
     void InputComponent::HandleDash(const Hero& hero)
     {
         // If right-clicked, start dashing if possible
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Right) && !hero.AnimationComp->IsDashing && hero.MoveComp->IsDashAvailable())
+        if (ETG::Mouse::isButtonPressed(ETG::Mouse::Right) && !hero.AnimationComp->IsDashing && hero.MoveComp->IsDashAvailable())
         {
             const HeroDashEnum dashDirection = DirectionUtils::GetDashDirectionEnum(); // If you put breakpoint this line, direction enum will always be unknown so put breakpoint below this line to capture dash direction
             if (dashDirection != HeroDashEnum::Unknown)
@@ -70,22 +70,22 @@ namespace ETG
 
     void InputComponent::HandleGunSwitch(Hero& hero) const
     {
-        Globals::Window->pollEvent(GameManager::GameEvent);
         //If any imgui window hovered, return
         const bool anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow | ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
         if (anyWindowHovered) return;
 
         // If gun is not reloading, not dead or hit or dash and mouse wheel scrolled, switch gun
-        if (hero.CanSwitchGuns() && GameManager::GameEvent.type == sf::Event::MouseWheelScrolled && GameManager::GameEvent.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel)
+        // The per-frame wheel delta is accumulated by GameManager::ProcessEvents
+        if (hero.CanSwitchGuns() && InputManager::MouseWheelDelta != 0.f)
         {
-            if (GameManager::GameEvent.mouseWheelScroll.delta > 0)
+            if (InputManager::MouseWheelDelta > 0)
                 hero.SwitchToPreviousGun();
 
-            else if (GameManager::GameEvent.mouseWheelScroll.delta < 0)
+            else if (InputManager::MouseWheelDelta < 0)
                 hero.SwitchToNextGun();
 
             gunSwitchHandled = true; // Set flag to indicate the event has been handled
-            GameManager::GameEvent = sf::Event(); // Clear the event to prevent it from being processed again
+            InputManager::MouseWheelDelta = 0.f; // Clear the delta to prevent it from being processed again
         }
     }
 

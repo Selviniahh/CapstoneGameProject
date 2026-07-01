@@ -6,7 +6,7 @@
 #include "SawedOff.h"
 #include "../../Utils/Math.h"
 
-ETG::SawedOff::SawedOff(const sf::Vector2f& pos) : GunBase(pos,
+ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            1.8f, // FireRate
                                                            100.0f, // ShotSpeed
                                                            200.0f, // Range (should be infinite but I will just give 2000)

@@ -5,7 +5,7 @@
 #include "../../Core/Components/CollisionComponent.h"
 #include "../../Characters/Hero.h"
 
-ETG::AK47::AK47(const sf::Vector2f& pos) : GunBase(pos,
+ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     0.4f,     // FireRate
     150.0f,     // ShotSpeed
     1000.0f,    // Range (should be infinite but I will just give 2000)

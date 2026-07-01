@@ -6,7 +6,7 @@
 #include "../../Enemy/EnemyBase.h"
 #include "../../Utils/Math.h"
 
-ETG::Magnum::Magnum(const sf::Vector2f& pos) : GunBase(pos,
+ETG::Magnum::Magnum(const ETG::Vector2f& pos) : GunBase(pos,
                                                        1.8f, // FireRate
                                                        100.0f, // ShotSpeed
                                                        200.0f, // Range (should be infinite but I will just give 2000)
