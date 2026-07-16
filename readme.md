@@ -14,8 +14,8 @@ A clone of the game Enter the Gungeon built with SDL3. It aims to replicate the 
 - Ninja Build System
 - A C++ compiler with C++23 support
 
-No package manager is required. SDL libraries are included as Git submodules,
-while Dear ImGui and the required Boost headers are vendored under `deps/`.
+No package manager is required. SDL, Dear ImGui, and the required header-only
+Boost modules are included as Git submodules under `deps/`.
 
 ```
 git clone --recurse-submodules https://github.com/Selviniahh/CapstoneGameProject.git

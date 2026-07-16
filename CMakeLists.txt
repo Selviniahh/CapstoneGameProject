@@ -33,8 +33,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 #    and cached in depbuilt/ (needs SDL3 built first)
 #  - SDL3_ttf (font rendering, vendored freetype): git submodule under deps/SDL_ttf,
 #    built once and cached in depbuilt/ (needs SDL3 built first)
-#  - Dear ImGui (+ SDL3 backends): vendored under deps/imgui
-#  - Boost (header-only: type_index, describe): vendored under deps/boost
+#  - Dear ImGui (+ SDL3 backends): git submodule under deps/imgui
+#  - Boost (header-only: type_index, describe): required Boost modules are git
+#    submodules under deps/boost
 # ------------------------------------------------------------------------------
 include(cmake/DepConfig.cmake)
 include(cmake/depBuild/SDL3.cmake)
