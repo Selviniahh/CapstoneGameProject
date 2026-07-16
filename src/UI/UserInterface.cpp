@@ -22,10 +22,11 @@ namespace ETG
         CurrentGun = hero->GetCurrentHoldingGun();
         if (!CurrentGun) throw std::runtime_error("Current Gun not found");
 
-        // Calculate game screen size (accounting for engine UI)
+        // Calculate game screen size (accounting for engine UI), against the fixed logical
+        // canvas rather than the real window size, so it never needs recalculating on resize.
         GameScreenSize = {
-            static_cast<float>(Globals::ScreenSize.x - GameState::GetInstance().GetEngineUISize()->x),
-            static_cast<float>(Globals::ScreenSize.y)
+            static_cast<float>(ETG::RenderWindow::LogicalSize.x) - GameState::GetInstance().GetEngineUISize()->x,
+            static_cast<float>(ETG::RenderWindow::LogicalSize.y)
         };
 
         InitializeFrameProperties();

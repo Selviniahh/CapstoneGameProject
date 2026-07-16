@@ -1,32 +1,40 @@
 #pragma once
 #include <string>
-#include <vector>
 #include "Vector2.h"
 #include "Rect.h"
 #include "Color.h"
 
 struct SDL_Texture;
+struct SDL_Surface;
 
 namespace ETG
 {
-    //CPU side RGBA8 pixel buffer, replacement for sf::Image
+    //CPU side RGBA8 pixel buffer backed by SDL_Surface, replacement for sf::Image.
+    //Files are decoded by SDL3_image.
     class Image
     {
     public:
         Image() = default;
+        ~Image();
+
+        Image(const Image& other);
+        Image& operator=(const Image& other);
+        Image(Image&& other) noexcept;
+        Image& operator=(Image&& other) noexcept;
 
         void create(unsigned width, unsigned height, const Color& color = Color::Black);
-        bool loadFromFile(const std::string& path); //Decoded with stb_image
+        bool loadFromFile(const std::string& path);
 
         //Copy the source image onto this image at (destX, destY). An empty sourceRect means "whole source image".
         void copy(const Image& source, unsigned destX, unsigned destY, const IntRect& sourceRect = IntRect());
 
-        [[nodiscard]] Vector2u getSize() const { return m_size; }
-        [[nodiscard]] const std::uint8_t* getPixelsPtr() const { return m_pixels.data(); }
+        [[nodiscard]] Vector2u getSize() const;
+        [[nodiscard]] SDL_Surface* getNativeSurface() const { return m_surface; }
 
     private:
-        Vector2u m_size{0, 0};
-        std::vector<std::uint8_t> m_pixels; //RGBA, m_size.x * m_size.y * 4
+        void destroy();
+
+        SDL_Surface* m_surface = nullptr; //Always SDL_PIXELFORMAT_RGBA32
     };
 
     //GPU texture backed by SDL_Texture, replacement for sf::Texture.

@@ -1,50 +1,50 @@
 #pragma once
-#include <memory>
 #include <string>
-#include <vector>
-#include "Texture.h"
 #include "Vector2.h"
 #include "Rect.h"
 #include "Color.h"
+
+struct TTF_Font;
+struct SDL_Texture;
 
 namespace ETG
 {
     class RenderWindow;
 
-    //TTF font baked into a texture atlas with stb_truetype, replacement for sf::Font
+    //TTF font handle, replacement for sf::Font. Rasterization is done by SDL3_ttf (freetype).
     class Font
     {
     public:
-        static constexpr float BakePixelHeight = 48.f; //Glyphs are baked at this size and scaled at draw time
-        static constexpr int FirstChar = 32; //ASCII range 32..126
-        static constexpr int CharCount = 95;
-
         Font() = default;
+        ~Font();
+
+        Font(const Font&) = delete;
+        Font& operator=(const Font&) = delete;
+        Font(Font&& other) noexcept;
+        Font& operator=(Font&& other) noexcept;
 
         bool loadFromFile(const std::string& path);
 
-        struct GlyphQuad
-        {
-            FloatRect screen; //Position relative to the pen, in baked pixels
-            FloatRect uv; //Normalized texture coordinates
-        };
-
-        //Advances `penX` like stbtt_GetBakedQuad
-        [[nodiscard]] bool getGlyph(char c, float& penX, float& penY, GlyphQuad& out) const;
-        [[nodiscard]] const Texture* getAtlas() const { return m_atlas.get(); }
-        [[nodiscard]] bool isLoaded() const { return m_atlas != nullptr; }
+        [[nodiscard]] TTF_Font* getNativeHandle() const { return m_font; }
+        [[nodiscard]] bool isLoaded() const { return m_font != nullptr; }
 
     private:
-        std::shared_ptr<Texture> m_atlas;
-        std::vector<std::uint8_t> m_bakedCharData; //stbtt_bakedchar array, kept opaque here
-        int m_atlasSize = 0;
+        TTF_Font* m_font = nullptr;
     };
 
     //Drawable string, replacement for sf::Text. Rendered via RenderWindow::draw(text).
+    //The string is rasterized once by SDL3_ttf into a cached texture (re-rendered only when
+    //the string or character size changes) and drawn as a quad through the window's view.
     class Text
     {
     public:
         Text() = default;
+        ~Text();
+
+        Text(const Text&) = delete;
+        Text& operator=(const Text&) = delete;
+        Text(Text&&) = delete;
+        Text& operator=(Text&&) = delete;
 
         void setFont(const Font& font) { m_font = &font; }
         void setString(const std::string& str) { m_string = str; }
@@ -63,11 +63,21 @@ namespace ETG
         void drawTo(RenderWindow& window) const;
 
     private:
+        bool ensureTexture() const;
+        void destroyTexture() const;
+
         const Font* m_font = nullptr;
         std::string m_string;
         unsigned m_characterSize = 30;
         Color m_fillColor = Color::White;
         Vector2f m_position{0.f, 0.f};
         Vector2f m_origin{0.f, 0.f};
+
+        //Cached rasterization. Rendered white and tinted at draw time, so color changes
+        //don't force a re-render.
+        mutable SDL_Texture* m_texture = nullptr;
+        mutable Vector2f m_textureSize{0.f, 0.f};
+        mutable std::string m_cachedString;
+        mutable unsigned m_cachedSize = 0;
     };
 }

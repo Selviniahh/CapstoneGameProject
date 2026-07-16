@@ -20,7 +20,7 @@ namespace ETG
     class RenderWindow
     {
     public:
-        RenderWindow(unsigned width, unsigned height, const std::string& title);
+        RenderWindow(unsigned width, unsigned height, const std::string& title, bool fullscreen = false);
         ~RenderWindow();
 
         RenderWindow(const RenderWindow&) = delete;
@@ -45,7 +45,9 @@ namespace ETG
         [[nodiscard]] const View& getView() const { return m_view; }
         [[nodiscard]] View getDefaultView() const;
 
-        //Convert a pixel (window) coordinate to world coordinates for the given view
+        //Convert a pixel (window) coordinate to world coordinates for the given view.
+        //Always accounts for the letterbox transform (see beginLetterboxedScene), since
+        //the only caller maps mouse position onto the letterboxed game world view.
         [[nodiscard]] Vector2f mapPixelToCoords(const Vector2i& pixel, const View& view) const;
 
         //Transform a world coordinate to screen (pixel) coordinates using the current view
@@ -65,6 +67,11 @@ namespace ETG
         //Global access for resource creation (textures, fonts). Null until a window exists.
         static SDL_Renderer* GetRenderer() { return s_renderer; }
 
+        //Fixed design resolution everything (world, HUD, ImGui) is drawn against. SDL's
+        //logical presentation (set once, permanently, in the constructor) letterboxes this
+        //canvas onto the real window, regardless of how the window is resized/shaped.
+        static constexpr Vector2u LogicalSize{1920, 1080};
+
     private:
         SDL_Window* m_window = nullptr;
         SDL_Renderer* m_renderer = nullptr;
@@ -73,6 +80,9 @@ namespace ETG
 
         unsigned m_framerateLimit = 0;
         std::uint64_t m_lastFrameTimeNs = 0;
+
+        Vector2u m_logicalSize;
+        [[nodiscard]] Vector2f windowPixelToLogical(const Vector2f& physicalPixel) const;
 
         static SDL_Renderer* s_renderer;
     };

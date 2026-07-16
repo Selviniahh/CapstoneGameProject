@@ -1,59 +1,115 @@
 #include "Texture.h"
-#include <cstring>
 #include <SDL3/SDL.h>
-#include <stb_image.h>
+#include <SDL3_image/SDL_image.h>
 #include "RenderWindow.h"
 
 namespace ETG
 {
     //------------------------------------ Image ------------------------------------
+    namespace
+    {
+        //Blits must copy raw RGBA (like sf::Image::copy) instead of alpha-blending,
+        //otherwise stitching sprites onto a transparent atlas would darken AA edges.
+        void PrepareSurface(SDL_Surface* surface)
+        {
+            SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
+        }
+    }
+
+    Image::~Image()
+    {
+        destroy();
+    }
+
+    void Image::destroy()
+    {
+        if (m_surface) SDL_DestroySurface(m_surface);
+        m_surface = nullptr;
+    }
+
+    Image::Image(const Image& other)
+    {
+        if (other.m_surface)
+        {
+            m_surface = SDL_DuplicateSurface(other.m_surface);
+            if (m_surface) PrepareSurface(m_surface);
+        }
+    }
+
+    Image& Image::operator=(const Image& other)
+    {
+        if (this == &other) return *this;
+        destroy();
+        if (other.m_surface)
+        {
+            m_surface = SDL_DuplicateSurface(other.m_surface);
+            if (m_surface) PrepareSurface(m_surface);
+        }
+        return *this;
+    }
+
+    Image::Image(Image&& other) noexcept : m_surface(other.m_surface)
+    {
+        other.m_surface = nullptr;
+    }
+
+    Image& Image::operator=(Image&& other) noexcept
+    {
+        if (this == &other) return *this;
+        destroy();
+        m_surface = other.m_surface;
+        other.m_surface = nullptr;
+        return *this;
+    }
+
     void Image::create(const unsigned width, const unsigned height, const Color& color)
     {
-        m_size = {width, height};
-        m_pixels.assign(static_cast<size_t>(width) * height * 4, 0);
-        for (size_t i = 0; i < static_cast<size_t>(width) * height; ++i)
-        {
-            m_pixels[i * 4 + 0] = color.r;
-            m_pixels[i * 4 + 1] = color.g;
-            m_pixels[i * 4 + 2] = color.b;
-            m_pixels[i * 4 + 3] = color.a;
-        }
+        destroy();
+        m_surface = SDL_CreateSurface(static_cast<int>(width), static_cast<int>(height), SDL_PIXELFORMAT_RGBA32);
+        if (!m_surface) return;
+
+        PrepareSurface(m_surface);
+        SDL_FillSurfaceRect(m_surface, nullptr, SDL_MapSurfaceRGBA(m_surface, color.r, color.g, color.b, color.a));
     }
 
     bool Image::loadFromFile(const std::string& path)
     {
-        int w = 0, h = 0, channels = 0;
-        stbi_uc* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
-        if (!data) return false;
+        SDL_Surface* loaded = IMG_Load(path.c_str());
+        if (!loaded) return false;
 
-        m_size = {static_cast<unsigned>(w), static_cast<unsigned>(h)};
-        m_pixels.assign(data, data + static_cast<size_t>(w) * h * 4);
-        stbi_image_free(data);
+        destroy();
+        if (loaded->format == SDL_PIXELFORMAT_RGBA32)
+        {
+            m_surface = loaded;
+        }
+        else
+        {
+            m_surface = SDL_ConvertSurface(loaded, SDL_PIXELFORMAT_RGBA32);
+            SDL_DestroySurface(loaded);
+        }
+
+        if (!m_surface) return false;
+        PrepareSurface(m_surface);
         return true;
     }
 
     void Image::copy(const Image& source, const unsigned destX, const unsigned destY, const IntRect& sourceRect)
     {
+        if (!m_surface || !source.m_surface) return;
+
         IntRect srcRect = sourceRect;
         if (srcRect.width == 0 || srcRect.height == 0)
-            srcRect = IntRect(0, 0, static_cast<int>(source.m_size.x), static_cast<int>(source.m_size.y));
+            srcRect = IntRect(0, 0, source.m_surface->w, source.m_surface->h);
 
-        for (int y = 0; y < srcRect.height; ++y)
-        {
-            const unsigned dy = destY + y;
-            const unsigned sy = srcRect.top + y;
-            if (dy >= m_size.y || sy >= source.m_size.y) continue;
+        const SDL_Rect src{srcRect.left, srcRect.top, srcRect.width, srcRect.height};
+        SDL_Rect dst{static_cast<int>(destX), static_cast<int>(destY), srcRect.width, srcRect.height};
+        SDL_BlitSurface(source.m_surface, &src, m_surface, &dst);
+    }
 
-            for (int x = 0; x < srcRect.width; ++x)
-            {
-                const unsigned dx = destX + x;
-                const unsigned sx = srcRect.left + x;
-                if (dx >= m_size.x || sx >= source.m_size.x) continue;
-
-                std::memcpy(&m_pixels[(static_cast<size_t>(dy) * m_size.x + dx) * 4],
-                            &source.m_pixels[(static_cast<size_t>(sy) * source.m_size.x + sx) * 4], 4);
-            }
-        }
+    Vector2u Image::getSize() const
+    {
+        if (!m_surface) return {0, 0};
+        return {static_cast<unsigned>(m_surface->w), static_cast<unsigned>(m_surface->h)};
     }
 
     //------------------------------------ Texture ------------------------------------
@@ -117,18 +173,11 @@ namespace ETG
         SDL_Renderer* renderer = RenderWindow::GetRenderer();
         if (!renderer) return false;
 
-        const Vector2u size = image.getSize();
-        if (size.x == 0 || size.y == 0) return false;
+        SDL_Surface* surface = image.getNativeSurface();
+        if (!surface || surface->w == 0 || surface->h == 0) return false;
 
-        SDL_Texture* newTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
-                                                    static_cast<int>(size.x), static_cast<int>(size.y));
+        SDL_Texture* newTexture = SDL_CreateTextureFromSurface(renderer, surface);
         if (!newTexture) return false;
-
-        if (!SDL_UpdateTexture(newTexture, nullptr, image.getPixelsPtr(), static_cast<int>(size.x) * 4))
-        {
-            SDL_DestroyTexture(newTexture);
-            return false;
-        }
 
         //Pixel art: nearest sampling keeps sprites crisp when the view is zoomed
         SDL_SetTextureScaleMode(newTexture, SDL_SCALEMODE_NEAREST);
@@ -136,7 +185,7 @@ namespace ETG
 
         destroy();
         m_handle = newTexture;
-        m_size = size;
+        m_size = image.getSize();
         m_image = image;
         return true;
     }

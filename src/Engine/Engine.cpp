@@ -36,7 +36,7 @@ void Engine::Initialize()
     GameState::GetInstance().SetEngine(this);
 
     GameState::GetInstance().SetEngineUISize(&windowSize);
-    windowSize = {400, (float)(Window->getSize().y)};
+    windowSize = {400, (float)ETG::RenderWindow::LogicalSize.y};
     std::cout << std::unitbuf;
 
     LoadFont();
@@ -49,27 +49,25 @@ void Engine::Update()
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
 
-    //Some SDL video drivers (headless dummy/offscreen, or during resolution changes) report a
-    //zero pixel size, which would trip ImGui's sanity asserts. Fall back to safe values.
+    //ImGui draws entirely in the fixed logical canvas (RenderWindow::LogicalSize); SDL's
+    //permanently-active logical presentation is what maps that onto the real, possibly-HiDPI
+    //window. Force both so ImGui doesn't also apply its own (unrelated) DPI scale, and so its
+    //DisplaySize matches the logical canvas that GameManager converts mouse events into.
     ImGuiIO& io = ImGui::GetIO();
-    if (io.DisplayFramebufferScale.x <= 0.0f || io.DisplayFramebufferScale.y <= 0.0f)
-        io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-    if (io.DisplaySize.x < 0.0f || io.DisplaySize.y < 0.0f)
-        io.DisplaySize = ImVec2(0.0f, 0.0f);
+    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    io.DisplaySize = ImVec2((float)ETG::RenderWindow::LogicalSize.x, (float)ETG::RenderWindow::LogicalSize.y);
 
     ImGui::NewFrame();
 
-    // Begin a new ImGui window docked to the right
-    // Only set position and size when first creating the window
-    ImGui::SetNextWindowPos(ImVec2((float)Window->getSize().x - windowSize.x, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(windowSize.x, windowSize.y), ImGuiCond_FirstUseEver);
+    // Pin the panel to the logical canvas's right edge and full height every frame, so it
+    // always stays docked there instead of drifting once the user drags/resizes it
+    // (ImGuiCond_FirstUseEver only applied the position/size on the very first frame).
+    const float windowW = (float)ETG::RenderWindow::LogicalSize.x;
+    const float windowH = (float)ETG::RenderWindow::LogicalSize.y;
+    ImGui::SetNextWindowPos(ImVec2(windowW - windowSize.x, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(windowSize.x, windowH), ImGuiCond_Always);
 
-    // Use no flags to allow all default window behaviors (dragging, resizing)
-    ImGui::Begin("Details Pane", nullptr);
-
-    //If window is updated, need to assign to this variable so Game UI can be updated
-    const ImVec2 currWindowSize = ImGui::GetWindowSize();
-    windowSize = {currWindowSize.x, currWindowSize.y};
+    ImGui::Begin("Details Pane", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
     UpdateDetailsPanel();
 

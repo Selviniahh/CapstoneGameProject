@@ -1,32 +1,32 @@
 #pragma once
-#include <cstdint>
-#include <memory>
 #include <string>
-#include <vector>
 
-struct SDL_AudioStream;
+struct MIX_Audio;
+struct MIX_Track;
 
 namespace ETG
 {
-    //Decoded PCM sound data (OGG Vorbis via stb_vorbis), replacement for sf::SoundBuffer
+    //Decoded sound data (loaded via SDL_mixer), replacement for sf::SoundBuffer
     class SoundBuffer
     {
     public:
         SoundBuffer() = default;
+        ~SoundBuffer();
+
+        SoundBuffer(const SoundBuffer&) = delete;
+        SoundBuffer& operator=(const SoundBuffer&) = delete;
+        SoundBuffer(SoundBuffer&& other) noexcept;
+        SoundBuffer& operator=(SoundBuffer&& other) noexcept;
 
         bool loadFromFile(const std::string& path);
 
-        [[nodiscard]] const std::vector<std::int16_t>& getSamples() const { return m_samples; }
-        [[nodiscard]] int getChannelCount() const { return m_channels; }
-        [[nodiscard]] int getSampleRate() const { return m_sampleRate; }
+        [[nodiscard]] MIX_Audio* getAudio() const { return m_audio; }
 
     private:
-        std::vector<std::int16_t> m_samples;
-        int m_channels = 0;
-        int m_sampleRate = 0;
+        MIX_Audio* m_audio = nullptr;
     };
 
-    //One-shot sound playback through an SDL3 audio stream, replacement for sf::Sound
+    //One-shot sound playback through an SDL_mixer track, replacement for sf::Sound
     class Sound
     {
     public:
@@ -44,10 +44,10 @@ namespace ETG
         void stop();
 
     private:
-        bool ensureStream();
+        bool ensureTrack();
 
         const SoundBuffer* m_buffer = nullptr;
-        SDL_AudioStream* m_stream = nullptr;
+        MIX_Track* m_track = nullptr;
         float m_volume = 100.f;
     };
 }

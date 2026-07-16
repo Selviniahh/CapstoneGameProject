@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <iostream>
 #include <boost/type_index.hpp>
 #include <boost/mp11.hpp>

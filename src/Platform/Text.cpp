@@ -1,153 +1,113 @@
 #include "Text.h"
-#include <fstream>
 #include <SDL3/SDL.h>
-#include <stb_truetype.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include "RenderWindow.h"
 
 namespace ETG
 {
-    //------------------------------------ Font ------------------------------------
-    bool Font::loadFromFile(const std::string& path)
+    namespace
     {
-        std::ifstream file(path, std::ios::binary);
-        if (!file) return false;
-        std::vector<unsigned char> fontData((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-        m_atlasSize = 1024;
-        std::vector<unsigned char> alphaBitmap(static_cast<size_t>(m_atlasSize) * m_atlasSize);
-        m_bakedCharData.resize(sizeof(stbtt_bakedchar) * CharCount);
-
-        const int result = stbtt_BakeFontBitmap(fontData.data(), 0, BakePixelHeight,
-                                                alphaBitmap.data(), m_atlasSize, m_atlasSize,
-                                                FirstChar, CharCount,
-                                                reinterpret_cast<stbtt_bakedchar*>(m_bakedCharData.data()));
-        if (result <= 0) return false;
-
-        //Expand the alpha coverage bitmap into white RGBA so it can be tinted at draw time
-        Image atlasImage;
-        atlasImage.create(m_atlasSize, m_atlasSize, Color{255, 255, 255, 0});
-        auto* pixels = const_cast<std::uint8_t*>(atlasImage.getPixelsPtr());
-        for (size_t i = 0; i < alphaBitmap.size(); ++i)
+        bool EnsureTtfInit()
         {
-            pixels[i * 4 + 3] = alphaBitmap[i];
+            static const bool initialized = TTF_Init();
+            return initialized;
         }
-
-        m_atlas = std::make_shared<Texture>();
-        if (!m_atlas->loadFromImage(atlasImage))
-        {
-            m_atlas = nullptr;
-            return false;
-        }
-        //Text looks better with linear filtering when scaled down
-        SDL_SetTextureScaleMode(m_atlas->getNativeHandle(), SDL_SCALEMODE_LINEAR);
-        return true;
     }
 
-    bool Font::getGlyph(const char c, float& penX, float& penY, GlyphQuad& out) const
+    //------------------------------------ Font ------------------------------------
+    Font::~Font()
     {
-        if (!m_atlas || c < FirstChar || c >= FirstChar + CharCount) return false;
+        if (m_font) TTF_CloseFont(m_font);
+    }
 
-        stbtt_aligned_quad quad{};
-        stbtt_GetBakedQuad(reinterpret_cast<const stbtt_bakedchar*>(m_bakedCharData.data()),
-                           m_atlasSize, m_atlasSize, c - FirstChar, &penX, &penY, &quad, 1);
+    Font::Font(Font&& other) noexcept : m_font(other.m_font)
+    {
+        other.m_font = nullptr;
+    }
 
-        out.screen = FloatRect(quad.x0, quad.y0, quad.x1 - quad.x0, quad.y1 - quad.y0);
-        out.uv = FloatRect(quad.s0, quad.t0, quad.s1 - quad.s0, quad.t1 - quad.t0);
-        return true;
+    Font& Font::operator=(Font&& other) noexcept
+    {
+        if (this == &other) return *this;
+        if (m_font) TTF_CloseFont(m_font);
+        m_font = other.m_font;
+        other.m_font = nullptr;
+        return *this;
+    }
+
+    bool Font::loadFromFile(const std::string& path)
+    {
+        if (!EnsureTtfInit()) return false;
+        if (m_font) TTF_CloseFont(m_font);
+
+        //Opened at an arbitrary size; Text sets the real size before each rasterization
+        m_font = TTF_OpenFont(path.c_str(), 32.f);
+        return m_font != nullptr;
     }
 
     //------------------------------------ Text ------------------------------------
+    Text::~Text()
+    {
+        destroyTexture();
+    }
+
+    void Text::destroyTexture() const
+    {
+        if (m_texture && RenderWindow::GetRenderer()) SDL_DestroyTexture(m_texture);
+        m_texture = nullptr;
+    }
+
+    bool Text::ensureTexture() const
+    {
+        if (!m_font || !m_font->isLoaded() || m_string.empty()) return false;
+        if (m_texture && m_string == m_cachedString && m_characterSize == m_cachedSize) return true;
+
+        SDL_Renderer* renderer = RenderWindow::GetRenderer();
+        if (!renderer) return false;
+
+        TTF_Font* font = m_font->getNativeHandle();
+        TTF_SetFontSize(font, static_cast<float>(m_characterSize));
+
+        SDL_Surface* surface = TTF_RenderText_Blended(font, m_string.c_str(), 0, SDL_Color{255, 255, 255, 255});
+        if (!surface) return false;
+
+        destroyTexture();
+        m_texture = SDL_CreateTextureFromSurface(renderer, surface);
+        m_textureSize = {static_cast<float>(surface->w), static_cast<float>(surface->h)};
+        SDL_DestroySurface(surface);
+        if (!m_texture) return false;
+
+        //Text looks better with linear filtering when scaled by the view
+        SDL_SetTextureScaleMode(m_texture, SDL_SCALEMODE_LINEAR);
+        SDL_SetTextureBlendMode(m_texture, SDL_BLENDMODE_BLEND);
+        m_cachedString = m_string;
+        m_cachedSize = m_characterSize;
+        return true;
+    }
+
     FloatRect Text::getLocalBounds() const
     {
         if (!m_font || !m_font->isLoaded() || m_string.empty()) return {};
 
-        const float scale = static_cast<float>(m_characterSize) / Font::BakePixelHeight;
-        float penX = 0.f, penY = 0.f;
-        float minX = 0.f, minY = 0.f, maxX = 0.f, maxY = 0.f;
-        bool first = true;
+        TTF_Font* font = m_font->getNativeHandle();
+        TTF_SetFontSize(font, static_cast<float>(m_characterSize));
 
-        for (const char c : m_string)
-        {
-            Font::GlyphQuad quad{};
-            if (!m_font->getGlyph(c, penX, penY, quad)) continue;
-
-            if (first)
-            {
-                minX = quad.screen.left;
-                minY = quad.screen.top;
-                maxX = quad.screen.left + quad.screen.width;
-                maxY = quad.screen.top + quad.screen.height;
-                first = false;
-            }
-            else
-            {
-                minX = std::min(minX, quad.screen.left);
-                minY = std::min(minY, quad.screen.top);
-                maxX = std::max(maxX, quad.screen.left + quad.screen.width);
-                maxY = std::max(maxY, quad.screen.top + quad.screen.height);
-            }
-        }
-
-        return {minX * scale, minY * scale, (maxX - minX) * scale, (maxY - minY) * scale};
+        int w = 0, h = 0;
+        TTF_GetStringSize(font, m_string.c_str(), 0, &w, &h);
+        return {0.f, 0.f, static_cast<float>(w), static_cast<float>(h)};
     }
 
     void Text::drawTo(RenderWindow& window) const
     {
-        if (!m_font || !m_font->isLoaded() || m_string.empty()) return;
+        if (!ensureTexture()) return;
         SDL_Renderer* renderer = window.getNativeRenderer();
         if (!renderer) return;
 
-        const float scale = static_cast<float>(m_characterSize) / Font::BakePixelHeight;
-        const SDL_FColor color{m_fillColor.r / 255.f, m_fillColor.g / 255.f, m_fillColor.b / 255.f, m_fillColor.a / 255.f};
+        const Vector2f screen = window.worldToScreen(m_position - m_origin);
+        const Vector2f scale = window.worldToScreenScale();
+        const SDL_FRect dst{screen.x, screen.y, m_textureSize.x * scale.x, m_textureSize.y * scale.y};
 
-        //The baked pen sits on the baseline; shift down so m_position is the top-left like sf::Text
-        const float ascentOffset = Font::BakePixelHeight * 0.8f;
-
-        std::vector<SDL_Vertex> vertices;
-        std::vector<int> indices;
-        vertices.reserve(m_string.size() * 4);
-        indices.reserve(m_string.size() * 6);
-
-        float penX = 0.f, penY = 0.f;
-        for (const char c : m_string)
-        {
-            Font::GlyphQuad quad{};
-            if (!m_font->getGlyph(c, penX, penY, quad)) continue;
-
-            const Vector2f local[4] = {
-                {quad.screen.left, quad.screen.top + ascentOffset},
-                {quad.screen.left + quad.screen.width, quad.screen.top + ascentOffset},
-                {quad.screen.left + quad.screen.width, quad.screen.top + quad.screen.height + ascentOffset},
-                {quad.screen.left, quad.screen.top + quad.screen.height + ascentOffset}
-            };
-            const Vector2f uv[4] = {
-                {quad.uv.left, quad.uv.top},
-                {quad.uv.left + quad.uv.width, quad.uv.top},
-                {quad.uv.left + quad.uv.width, quad.uv.top + quad.uv.height},
-                {quad.uv.left, quad.uv.top + quad.uv.height}
-            };
-
-            const int base = static_cast<int>(vertices.size());
-            for (int i = 0; i < 4; ++i)
-            {
-                const Vector2f world = m_position - m_origin + local[i] * scale;
-                const Vector2f screen = window.worldToScreen(world);
-                vertices.push_back(SDL_Vertex{SDL_FPoint{screen.x, screen.y}, color, SDL_FPoint{uv[i].x, uv[i].y}});
-            }
-
-            indices.push_back(base + 0);
-            indices.push_back(base + 1);
-            indices.push_back(base + 2);
-            indices.push_back(base + 0);
-            indices.push_back(base + 2);
-            indices.push_back(base + 3);
-        }
-
-        if (!vertices.empty())
-        {
-            SDL_RenderGeometry(renderer, m_font->getAtlas()->getNativeHandle(),
-                               vertices.data(), static_cast<int>(vertices.size()),
-                               indices.data(), static_cast<int>(indices.size()));
-        }
+        SDL_SetTextureColorMod(m_texture, m_fillColor.r, m_fillColor.g, m_fillColor.b);
+        SDL_SetTextureAlphaMod(m_texture, m_fillColor.a);
+        SDL_RenderTexture(renderer, m_texture, nullptr, &dst);
     }
 }

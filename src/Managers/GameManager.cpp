@@ -29,7 +29,7 @@ ETG::GameManager::GameManager()
 
 void ETG::GameManager::Initialize()
 {
-    //During development for different resolution and size monitors, Window mode will be half of host's window size
+    //Always launch fullscreen at the desktop's native resolution
     if (!SDL_WasInit(SDL_INIT_VIDEO)) SDL_InitSubSystem(SDL_INIT_VIDEO);
     int desktopWidth = 1280, desktopHeight = 720;
     if (const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()))
@@ -37,7 +37,7 @@ void ETG::GameManager::Initialize()
         desktopWidth = desktopMode->w;
         desktopHeight = desktopMode->h;
     }
-    Window = std::make_shared<ETG::RenderWindow>(static_cast<unsigned>(desktopWidth / 1.2), static_cast<unsigned>(desktopHeight / 1.2), "Enter The Gungeon Clone (SDL3)");
+    Window = std::make_shared<ETG::RenderWindow>(static_cast<unsigned>(desktopWidth), static_cast<unsigned>(desktopHeight), "Enter The Gungeon Clone (SDL3)", true);
     Window->requestFocus();
     Window->setFramerateLimit(Globals::FPS);
     GameState::GetInstance().SetRenderWindow(Window.get());
@@ -104,7 +104,10 @@ void ETG::GameManager::Draw()
     if (!HasFocus) return;
     Window->clear({1,255,255,255});
 
-    //NOTE: Draw the main game scene with Custom view. These draws will be drawn zoomed
+    //NOTE: Draw the main game scene with Custom view. These draws will be drawn zoomed.
+    //Everything is drawn against the fixed logical canvas (RenderWindow::LogicalSize);
+    //SDL's permanently-active logical presentation letterboxes it onto the real window,
+    //regardless of how the window is resized.
     Window->setView(Globals::MainView);
 
     GlobSpriteBatch.begin();
@@ -156,15 +159,9 @@ void ETG::GameManager::ProcessEvents()
         // Handle window resize
         if (event.type == SDL_EVENT_WINDOW_RESIZED)
         {
-            // Update the global screen size
+            // Update the global screen size (real window pixels; not used for layout anymore
+            // since everything now draws against the fixed logical canvas)
             ScreenSize = {static_cast<unsigned>(event.window.data1), static_cast<unsigned>(event.window.data2)};
-
-            // Optionally update the default view if you rely on it
-            Window->setView(Window->getDefaultView());
-
-            //TODO: When the window is resized, I need to recalculate every position of every UI object.
-            // Recalculate UI positions based on the new screen size.
-            // UI->Initialize(); // or UI.UpdatePositions(); if you separate the logic.
         }
 
         //Accumulate mouse wheel movement for this frame (used for gun switching)
@@ -173,7 +170,11 @@ void ETG::GameManager::ProcessEvents()
             InputManager::MouseWheelDelta += event.wheel.y;
         }
 
-        //Poll and process events for ImGUI
-        ImGui_ImplSDL3_ProcessEvent(&event);
+        //Poll and process events for ImGUI. Convert coordinates into the logical/render
+        //coordinate space first, so ImGui's hit-testing lines up with the permanently-active
+        //logical presentation (ImGui itself draws in that same logical space, see Engine::Update).
+        SDL_Event imguiEvent = event;
+        SDL_ConvertEventToRenderCoordinates(Window->getNativeRenderer(), &imguiEvent);
+        ImGui_ImplSDL3_ProcessEvent(&imguiEvent);
     }
 }

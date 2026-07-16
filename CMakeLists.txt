@@ -4,65 +4,47 @@ project(ETG LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Build the project's compiled libraries as shared libraries by default.
+option(BUILD_SHARED_LIBS "Build project libraries as shared libraries" ON)
+
+# Export symbols automatically from our DLL targets on Windows. This keeps the
+# current source code portable without requiring __declspec(dllexport) macros.
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+#- CMAKE_INSTALL_BINDIR → usually in "bin"
+#CMAKE_INSTALL_LIBDIR -> usually "lib"
 include(GNUInstallDirs)
+
+# Places Statik libs under (.a, .lib) build/lib.
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+
+#Linux’taki paylaşımlı kütüphaneleri (.so) ve macOS’taki .dylib dosyalarını build/lib altına koyar.
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+
+#Çalıştırılabilir dosyaları ve Windows’taki .dll dosyalarını  build/bin altına koyar.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 # ------------------------------------------------------------------------------
-# Dependencies (no package manager required)
-#  - SDL3: fetched from the official release tarball and built from source
-#  - Dear ImGui (+ SDL3 backends): vendored under external/imgui
-#  - stb (image/vorbis/truetype decoding): vendored under external/stb
-#  - Boost (header-only: type_index, describe, mpl): fetched release tarball
+# Dependencies (no package manager required, everything built from source)
+#  - SDL3: git submodule under deps/SDL3, built once and cached in depbuilt/
+#  - SDL3_mixer (audio decoding/playback): git submodule under deps/SDL_mixer, built once
+#    and cached in depbuilt/ (needs SDL3 built first)
+#  - SDL3_image (PNG decoding): git submodule under deps/SDL_image, built once
+#    and cached in depbuilt/ (needs SDL3 built first)
+#  - SDL3_ttf (font rendering, vendored freetype): git submodule under deps/SDL_ttf,
+#    built once and cached in depbuilt/ (needs SDL3 built first)
+#  - Dear ImGui (+ SDL3 backends): vendored under deps/imgui
+#  - Boost (header-only: type_index, describe): vendored under deps/boost
 # ------------------------------------------------------------------------------
-include(FetchContent)
+include(cmake/DepConfig.cmake)
+include(cmake/depBuild/SDL3.cmake)
+include(cmake/depBuild/SDL3_mixer.cmake) # SDL3'ten SONRA: kendi find_package(SDL3) çağrısı için SDL3_DIR gerekiyor
+include(cmake/depBuild/SDL3_image.cmake) # SDL3'ten SONRA
+include(cmake/depBuild/SDL3_ttf.cmake)   # SDL3'ten SONRA
+include(cmake/depBuild/imgui.cmake)   # SDL3'ten SONRA: imgui SDL3::SDL3'e link eder
+include(cmake/depBuild/boost.cmake)
 
-set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-set(SDL_STATIC ON CACHE BOOL "" FORCE)
-set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
-set(SDL_TESTS OFF CACHE BOOL "" FORCE)
-set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-        SDL3
-        URL https://www.libsdl.org/release/SDL3-3.4.12.tar.gz
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(SDL3)
-
-# Boost: the release tarball ships all headers pre-assembled under boost/.
-# The three libraries used here (type_index, describe, mpl) are header-only.
-FetchContent_Declare(
-        boost_headers
-        URL https://archives.boost.io/release/1.91.0/source/boost_1_91_0.tar.gz
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(boost_headers)
-
-add_library(boost_header_only INTERFACE)
-target_include_directories(boost_header_only SYSTEM INTERFACE ${boost_headers_SOURCE_DIR})
-add_library(Boost::type_index ALIAS boost_header_only)
-add_library(Boost::describe ALIAS boost_header_only)
-add_library(Boost::mpl ALIAS boost_header_only)
-
-# Dear ImGui with the SDL3 + SDL_Renderer3 backends (vendored)
-set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
-add_library(imgui STATIC
-        ${IMGUI_DIR}/imgui.cpp
-        ${IMGUI_DIR}/imgui_draw.cpp
-        ${IMGUI_DIR}/imgui_tables.cpp
-        ${IMGUI_DIR}/imgui_widgets.cpp
-        ${IMGUI_DIR}/imgui_demo.cpp
-        ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
-        ${IMGUI_DIR}/backends/imgui_impl_sdlrenderer3.cpp
-)
-target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends)
-target_link_libraries(imgui PUBLIC SDL3::SDL3)
-
-# stb single-header libraries (implementations live in src/Platform/StbImpl.cpp)
-add_library(stb INTERFACE)
-target_include_directories(stb SYSTEM INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
-
+#std::thread icin 
 find_package(Threads REQUIRED)
 
 # ------------------------------------------------------------------------------
@@ -86,7 +68,6 @@ set(PLATFORM_SOURCES
         src/Platform/Text.cpp
         src/Platform/Text.h
         src/Platform/Platform.h
-        src/Platform/StbImpl.cpp
 )
 
 set(CORE_SOURCES
@@ -217,8 +198,9 @@ set(UTILS_SOURCES
         src/Utils/Interface/IGunModifier.h
 )
 
-# Create a master STATIC library for all SDL-dependent code
-add_library(etgcore STATIC
+# Create a master library for all SDL-dependent code.
+# Its type is controlled by BUILD_SHARED_LIBS (shared by default).
+add_library(etgcore
         ${PLATFORM_SOURCES}
         ${CORE_SOURCES}
         ${ENGINE_SOURCES}
@@ -232,7 +214,7 @@ add_library(etgcore STATIC
         ${ITEMS_SOURCES}
 )
 
-# Common definitions for the static library
+# Common definitions for the core library
 target_compile_definitions(etgcore PRIVATE
         RESOURCE_PATH="../../Resources"
 )
@@ -248,20 +230,21 @@ target_link_libraries(etgcore PUBLIC etg_compile_flags)
 # Include directories
 target_include_directories(etgcore PUBLIC src)
 
-# Link everything to the static library
+# Link the core library's dependencies
 target_link_libraries(etgcore PUBLIC
         SDL3::SDL3
+        SDL3_mixer::SDL3_mixer
+        SDL3_image::SDL3_image
+        SDL3_ttf::SDL3_ttf
         imgui
-        stb
         Boost::type_index
         Boost::describe
-        Boost::mpl
 )
 
-add_library(utils STATIC ${UTILS_SOURCES})
+add_library(utils ${UTILS_SOURCES})
 target_compile_definitions(utils PRIVATE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_include_directories(utils PUBLIC src)
-target_link_libraries(utils PUBLIC Boost::type_index Boost::describe Boost::mpl SDL3::SDL3 imgui etg_compile_flags)
+target_link_libraries(utils PUBLIC Boost::type_index Boost::describe SDL3::SDL3 imgui etg_compile_flags)
 
 add_library(modifiers INTERFACE)
 target_sources(modifiers INTERFACE ${MODIFIERS_SOURCES})
@@ -272,13 +255,25 @@ add_executable(ETG main.cpp)
 
 target_compile_definitions(ETG PRIVATE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_link_libraries(ETG PRIVATE
-        etgcore  # Our consolidated static library
+        etgcore  # Our consolidated core library
         utils
         modifiers
         SDL3::SDL3
+        SDL3_mixer::SDL3_mixer
         imgui
         Boost::type_index
         Boost::describe
-        Boost::mpl
         Threads::Threads
 )
+
+# Windows only searches a limited set of locations for runtime DLLs. Copy all
+# shared-library dependencies next to ETG.exe after every successful build.
+if(WIN32)
+    add_custom_command(TARGET ETG POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_RUNTIME_DLLS:ETG>
+                    $<TARGET_FILE_DIR:ETG>
+            COMMAND_EXPAND_LISTS
+            COMMENT "Copying runtime DLLs next to ETG"
+    )
+endif()

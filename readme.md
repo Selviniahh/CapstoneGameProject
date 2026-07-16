@@ -14,10 +14,11 @@ A clone of the game Enter the Gungeon built with SDL3. It aims to replicate the 
 - Ninja Build System
 - A C++ compiler with C++23 support
 
-No package manager is required: SDL3 and Boost are downloaded automatically by CMake (FetchContent), while Dear ImGui and stb are vendored under `external/`.
+No package manager is required. SDL libraries are included as Git submodules,
+while Dear ImGui and the required Boost headers are vendored under `deps/`.
 
 ```
-git clone https://github.com/Selviniahh/CapstoneGameProject.git
+git clone --recurse-submodules https://github.com/Selviniahh/CapstoneGameProject.git
 cd CapstoneGameProject
 cmake -G Ninja -B build
 cmake --build build --config Release
@@ -29,12 +30,13 @@ The build process is similar on Linux and macOS. On Linux, install the usual SDL
 
 # Dependencies
 
-- SDL3 (window, rendering, input, audio)
+- SDL3 (window, rendering, and input)
+- SDL3_mixer (audio playback and OGG decoding)
+- SDL3_image (PNG decoding)
+- SDL3_ttf (font rendering)
 - Dear ImGui (with the SDL3 + SDL_Renderer3 backends)
-- stb (stb_image, stb_truetype, stb_vorbis for asset decoding)
 - boost-type-index
 - boost-describe
-- boost-mpl
 
 # Contributing
 Please read the docs folder to understand the project structure.

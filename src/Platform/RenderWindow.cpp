@@ -18,7 +18,7 @@ namespace ETG
         }
     }
 
-    RenderWindow::RenderWindow(const unsigned width, const unsigned height, const std::string& title)
+    RenderWindow::RenderWindow(const unsigned width, const unsigned height, const std::string& title, const bool fullscreen)
     {
         if (!SDL_WasInit(SDL_INIT_VIDEO))
         {
@@ -26,9 +26,13 @@ namespace ETG
                 throw std::runtime_error(std::string("SDL video init failed: ") + SDL_GetError());
         }
 
-        m_window = SDL_CreateWindow(title.c_str(), static_cast<int>(width), static_cast<int>(height), SDL_WINDOW_RESIZABLE);
+        SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE;
+        if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
+        m_window = SDL_CreateWindow(title.c_str(), static_cast<int>(width), static_cast<int>(height), flags);
         if (!m_window)
             throw std::runtime_error(std::string("SDL_CreateWindow failed: ") + SDL_GetError());
+        if (fullscreen)
+            SDL_SyncWindow(m_window); //Wait for the fullscreen resize so getSize() below is accurate
 
         m_renderer = SDL_CreateRenderer(m_window, nullptr);
         if (!m_renderer)
@@ -43,8 +47,14 @@ namespace ETG
 
         s_renderer = m_renderer;
         m_open = true;
-        m_view = getDefaultView();
         m_lastFrameTimeNs = SDL_GetTicksNS();
+
+        //Fixed design resolution (see RenderWindow.h). SDL letterboxes/scales this onto the
+        //real window forever; nothing else needs to react to resize events anymore.
+        m_logicalSize = LogicalSize;
+        SDL_SetRenderLogicalPresentation(m_renderer, static_cast<int>(m_logicalSize.x), static_cast<int>(m_logicalSize.y), SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
+        m_view = getDefaultView();
     }
 
     RenderWindow::~RenderWindow()
@@ -120,29 +130,40 @@ namespace ETG
     //---------------- View handling ----------------
     View RenderWindow::getDefaultView() const
     {
-        const Vector2u size = getSize();
-        const auto w = static_cast<float>(size.x);
-        const auto h = static_cast<float>(size.y);
+        const auto w = static_cast<float>(m_logicalSize.x);
+        const auto h = static_cast<float>(m_logicalSize.y);
         return View{{w / 2.f, h / 2.f}, {w, h}};
+    }
+
+    //Physical window pixel -> logical letterboxed-scene pixel. Delegates to SDL, which
+    //knows the current logical presentation transform (letterbox scale + offset) exactly.
+    Vector2f RenderWindow::windowPixelToLogical(const Vector2f& physicalPixel) const
+    {
+        if (!m_renderer) return physicalPixel;
+
+        float lx = physicalPixel.x, ly = physicalPixel.y;
+        SDL_RenderCoordinatesFromWindow(m_renderer, physicalPixel.x, physicalPixel.y, &lx, &ly);
+        return {lx, ly};
     }
 
     Vector2f RenderWindow::mapPixelToCoords(const Vector2i& pixel, const View& view) const
     {
-        const Vector2u winSize = getSize();
-        const Vector2f win{static_cast<float>(winSize.x), static_cast<float>(winSize.y)};
+        const Vector2f logicalPixel = windowPixelToLogical({static_cast<float>(pixel.x), static_cast<float>(pixel.y)});
+        const Vector2f win{static_cast<float>(m_logicalSize.x), static_cast<float>(m_logicalSize.y)};
         const Vector2f viewSize = view.getSize();
         const Vector2f center = view.getCenter();
 
         return {
-            center.x + (static_cast<float>(pixel.x) - win.x / 2.f) * (viewSize.x / win.x),
-            center.y + (static_cast<float>(pixel.y) - win.y / 2.f) * (viewSize.y / win.y)
+            center.x + (logicalPixel.x - win.x / 2.f) * (viewSize.x / win.x),
+            center.y + (logicalPixel.y - win.y / 2.f) * (viewSize.y / win.y)
         };
     }
 
     Vector2f RenderWindow::worldToScreen(const Vector2f& world) const
     {
-        const Vector2u winSize = getSize();
-        const Vector2f win{static_cast<float>(winSize.x), static_cast<float>(winSize.y)};
+        //Our own draw calls always target logical coordinates — SDL's permanently-active
+        //logical presentation then scales/letterboxes them onto the real window.
+        const Vector2f win{static_cast<float>(m_logicalSize.x), static_cast<float>(m_logicalSize.y)};
         const Vector2f viewSize = m_view.getSize();
         const Vector2f center = m_view.getCenter();
 
@@ -154,9 +175,8 @@ namespace ETG
 
     Vector2f RenderWindow::worldToScreenScale() const
     {
-        const Vector2u winSize = getSize();
         const Vector2f viewSize = m_view.getSize();
-        return {static_cast<float>(winSize.x) / viewSize.x, static_cast<float>(winSize.y) / viewSize.y};
+        return {static_cast<float>(m_logicalSize.x) / viewSize.x, static_cast<float>(m_logicalSize.y) / viewSize.y};
     }
 
     //---------------- Immediate mode drawing ----------------
