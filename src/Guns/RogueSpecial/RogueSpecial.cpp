@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "../../Core/Factory.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
+#include "Managers/AssetManager.h"
 
 ETG::RogueSpecial::RogueSpecial(const ETG::Vector2f& Position) : GunBase(Position,
 0.35f,
@@ -17,8 +18,8 @@ ETG::RogueSpecial::RogueSpecial(const ETG::Vector2f& Position) : GunBase(Positio
 10.f)
 {
     AnimationComp = CreateGameObjectAttached<RogueSpecialAnimComp>(this);
-    SetShootSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "RogueSpecialShoot.ogg").generic_string());
-    SetReloadSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Reload.ogg").generic_string());
+    SetShootSound(AssetManager::Resolve("Sounds/RogueSpecialShoot.ogg"));
+    SetReloadSound(AssetManager::Resolve("Sounds/Reload.ogg"));
 
     // call the common initialization.
     RogueSpecial::Initialize();
@@ -33,7 +34,7 @@ void ETG::RogueSpecial::Initialize()
     MuzzleFlash->SetOffset({37.f, -6.f});
 
     // Load the projectile texture for RogueSpecial.
-    const auto projPath = (std::filesystem::path(RESOURCE_PATH) / "Projectiles" / "RogueSpecial" / "Projectile_RogueSpecial.png").string();
+    const auto projPath = AssetManager::Resolve("Projectiles/RogueSpecial/Projectile_RogueSpecial.png");
     if (!ProjTexture->loadFromFile(projPath))
         throw std::runtime_error("Failed to load Projectile_RogueSpecial.png from path: " + projPath);
 

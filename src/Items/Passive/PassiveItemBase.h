@@ -5,6 +5,7 @@
 #include <iostream>
 #include "Platform/Platform.h"
 #include "../../Core/GameObjectBase.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -22,10 +23,10 @@ namespace ETG
                 std::cerr << "Failed to load hand texture" << std::endl;
 
             // Load sound effects
-            if (!PickupSoundBuffers[0].loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Pickup1.ogg").generic_string()))
+            if (!PickupSoundBuffers[0].loadFromFile(AssetManager::Resolve("Sounds/Pickup1.ogg")))
                 std::cerr << "Failed to load Pickup1.ogg sound" << std::endl;
 
-            if (!PickupSoundBuffers[1].loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Pickup2.ogg").generic_string()))
+            if (!PickupSoundBuffers[1].loadFromFile(AssetManager::Resolve("Sounds/Pickup2.ogg")))
                 std::cerr << "Failed to load Pickup2.ogg sound" << std::endl;
 
             // Connect sounds to their buffers

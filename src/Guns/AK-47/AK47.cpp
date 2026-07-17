@@ -4,6 +4,7 @@
 #include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../Core/Components/CollisionComponent.h"
 #include "../../Characters/Hero.h"
+#include "Managers/AssetManager.h"
 
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     0.4f,     // FireRate
@@ -19,8 +20,8 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     3.0f)      // Spread (in degrees)
 {
     AnimationComp = CreateGameObjectAttached<AK47AnimComp>(this);
-    SetShootSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "AK47Shoot.ogg").generic_string());
-    SetReloadSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "AK47Reload.ogg").generic_string());
+    SetShootSound(AssetManager::Resolve("Sounds/AK47Shoot.ogg"));
+    SetReloadSound(AssetManager::Resolve("Sounds/AK47Reload.ogg"));
     
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
@@ -38,7 +39,7 @@ void ETG::AK47::Initialize()
 
     
     // Load the projectile texture for AK-47
-    const auto projPath = (std::filesystem::path(RESOURCE_PATH) / "Projectiles"  / "bullet_variant_002.png").string();
+    const auto projPath = AssetManager::Resolve("Projectiles/bullet_variant_002.png");
     if (!ProjTexture->loadFromFile(projPath))
         throw std::runtime_error("Failed to load Projectile_AK-47.png from path: " + projPath);
 

@@ -5,9 +5,10 @@
 #include "../../Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
+#include "Managers/AssetManager.h"
 
-ETG::DoubleShoot::DoubleShoot() : ActiveItemBase((std::filesystem::path(RESOURCE_PATH) / "Items" / "Active" / "Potion_of_Gun_Friendship.png").generic_string(),
-(std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Consume.ogg").generic_string(),
+ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Active/Potion_of_Gun_Friendship.png"),
+AssetManager::Resolve("Sounds/Consume.ogg"),
     DEFAULT_COOLDOWN, DEFAULT_ACTIVE_TIME)
 {
     ItemDescription = "Double shoot the item and set Spread 0";

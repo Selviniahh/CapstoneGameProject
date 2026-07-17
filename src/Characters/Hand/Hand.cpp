@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <filesystem>
+#include "Managers/AssetManager.h"
 
 ETG::Hand::Hand()
 {
@@ -16,7 +17,7 @@ void ETG::Hand::Initialize()
 {
     Texture = std::make_shared<ETG::Texture>();
 
-    if (!Texture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Player" / "rogue_hand_001.png").generic_string()))
+    if (!Texture->loadFromFile(AssetManager::Resolve("Player/rogue_hand_001.png")))
         std::cerr << "Failed to load hand texture" << std::endl;
     
     GameObjectBase::Initialize();

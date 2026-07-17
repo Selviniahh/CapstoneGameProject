@@ -3,6 +3,7 @@
 #include "../../Characters/Hero.h"
 #include "../../Managers/SpriteBatch.h"
 #include "../../Utils/Math.h"
+#include "Managers/AssetManager.h"
 
 ETG::ReloadSlider::ReloadSlider()
 {
@@ -15,8 +16,8 @@ void ETG::ReloadSlider::Initialize()
 {
     Hero = GameState::GetInstance().GetHero();
 
-    SliderBar->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "Slider.png").string());
-    SliderValue->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "SliderValue.png").string());
+    SliderBar->loadFromFile(AssetManager::Resolve("UI/Slider.png"));
+    SliderValue->loadFromFile(AssetManager::Resolve("UI/SliderValue.png"));
 
     SliderBarPros.Texture = SliderBar.get();
     SliderValProps.Texture = SliderValue.get();

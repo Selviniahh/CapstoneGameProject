@@ -11,6 +11,7 @@
 #include "../../Guns/Base/GunBase.h"
 #include "../../Guns/Magnum/Magnum.h"
 #include "../../Core/Components/BaseHealthComp.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -33,7 +34,7 @@ ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
 
     Gun = ETG::CreateGameObjectAttached<Magnum>(this, Hand->GetRelativePosition());
     Gun->Initialize();
-    Gun->ProjTexture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Projectiles/Enemy" / "8x8_enemy_projectile_001.png").string());
+    Gun->ProjTexture->loadFromFile(AssetManager::Resolve("Projectiles/Enemy/8x8_enemy_projectile_001.png"));
 }
 
 ETG::BulletMan::~BulletMan() = default;

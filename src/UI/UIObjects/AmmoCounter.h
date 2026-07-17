@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "../../Core/GameObjectBase.h"
 #include "../../Managers/Globals.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -43,7 +44,7 @@ namespace ETG
         GameObjectBase::Initialize();
 
         // Load font - make sure the path is correct for your project
-        if (!font.loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Fonts" / "alagard.ttf").generic_string()))
+        if (!font.loadFromFile(AssetManager::Resolve("Fonts/alagard.ttf")))
         {
             throw std::runtime_error("Failed to load font");
         }

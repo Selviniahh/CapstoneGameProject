@@ -5,11 +5,12 @@
 #include "../../Managers/GameState.h"
 #include "../../Managers/SpriteBatch.h"
 #include "../../Utils/Math.h"
+#include "Managers/AssetManager.h"
 
 ETG::FrameLeftProgressBar::FrameLeftProgressBar()
 {
     Texture = std::make_shared<ETG::Texture>();
-    if (!Texture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "FrameLeftProgressBar.png").generic_string()))
+    if (!Texture->loadFromFile(AssetManager::Resolve("UI/FrameLeftProgressBar.png")))
         throw std::runtime_error("Failed to load FrameLeftProgressBar texture");
 
     // Set up the progress rectangle

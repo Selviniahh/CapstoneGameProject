@@ -5,6 +5,7 @@
 #include "../../Characters/Hero.h"
 #include "SawedOff.h"
 #include "../../Utils/Math.h"
+#include "Managers/AssetManager.h"
 
 ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            1.8f, // FireRate
@@ -20,8 +21,8 @@ ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            3.0f) // Spread (in degrees)
 {
     AnimationComp = CreateGameObjectAttached<SawedOffAnimComp>(this);
-    SetShootSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "AK47Shoot.ogg").generic_string());
-    SetReloadSound((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "AK47Reload.ogg").generic_string());
+    SetShootSound(AssetManager::Resolve("Sounds/AK47Shoot.ogg"));
+    SetReloadSound(AssetManager::Resolve("Sounds/AK47Reload.ogg"));
 
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
@@ -39,7 +40,7 @@ void ETG::SawedOff::Initialize()
     ArrowComp->arrowOffset = {15.f, -4.f};
     CollisionComp->Initialize();
 
-    const auto projPath = (std::filesystem::path(RESOURCE_PATH) / "Projectiles" / "bullet_variant_003.png").string();
+    const auto projPath = AssetManager::Resolve("Projectiles/bullet_variant_003.png");
     if (!ProjTexture->loadFromFile(projPath))
         throw std::runtime_error("Failed to load Projectile_SawedOff.png from path: " + projPath);
 

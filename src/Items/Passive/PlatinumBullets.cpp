@@ -6,8 +6,9 @@
 #include "../../Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Utils/Math.h"
+#include "Managers/AssetManager.h"
 
-ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase((std::filesystem::path(RESOURCE_PATH) / "Items" / "Passive" / "platinum_bullets_001.png").generic_string())
+ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("Items/Passive/platinum_bullets_001.png"))
 {
     ItemDescription = "Increase the fire rate %20";
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);

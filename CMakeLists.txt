@@ -121,6 +121,8 @@ set(UI_SOURCES
 )
 
 set(MANAGERS_SOURCES
+        src/Managers/AssetManager.cpp
+        src/Managers/AssetManager.h
         src/Managers/Globals.cpp
         src/Managers/GameManager.cpp
         src/Managers/GameState.h
@@ -215,11 +217,6 @@ add_library(etgcore
         ${ITEMS_SOURCES}
 )
 
-# Common definitions for the core library
-target_compile_definitions(etgcore PRIVATE
-        RESOURCE_PATH="../../Resources"
-)
-
 # The codebase uses members that shadow their own type names (e.g. `Engine* Engine;`),
 # which GCC rejects by default while MSVC/Clang accept it.
 add_library(etg_compile_flags INTERFACE)
@@ -243,18 +240,15 @@ target_link_libraries(etgcore PUBLIC
 )
 
 add_library(utils ${UTILS_SOURCES})
-target_compile_definitions(utils PRIVATE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_include_directories(utils PUBLIC src)
 target_link_libraries(utils PUBLIC Boost::type_index Boost::describe SDL3::SDL3 imgui etg_compile_flags)
 
 add_library(modifiers INTERFACE)
 target_sources(modifiers INTERFACE ${MODIFIERS_SOURCES})
-target_compile_definitions(modifiers INTERFACE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_include_directories(modifiers INTERFACE src)
 
 add_executable(ETG main.cpp)
 
-target_compile_definitions(ETG PRIVATE RESOURCE_PATH="${CMAKE_SOURCE_DIR}/Resources")
 target_link_libraries(ETG PRIVATE
         etgcore  # Our consolidated core library
         utils
@@ -265,6 +259,15 @@ target_link_libraries(ETG PRIVATE
         Boost::type_index
         Boost::describe
         Threads::Threads
+)
+
+# AssetManager resolves assets relative to the executable (SDL_GetBasePath), so
+# mirror the Resources folder next to the binary after every successful build.
+add_custom_command(TARGET ETG POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+                ${CMAKE_SOURCE_DIR}/Resources
+                $<TARGET_FILE_DIR:ETG>/Resources
+        COMMENT "Copying Resources next to ETG"
 )
 
 # Windows only searches a limited set of locations for runtime DLLs. Copy all

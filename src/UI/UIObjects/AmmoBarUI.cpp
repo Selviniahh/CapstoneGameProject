@@ -1,8 +1,8 @@
 #include "AmmoBarUI.h"
 #include "../../Guns/Base/GunBase.h"
+#include "../../Managers/AssetManager.h"
 #include "../../Managers/Globals.h"
 #include "../../Managers/SpriteBatch.h"
-#include <filesystem>
 
 namespace ETG
 {
@@ -14,12 +14,10 @@ namespace ETG
 
     void AmmoBarUI::Initialize()
     {
-        const std::string ResPath = RESOURCE_PATH;
-
         // Load textures
         ammoBarTexture = std::make_shared<ETG::Texture>();
-        
-        if (!ammoBarTexture->loadFromFile(ResPath + "/UI/AmmoBarUI.png"))
+
+        if (!ammoBarTexture->loadFromFile(AssetManager::Resolve("UI/AmmoBarUI.png")))
             throw std::runtime_error("Failed to load AmmoBarUI.png");
 
         // Set up initial draw properties

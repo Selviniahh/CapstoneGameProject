@@ -1,5 +1,5 @@
 #include "UserInterface.h"
-#include <filesystem>
+#include "../Managers/AssetManager.h"
 #include "../Characters/Hero.h"
 #include "../Guns/Base/GunBase.h"
 #include "../Managers/GameState.h"
@@ -90,12 +90,9 @@ namespace ETG
 
     void UserInterface::InitializeFrameProperties()
     {
-        // Load textures
-        const std::string ResPath = RESOURCE_PATH;
-
         //NOTE: Right gun frame
         // Create right frame for gun display
-        RightGunFrame = CreateGameObjectAttached<FrameBar>(this, ResPath + "/UI/FrameRight.png", BarType::GunBar);
+        RightGunFrame = CreateGameObjectAttached<FrameBar>(this, AssetManager::Resolve("UI/FrameRight.png"), BarType::GunBar);
 
         const float RightFrameOffsetX = GameScreenSize.x * (RightFrameOffsetPerc.x / 100);
         const float RightFrameOffsetY = GameScreenSize.y * (RightFrameOffsetPerc.y / 100);
@@ -111,7 +108,7 @@ namespace ETG
 
         //NOTE: Left item frame 
         // Create left frame for active item display (positioned on left side)
-        LeftActiveItemFrame = CreateGameObjectAttached<FrameBar>(this, ResPath + "/UI/FrameLeft.png", BarType::ActiveItemBar);
+        LeftActiveItemFrame = CreateGameObjectAttached<FrameBar>(this, AssetManager::Resolve("UI/FrameLeft.png"), BarType::ActiveItemBar);
 
         const float LeftFrameOffsetX = GameScreenSize.x * (LeftFrameOffsetPerc.x / 100);
         const float LeftFrameOffsetY = GameScreenSize.y * (LeftFrameOffsetPerc.y / 100);

@@ -1,5 +1,6 @@
 #include "ActiveItemBase.h"
 #include "../../Managers/Globals.h"
+#include "Managers/AssetManager.h"
 
 ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& activateResPath, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
 {
@@ -12,16 +13,16 @@ ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::
     Origin = ETG::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
 
     // Load sound effects
-    if (!PickupSoundBuffers[0].loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Pickup1.ogg").generic_string()))
+    if (!PickupSoundBuffers[0].loadFromFile(AssetManager::Resolve("Sounds/Pickup1.ogg")))
         std::cerr << "Failed to load Pickup1.ogg sound" << std::endl;
 
-    if (!PickupSoundBuffers[1].loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Pickup2.ogg").generic_string()))
+    if (!PickupSoundBuffers[1].loadFromFile(AssetManager::Resolve("Sounds/Pickup2.ogg")))
         std::cerr << "Failed to load Pickup2.ogg sound" << std::endl;
 
-    if (!ActivateSoundBuffer.loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "Consume.ogg").generic_string()))
+    if (!ActivateSoundBuffer.loadFromFile(AssetManager::Resolve("Sounds/Consume.ogg")))
         std::cerr << "Failed to load Pickup2.ogg sound" << std::endl;
 
-    if (!ReadySoundBuffer.loadFromFile((std::filesystem::path(RESOURCE_PATH) / "Sounds" / "ItemReady.ogg").generic_string()))
+    if (!ReadySoundBuffer.loadFromFile(AssetManager::Resolve("Sounds/ItemReady.ogg")))
         std::cerr << "Failed to load ItemReady.ogg sound" << std::endl;
 
     // Connect sounds to their buffers

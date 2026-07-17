@@ -2,6 +2,7 @@
 #include "../../Guns/Base/GunBase.h"
 #include "../../Items/Active/ActiveItemBase.h"
 #include "../../Managers/SpriteBatch.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -14,10 +15,10 @@ namespace ETG
         if (!Texture->loadFromFile(texturePath))
             throw std::runtime_error("Failed to load Frame texture from: " + texturePath);
 
-        if (!FullFrameTexture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "FrameRight.png").generic_string()))
+        if (!FullFrameTexture->loadFromFile(AssetManager::Resolve("UI/FrameRight.png")))
             throw std::runtime_error("Failed to load Frame texture from: " + texturePath);
 
-        if (!FrameWithProgBarTexture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "FrameLeft.png").generic_string()))
+        if (!FrameWithProgBarTexture->loadFromFile(AssetManager::Resolve("UI/FrameLeft.png")))
             throw std::runtime_error("Failed to load Frame texture from: " + texturePath);
 
         Origin = {Texture->getSize().x / 2.f, Texture->getSize().y / 2.f};

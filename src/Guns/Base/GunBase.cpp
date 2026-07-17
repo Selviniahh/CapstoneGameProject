@@ -11,6 +11,7 @@
 #include "../../Utils/Math.h"
 #include "../../Items/Passive/PlatinumBullets.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -51,7 +52,7 @@ namespace ETG
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ProjTexture) ProjTexture = std::make_shared<ETG::Texture>();
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
-        if (!ArrowComp) ArrowComp = CreateGameObjectAttached<class ArrowComp>(this, (std::filesystem::path(RESOURCE_PATH) / "Projectiles" / "Arrow.png").string());
+        if (!ArrowComp) ArrowComp = CreateGameObjectAttached<class ArrowComp>(this, AssetManager::Resolve("Projectiles/Arrow.png"));
         if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this, "Guns/RogueSpecial/MuzzleFlash/", "RS_muzzleflash_001", "png", 0.10f);
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 

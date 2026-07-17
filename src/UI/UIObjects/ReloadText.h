@@ -4,6 +4,7 @@
 #include "../../Core/GameObjectBase.h"
 #include "../../Managers/GameState.h"
 #include "../../Utils/Math.h"
+#include "Managers/AssetManager.h"
 
 namespace ETG
 {
@@ -51,7 +52,7 @@ namespace ETG
     {
         Hero = GameState::GetInstance().GetHero();
         Texture = std::make_shared<ETG::Texture>();
-        Texture->loadFromFile((std::filesystem::path(RESOURCE_PATH) / "UI" / "ReloadText.png").generic_string());
+        Texture->loadFromFile(AssetManager::Resolve("UI/ReloadText.png"));
         Origin.x = Texture->getSize().x / 2;
         Origin.y = Texture->getSize().y / 2;
         Scale = ETG::Vector2f{0.2f, 0.2f};

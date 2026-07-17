@@ -1,6 +1,6 @@
 #include "Globals.h"
 #include <chrono>
-#include <filesystem>
+#include "AssetManager.h"
 #include "SpriteBatch.h"
 
 namespace ETG::Globals
@@ -28,10 +28,8 @@ namespace ETG::Globals
         LastTickTime = StartTime;
 
         //Load font
-        const std::filesystem::path FullPath = std::filesystem::path(RESOURCE_PATH) / "Fonts" / "SegoeUI.ttf";
-
         Font = std::make_unique<ETG::Font>();
-        if (!Font->loadFromFile(FullPath.generic_string()))
+        if (!Font->loadFromFile(AssetManager::Resolve("Fonts/SegoeUI.ttf")))
         {
             throw std::runtime_error("Failed to load font");
         }

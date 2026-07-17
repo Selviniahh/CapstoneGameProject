@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <imgui_impl_sdl3.h>
 #include "GameManager.h"
+#include "AssetManager.h"
 #include "DebugTexts.h"
 #include "InputManager.h"
 #include "SpriteBatch.h"
@@ -31,6 +32,9 @@ void ETG::GameManager::Initialize()
 {
     //Always launch fullscreen at the desktop's native resolution
     if (!SDL_WasInit(SDL_INIT_VIDEO)) SDL_InitSubSystem(SDL_INIT_VIDEO);
+
+    //Resolve the Resources root before anything tries to load an asset
+    AssetManager::Initialize();
     int desktopWidth = 1280, desktopHeight = 720;
     if (const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()))
     {

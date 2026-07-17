@@ -3,8 +3,10 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 #include <SDL3/SDL.h>
+#include <cstring>
 #include "Engine.h"
 #include "../Characters/Hero.h"
+#include "../Managers/AssetManager.h"
 #include "../Managers/GameManager.h"
 #include "../Managers/InputManager.h"
 #include "../Managers/TypeRegistry.h"
@@ -249,8 +251,14 @@ void Engine::LoadFont()
     const ImGuiIO io = ImGui::GetIO();
     io.Fonts->Clear();
 
-    const std::filesystem::path FontPath = std::filesystem::path(RESOURCE_PATH) / "Fonts" / "SegoeUI.ttf";
-    SegoeFont = io.Fonts->AddFontFromFileTTF(FontPath.generic_string().data(), 18.f);
-    if (SegoeFont == nullptr) throw std::runtime_error("Failed to load font from " + FontPath.generic_string());
+    //Load through SDL's IO layer instead of AddFontFromFileTTF (stdio), so it also works from APK assets on Android.
+    //ImGui frees the buffer with its own allocator, so the bytes are copied into an ImGui-owned block.
+    const std::vector<unsigned char> fontData = ETG::AssetManager::LoadBytes("Fonts/SegoeUI.ttf");
+    if (fontData.empty()) throw std::runtime_error("Failed to load font Fonts/SegoeUI.ttf");
+
+    void* imguiOwned = IM_ALLOC(fontData.size());
+    std::memcpy(imguiOwned, fontData.data(), fontData.size());
+    SegoeFont = io.Fonts->AddFontFromMemoryTTF(imguiOwned, static_cast<int>(fontData.size()), 18.f);
+    if (SegoeFont == nullptr) throw std::runtime_error("Failed to build ImGui font from Fonts/SegoeUI.ttf");
     //NOTE: With ImGui 1.92+ and the SDL_Renderer3 backend, the font atlas texture is managed automatically
 }
