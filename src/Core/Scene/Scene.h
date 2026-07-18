@@ -1,13 +1,8 @@
 #pragma once
 #include "../GameObjectBase.h"
-#include <vector>
-#include <memory>
 
 namespace ETG
 {
-    // Forward declaration
-    class BulletMan;
-
     class Scene : public GameObjectBase
     {
     public:
@@ -25,10 +20,7 @@ namespace ETG
         // Coordinates for spawning enemies
         float spawnX = 0.0f;
         float spawnY = 0.0f;
-        
-        // Container for all spawned enemies
-        std::vector<std::unique_ptr<BulletMan>> enemies;
-        
+
         BOOST_DESCRIBE_CLASS(Scene,(GameObjectBase),
             (spawnX, spawnY),
             (),

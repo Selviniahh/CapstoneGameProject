@@ -87,7 +87,7 @@ namespace ETG
             if (it != RegisteredTypes.end()) //if found
             {
                 //After this line executed, if above handler function not delegated, there's a problem with given obj's type. Make sure it's only GameObject not any child of it.
-                //Before calling ProcessObject, upcast with dynamic_cast
+                //Before calling ProcessObject, upcast with dynamic_cast.md
                 return it->second.handler(obj);
             }
 

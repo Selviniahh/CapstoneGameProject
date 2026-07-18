@@ -1,6 +1,7 @@
 #include "Scene.h"
-#include "../../Core/Factory.h"
 #include "../../Enemy/BulletMan/BulletMan.h"
+#include "../../Managers/GameManager.h"
+#include "../../Managers/GameState.h"
 #include <imgui.h>
 
 namespace ETG
@@ -20,43 +21,17 @@ namespace ETG
     void Scene::Update()
     {
         GameObjectBase::Update();
-
-        // Update all spawned enemies
-        for (auto& enemy : enemies)
-        {
-            if (enemy && enemy->IsValid())
-            {
-                enemy->Update();
-            }
-        }
     }
 
     void Scene::Draw()
     {
-        // Draw all spawned enemies
-        for (auto& enemy : enemies)
-        {
-            if (enemy && enemy->IsValid())
-            {
-                enemy->ComputeDrawProperties();
-                enemy->Draw();
-            }
-        }
+        //Scene has no visual of its own. Spawned objects live in GameManager's central list and draw themselves.
     }
 
     void Scene::SpawnBulletMan(float x, float y)
     {
-        // Create a new BulletMan at the specified position
-        auto newEnemy = ETG::CreateGameObjectDefault<BulletMan>(ETG::Vector2f{x, y});
-
-        // Check if creation was successful
-        if (newEnemy)
-        {
-            // Add to enemies vector
-            enemies.push_back(std::move(newEnemy));
-
-            // Log confirmation
-        }
+        //Ownership lives in GameManager's central scene list; Scene only requests the spawn
+        GameState::GetInstance().GetGameManager()->SpawnGameObject<BulletMan>(ETG::Vector2f{x, y});
     }
 
     void Scene::PopulateSpecificWidgets()
@@ -70,6 +45,13 @@ namespace ETG
         }
 
         // Display count of active enemies
-        ImGui::Text("Active enemies: %zu", enemies.size());
+        int enemyCount = 0;
+        for (const auto* obj : GameState::GetInstance().GetOrderedSceneObjs())
+        {
+            // “Nesne geçerliyse ve obj gerçekten BulletMan ise…”
+            if (GameClass::IsValid(obj) && dynamic_cast<const BulletMan*>(obj))
+                enemyCount++;
+        }
+        ImGui::Text("Active enemies: %d", enemyCount);
     }
 }

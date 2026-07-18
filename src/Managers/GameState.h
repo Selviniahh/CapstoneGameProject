@@ -11,6 +11,7 @@ namespace ETG
     class Scene;
     class GameObjectBase;
     class PassiveItemBase;
+    class GameManager;
 
 
     class GameState
@@ -23,6 +24,7 @@ namespace ETG
         }
 
         [[nodiscard]] Hero* GetHero() const { return MainHero; }
+        [[nodiscard]] GameManager* GetGameManager() const { return GameManagerPtr; } //Spawn runtime objects through this
         [[nodiscard]] std::unordered_map<std::string, GameObjectBase*>& GetSceneObjs() const { return *SceneObjs; } //Original method for fast lookups
         [[nodiscard]] std::vector<GameObjectBase*>& GetOrderedSceneObjs() {return OrderedSceneObjs;} //New, for ordered hierarchy pane 
         [[nodiscard]] ETG::Vector2f* GetEngineUISize() const { return EngineUISize; }
@@ -33,6 +35,7 @@ namespace ETG
         [[nodiscard]] std::vector<ActiveItemBase*>& GetEquippedActiveItems() { return EquippedActiveItems; }
 
         void SetHero(Hero* hero) { MainHero = hero; }
+        void SetGameManager(GameManager* gameManager) { GameManagerPtr = gameManager; }
         void SetSceneObjs(std::unordered_map<std::string, GameObjectBase*>& sceneObj) { SceneObjs = &sceneObj; }
         void SetEngineUISize(ETG::Vector2f* size) { EngineUISize = size; }
         void SetEngine(Engine* engine) { Engine = engine; }
@@ -46,6 +49,7 @@ namespace ETG
     private:
         GameState() = default;
         Hero* MainHero = nullptr;
+        GameManager* GameManagerPtr = nullptr;
 
         //Game objects (non-owning pointers)
         std::unordered_map<std::string, GameObjectBase*>* SceneObjs = nullptr;

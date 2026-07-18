@@ -31,10 +31,12 @@ ETG::GameManager::GameManager()
 void ETG::GameManager::Initialize()
 {
     //Always launch fullscreen at the desktop's native resolution
-    if (!SDL_WasInit(SDL_INIT_VIDEO)) SDL_InitSubSystem(SDL_INIT_VIDEO);
+    if (!SDL_WasInit(SDL_INIT_VIDEO)) 
+        SDL_InitSubSystem(SDL_INIT_VIDEO);
 
     //Resolve the Resources root before anything tries to load an asset
     AssetManager::Initialize();
+    
     int desktopWidth = 1280, desktopHeight = 720;
     if (const SDL_DisplayMode* desktopMode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()))
     {
@@ -49,11 +51,13 @@ void ETG::GameManager::Initialize()
     //Initialize GameState instance before anything and initialize SceneObj vector
     GameState::GetInstance();
     GameState::GetInstance().SetSceneObjs(SceneObjects);
+    GameState::GetInstance().SetGameManager(this);
 
-    //What's going on at here is only applicable for Scene object.
-    Scene = std::make_unique<class Scene>();
-    Scene->SetObjectNameToSelfClassName();
-    GameState::GetInstance().SetSceneObj(Scene.get());
+    //Scene is the ownership root every factory-created object attaches to, so it has to exist before
+    //anything else. It's still owned by WorldObjects; it's pushed into the list below in update order.
+    auto scene = std::make_unique<Scene>();
+    scene->SetObjectNameToSelfClassName();
+    GameState::GetInstance().SetSceneObj(scene.get());
 
 
     //NOTE: Secondly EngineUI needs to be initialized
@@ -62,25 +66,20 @@ void ETG::GameManager::Initialize()
     Globals::Initialize(Window);
     InputManager::InitializeDebugText();
 
-    Hero = ETG::CreateGameObjectDefault<class Hero>(ETG::Vector2f{10,10});
+    //World objects: vector order is update order. Hero has to update before the guns/enemies that read its state.
+    WorldObjects.push_back(CreateGameObjectDefault<Hero>(ETG::Vector2f{10, 10}));
+    WorldObjects.push_back(CreateGameObjectDefault<AK47>(ETG::Vector2f{-100, 100}));
+    WorldObjects.push_back(CreateGameObjectDefault<SawedOff>(ETG::Vector2f{-150, 100}));
+    WorldObjects.push_back(CreateGameObjectDefault<Magnum>(ETG::Vector2f{-200, 100}));
+    WorldObjects.push_back(std::move(scene));
+    WorldObjects.push_back(CreateGameObjectDefault<BulletMan>(ETG::Vector2f{50, 50}));
+    WorldObjects.push_back(CreateGameObjectDefault<PlatinumBullets>());
+    WorldObjects.push_back(CreateGameObjectDefault<DoubleShoot>());
 
-    UI = ETG::CreateGameObjectDefault<UserInterface>();
+    UI = CreateGameObjectDefault<UserInterface>();
 
     //Always initialize debug text last
     DebugText = std::make_unique<class DebugText>();
-
-    BulletMan = ETG::CreateGameObjectDefault<class BulletMan>(ETG::Vector2f{50,50});
-    PlatinumBullets = ETG::CreateGameObjectDefault<class PlatinumBullets>();
-    DoubleShoot = ETG::CreateGameObjectDefault<class DoubleShoot>();
-    Ak47 = ETG::CreateGameObjectDefault<class AK47>(ETG::Vector2f{-100,100});
-    SawedOff = ETG::CreateGameObjectDefault<class SawedOff>(ETG::Vector2f{-150,100});
-    Magnum = ETG::CreateGameObjectDefault<class Magnum>(ETG::Vector2f{-200,100});
-
-
-    //TODO: Work on safely destroying and error resolution for accessing destroyed object
-    // DestroyGameObject(Hero);
-
-
 }
 
 void ETG::GameManager::Update()
@@ -90,17 +89,17 @@ void ETG::GameManager::Update()
         EngineUI.Update();
         Globals::Update();
         InputManager::Update();
-        Hero->Update();
-        UI->Update();
-        Ak47->Update();
-        SawedOff->Update();
-        Magnum->Update();
-        Scene->Update();
-        BulletMan->Update();
-        PlatinumBullets->Update();
-        DoubleShoot->Update();
-    }
 
+        //Objects spawned last frame join the list before anyone updates, so they never draw un-updated
+        FlushPendingSpawns();
+
+        for (const auto& obj : WorldObjects) 
+            obj->Update();
+        UI->Update();
+
+        //Deallocate everything marked with MarkForDestroy during this frame
+        SweepDestroyedObjects();
+    }
 }
 
 void ETG::GameManager::Draw()
@@ -115,14 +114,8 @@ void ETG::GameManager::Draw()
     Window->setView(Globals::MainView);
 
     GlobSpriteBatch.begin();
-    Hero->Draw();
-    Scene->Draw();
-    BulletMan->Draw();
-    PlatinumBullets->Draw();
-    DoubleShoot->Draw();
-    Ak47->Draw();
-    SawedOff->Draw();
-    Magnum->Draw();
+    for (const auto& obj : WorldObjects) 
+        obj->Draw();
     GlobSpriteBatch.end(*Window);
 
     //NOTE: Switch to the default (un-zoomed) view for overlays (UI). These draws will be drawn in screen coords.
@@ -139,6 +132,40 @@ void ETG::GameManager::Draw()
 
     //Display the frame after everything is set to be drawn
     Window->display();
+}
+
+void ETG::GameManager::FlushPendingSpawns()
+{
+    for (auto& obj : PendingSpawns)
+        WorldObjects.push_back(std::move(obj));
+    PendingSpawns.clear();
+}
+
+void ETG::GameManager::SweepDestroyedObjects()
+{
+    bool anyDestroyed = false;
+    for (auto it = WorldObjects.begin(); it != WorldObjects.end();)
+    {
+        if ((*it)->IsPendingDestroy())
+        {
+            UnregisterGameObject((*it)->GetObjectName());
+            it = WorldObjects.erase(it); //unique_ptr deallocates the object here
+            anyDestroyed = true;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    //Components attached to a destroyed object registered themselves under their own names and died
+    //with their owner. Purge those now-dangling registry entries so the hierarchy panel stays safe.
+    if (anyDestroyed)
+    {
+        std::erase_if(SceneObjects, [](const auto& entry) { return !GameClass::IsValid(entry.second); });
+        auto& orderedObjs = GameState::GetInstance().GetOrderedSceneObjs();
+        std::erase_if(orderedObjs, [](const GameObjectBase* obj) { return !GameClass::IsValid(obj); });
+    }
 }
 
 void ETG::GameManager::ProcessEvents()

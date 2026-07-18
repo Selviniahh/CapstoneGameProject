@@ -119,7 +119,8 @@ namespace ETG
 
     void RenderWindow::requestFocus() const
     {
-        if (m_window) SDL_RaiseWindow(m_window);
+        if (m_window) 
+            SDL_RaiseWindow(m_window);
     }
 
     bool RenderWindow::hasFocus() const

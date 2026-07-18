@@ -23,13 +23,16 @@ namespace ETG
             ETG::Texture* Texture = nullptr;
         };
 
-    protected:
-        //Push back every GameObject to the SceneObj during initialization.  
-        GameObjectBase();
+    public:
+        //Public so the central scene list (vector<unique_ptr<GameObjectBase>>) can update/draw/destroy polymorphically
         virtual ~GameObjectBase();
         virtual void Initialize();
         virtual void Draw();
         virtual void Update();
+
+    protected:
+        //Push back every GameObject to the SceneObj during initialization.
+        GameObjectBase();
         // TypeID::IDType SetTypeID();
 
         //Base position of GameObjects

@@ -79,7 +79,7 @@ void ETG::Hero::Initialize()
         }
 
         //If the collision is with enemy projectile, damage our hero and destroy the enemy projectile
-        //eventData.Other->Owner = Projectile's gun. I didn't write that cuz dynamic_cast is expensive
+        //eventData.Other->Owner = Projectile's gun. I didn't write that cuz dynamic_cast.md is expensive
         if (eventData.Other->IsA<ProjectileBase>())
         {
             auto* projectile = eventData.Other->As<ProjectileBase>();
