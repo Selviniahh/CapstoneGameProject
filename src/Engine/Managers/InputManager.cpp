@@ -1,14 +1,10 @@
 #include "InputManager.h"
 #include <complex>
-#include "../../Game/Managers/GameManager.h"
-#include "../../Game/Managers/GameState.h"
-#include "../../Game/Characters/Hero.h"
+#include "Globals.h"
 #include "../Editor/Engine.h"
 
 void ETG::InputManager::Update()
 {
-    if (!HeroPtr) HeroPtr = GameState::GetInstance().GetHero();
-
     if (!Engine::IsGameWindowFocused()) return;
 
 
@@ -26,9 +22,6 @@ void ETG::InputManager::Update()
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D)) direction.x++;
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::W)) direction.y--;
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::S)) direction.y++;
-
-    //shooting
-    Hero::IsShooting = ETG::Mouse::isButtonPressed(ETG::Mouse::Left);
 
     //Camera Effects:
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::E)) Globals::MainView.zoom(1.0f - adjustedZoomFactor);
@@ -77,12 +70,6 @@ float ETG::InputManager::AdjustZoomFactor()
     float adjustedZoomFactor = ZoomFactor * std::sqrt(scaleRatio);
     adjustedZoomFactor = std::clamp(adjustedZoomFactor, MinScaleSpeed, MaxScaleSpeed);
     return adjustedZoomFactor;
-}
-
-float ETG::InputManager::GetMouseAngleRelativeToHero()
-{
-    const ETG::Vector2f diff = WorldMousePos - HeroPtr->GetPosition();
-    return std::atan2(diff.y, diff.x);
 }
 
 ETG::Vector2f ETG::InputManager::GetRelativeMousePos()

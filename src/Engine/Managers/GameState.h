@@ -1,15 +1,14 @@
 #pragma once
 #include <vector>
-#include "../../Engine/Core/Scene/Scene.h"
-#include "../../Engine/Editor/Engine.h"
-#include "../Items/Active/ActiveItemBase.h"
-#include "../Items/Passive/PassiveItemBase.h"
+#include "../Core/Scene/Scene.h"
+#include "../Editor/Engine.h"
 
 namespace ETG
 {
     class Hero;
     class Scene;
     class GameObjectBase;
+    class ActiveItemBase;
     class PassiveItemBase;
     class GameManager;
 

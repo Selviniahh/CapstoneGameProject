@@ -2,7 +2,7 @@
 #include "FrameLeftProgressBar.h"
 #include "../../Items/Active/ActiveItemBase.h"
 #include "../../../Engine/Managers/Globals.h"
-#include "../../Managers/GameState.h"
+#include "../../../Engine/Managers/GameState.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"

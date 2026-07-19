@@ -129,26 +129,10 @@ void UIUtils::DisplayTexture(const std::shared_ptr<ETG::Texture>& value)
     }
 }
 
-// Function to display the variant AnimationKey
+// Function to display the AnimationKey (the key stores its human-readable name at construction)
 void UIUtils::DisplayAnimationKey(const AnimationKey& key)
 {
-    std::visit([](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        
-        if constexpr (std::is_same_v<T, std::string>)
-        {
-            ImGui::Text("String: %s", arg.c_str());
-        }
-        else if constexpr (std::is_enum_v<T>)
-        {
-            auto enumType = ETG::EnumToString<T>(arg);
-            ImGui::Text("%s ", enumType);
-        }
-        else if constexpr (std::is_same_v<T, int>)
-        {
-            ImGui::Text("Int: %d", arg);
-        }
-    }, key);
+    ImGui::Text("%s", key.Name.c_str());
 }
 
 void UIUtils::DisplayAnimationManager(const char* label, AnimationManager& manager)

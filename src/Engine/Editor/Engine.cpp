@@ -5,9 +5,9 @@
 #include <SDL3/SDL.h>
 #include <cstring>
 #include "Engine.h"
-#include "../../Game/Characters/Hero.h"
+#include "../Core/ComponentBase.h"
 #include "../Managers/AssetManager.h"
-#include "../../Game/Managers/GameManager.h"
+#include "../Managers/GameState.h"
 #include "../Managers/InputManager.h"
 #include "../Managers/TypeRegistry.h"
 #include "../../Utils/Math.h"
@@ -42,7 +42,6 @@ void Engine::Initialize()
     std::cout << std::unitbuf;
 
     LoadFont();
-    TypeRegistry::InitializeTypeRegistry();
 }
 
 void Engine::Update()
@@ -99,8 +98,8 @@ bool Engine::IsGameWindowFocused()
         InputManager::LeftClickRequired = true;
 
     // Process events to check for mouse release
-    if (InputManager::LeftClickRequired && GameManager::GameEvent.type == SDL_EVENT_MOUSE_BUTTON_UP &&
-        ETG::GameManager::GameEvent.button.button == SDL_BUTTON_LEFT)
+    if (InputManager::LeftClickRequired && InputManager::GameEvent.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+        InputManager::GameEvent.button.button == SDL_BUTTON_LEFT)
     {
         InputManager::LeftClickRequired = false;
     }

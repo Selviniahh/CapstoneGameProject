@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include "../GameObjectBase.h"
 
 namespace ETG
@@ -13,16 +14,12 @@ namespace ETG
         void Draw() override;
         void PopulateSpecificWidgets() override;
 
-        // Method to spawn BulletMan (implementation in .cpp)
-        void SpawnBulletMan(float x, float y);
-
-    private:
-        // Coordinates for spawning enemies
-        float spawnX = 0.0f;
-        float spawnY = 0.0f;
+        //Game-specific editor widgets (spawn buttons etc.) are injected from the game side,
+        //so the engine's Scene never has to know concrete game types.
+        std::function<void()> PopulateGameWidgets;
 
         BOOST_DESCRIBE_CLASS(Scene,(GameObjectBase),
-            (spawnX, spawnY),
+            (),
             (),
             ())
     };

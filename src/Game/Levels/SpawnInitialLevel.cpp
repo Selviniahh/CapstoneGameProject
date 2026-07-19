@@ -1,4 +1,5 @@
 #include "SpawnInitialLevel.h"
+#include <imgui.h>
 #include "../Managers/GameManager.h"
 #include "../Characters/Hero.h"
 #include "../Guns/AK-47/AK47.h"
@@ -17,4 +18,25 @@ void ETG::SpawnInitialLevel::Spawn(GameManager& game)
     game.SpawnGameObject<BulletMan>(Vector2f{50, 50});
     game.SpawnGameObject<PlatinumBullets>();
     game.SpawnGameObject<DoubleShoot>();
+
+    //Game-specific editor widgets on the Scene panel (the engine's Scene only exposes the hook)
+    GameState::GetInstance().GetSceneObj()->PopulateGameWidgets = [&game]
+    {
+        static float spawnPos[2] = {0.f, 0.f};
+        ImGui::InputFloat2("Spawn Pos", spawnPos);
+
+        if (ImGui::Button("Spawn BulletMan"))
+        {
+            game.SpawnGameObject<BulletMan>(Vector2f{spawnPos[0], spawnPos[1]});
+        }
+
+        // Display count of active enemies
+        int enemyCount = 0;
+        for (const auto* obj : GameState::GetInstance().GetSceneObjs())
+        {
+            if (GameClass::IsValid(obj) && dynamic_cast<const BulletMan*>(obj))
+                enemyCount++;
+        }
+        ImGui::Text("Active enemies: %d", enemyCount);
+    };
 }

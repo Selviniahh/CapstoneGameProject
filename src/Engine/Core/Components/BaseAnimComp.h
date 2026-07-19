@@ -2,6 +2,7 @@
 #include <memory>
 #include <imgui.h>
 #include "../ComponentBase.h"
+#include "../Direction.h"
 #include "../../Animation/AnimationManager.h"
 #include "../../../Utils/Interface/IAnimationComponent.h"
 #include "../../Editor/UI/UIUtils.h"

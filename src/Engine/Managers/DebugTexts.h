@@ -1,16 +1,15 @@
 #pragma once
 #include "InputManager.h"
-#include "../../Game/Managers/GameState.h"
+#include "GameState.h"
 #include "Globals.h"
-#include "../../Utils/DirectionUtils.h"
-#include "../../Game/Characters/Components/HeroMoveComp.h"
-#include "../../Game/Characters/Hero.h"
 #include "../../Utils/StrManipulateUtil.h"
 
 namespace ETG
 {
     class DebugText;
-    
+
+    //Game code queues its own lines each frame (hero state, AI info etc.) via QueueText;
+    //the engine only draws generic engine-level info itself.
     class DebugTextManager
     {
         inline static std::vector<std::string> queuedTexts;
@@ -29,12 +28,8 @@ namespace ETG
     class DebugText
     {
     public:
-        Hero* HeroPtr = nullptr;
-        
         void Draw(ETG::RenderWindow& window)
         {
-            if (!HeroPtr) HeroPtr = GameState::GetInstance().GetHero();
-            // if (!SceneObjects) SceneObjects = &GameState::GetInstance().GetSceneObj();
             const auto& SceneObjects = GameState::GetInstance().GetSceneObjs();
 
             // Reset textPos to starting position each frame
@@ -50,28 +45,18 @@ namespace ETG
             //NOTE: IMPORTANT!!! Mouse position relative to view. This is so important because when hero rotating around mouse, if view zoomed or moved, we need to take View into account
             DrawDebugText("View Relative Mouse world Position: " + std::to_string(InputManager::ViewLocalMousePos.x) + " " + std::to_string(InputManager::ViewLocalMousePos.y), window);
 
-            DrawDebugText(" Mouse angle: " + std::to_string(Hero::MouseAngle), window);
-
             //Represents the mouse position as if the View were neither zoomed nor moved
             DrawDebugText("View ignored relative Mouse world Position AKA World Mouse Pos: " + std::to_string(InputManager::WorldMousePos.x) + " " + std::to_string(InputManager::WorldMousePos.y), window);
-
-            //Mouse Relative to hero
-            DrawDebugText("Mouse Relative to Hero: " + std::to_string(ETG::Mouse::getPosition().x - HeroPtr->GetPosition().x) + ", " + std::to_string(ETG::Mouse::getPosition().y - HeroPtr->GetPosition().y), window);
 
             // Moving state
             DrawDebugText("Moving: " + std::string(InputManager::IsMoving() ? "true" : "false"), window);
             DrawDebugText("WindowSize: " + std::to_string(Globals::ScreenSize.x) + " " + std::to_string(Globals::ScreenSize.y), window);
 
             DrawDebugText("FPS: " + std::to_string(1 / Globals::FrameTick), window);
-            DrawDebugText("Hero position: " + std::to_string(HeroPtr->GetPosition().x) + " " + std::to_string(HeroPtr->GetPosition().y), window);
             DrawDebugText("Zoom Scale: " + std::to_string(InputManager::ZoomScale), window);
 
-            // const ETG::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
             DrawDebugText("View Center: " + std::to_string(Globals::MainView.getCenter().x) + " " + std::to_string(Globals::MainView.getCenter().y), window);
             DrawDebugText("View Size: " + std::to_string(Globals::MainView.getSize().x) + " " + std::to_string(Globals::MainView.getSize().y), window);
-            DrawDebugText("CurrentDirection: " + std::string(EnumToString(Hero::CurrentDirection)), window);
-            DrawDebugText(std::string("Is Shooting: ") + (Hero::IsShooting ? "True" : "False"), window);
-            DrawDebugText("Hero Velocity: " + std::to_string(HeroPtr->MoveComp->Velocity.x) + " " + std::to_string(HeroPtr->MoveComp->Velocity.y), window);
 
             DebugTextManager::DrawQueuedTexts(window);
         }

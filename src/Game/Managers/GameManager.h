@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <SDL3/SDL_events.h>
 #include "../../Engine/Managers/Globals.h"
 #include "../../Engine/Editor/Engine.h"
 #include "../../Engine/Core/Factory.h"
@@ -54,8 +53,5 @@ namespace ETG
 
         bool HasFocus = true;
         std::unique_ptr<DebugText> DebugText;
-
-    public:
-        static SDL_Event GameEvent;
     };
 }

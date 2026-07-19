@@ -2,7 +2,7 @@
 #include <cmath>
 #include "../../Characters/Hero.h"
 #include "../../../Engine/Core/GameObjectBase.h"
-#include "../../Managers/GameState.h"
+#include "../../../Engine/Managers/GameState.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"
 

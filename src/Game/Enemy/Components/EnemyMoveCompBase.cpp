@@ -1,6 +1,6 @@
 #include "EnemyMoveCompBase.h"
 #include "../../../Engine/Core/GameObjectBase.h"
-#include "../../Managers/GameState.h"
+#include "../../../Engine/Managers/GameState.h"
 #include "../../Characters/Hero.h"
 #include "../../../Utils/Math.h"
 #include "../EnemyBase.h"

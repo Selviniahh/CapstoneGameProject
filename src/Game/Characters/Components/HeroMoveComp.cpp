@@ -1,7 +1,7 @@
 #include "HeroMoveComp.h"
 #include "HeroAnimComp.h"
 #include "../../../Engine/Managers/InputManager.h"
-#include "../../Managers/GameState.h"
+#include "../../../Engine/Managers/GameState.h"
 #include "../../../Utils/Math.h"
 #include "../Hero.h"  // For Hero
 #include "../../../Utils/DirectionUtils.h"

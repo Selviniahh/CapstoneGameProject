@@ -10,8 +10,8 @@
 #include "../../Engine/Core/Scene/Scene.h"
 #include "../UI/UserInterface.h"
 #include "../Levels/SpawnInitialLevel.h"
+#include "RegisterGameTypes.h"
 
-SDL_Event ETG::GameManager::GameEvent{};
 using namespace ETG::Globals;
 
 ETG::GameManager::~GameManager() = default;
@@ -54,6 +54,9 @@ void ETG::GameManager::Initialize()
 
     //NOTE: Secondly EngineUI needs to be initialized
     EngineUI.Initialize();
+
+    //Reflection type list is game content; the engine only provides the registry machinery
+    RegisterGameTypes();
 
     Globals::Initialize(Window);
     InputManager::InitializeDebugText();
@@ -160,7 +163,7 @@ void ETG::GameManager::ProcessEvents()
     SDL_Event event;
     while (Window->pollEvent(event))
     {
-        GameEvent = event;
+        InputManager::GameEvent = event;
 
         if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) HasFocus = false;
         if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED)

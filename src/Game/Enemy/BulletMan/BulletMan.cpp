@@ -2,7 +2,6 @@
 #include <filesystem>
 #include "../../../Engine/Platform/Platform.h"
 #include "../../../Engine/Core/Factory.h"
-#include "../../../Engine/Managers/DebugTexts.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Utils/Math.h"
 #include "Components/BulletManAnimComp.h"

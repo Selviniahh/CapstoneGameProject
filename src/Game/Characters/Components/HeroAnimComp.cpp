@@ -3,7 +3,7 @@
 #include "HeroMoveComp.h"
 #include "InputComponent.h"
 #include "../../Guns/Base/GunBase.h"
-#include "../../Managers/GameState.h"
+#include "../../../Engine/Managers/GameState.h"
 #include "../../Characters/Hero.h"
 
 namespace ETG

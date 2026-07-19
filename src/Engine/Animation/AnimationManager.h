@@ -1,52 +1,40 @@
 #pragma once
 
-#include <any>
-#include <complex>
-#include <unordered_map>
-#include <variant>
 #include <string>
+#include <typeindex>
+#include <unordered_map>
 #include <memory>
 #include "Animation.h"
-#include "../../Game/Managers/Enum/StateEnums.h"
+#include "../../Utils/StrManipulateUtil.h"
 #include "boost/describe.hpp"
 
-template <typename>
-struct always_false : std::false_type
+//Type-erased animation key: any described enum, int or string works as a key without the
+//engine having to know the game's enum types (they used to be hardcoded in a std::variant here).
+struct AnimationKey
 {
+    std::type_index Type{typeid(void)};
+    long long Value{};
+    std::string Name{}; //Human-readable form; also what the editor displays
+
+    AnimationKey() = default;
+    AnimationKey(const char* s) : Type(typeid(std::string)), Name(s) {}
+    AnimationKey(std::string s) : Type(typeid(std::string)), Name(std::move(s)) {}
+    AnimationKey(const int v) : Type(typeid(int)), Value(v), Name(std::to_string(v)) {}
+
+    template <typename E, std::enable_if_t<std::is_enum_v<E>, int>  = 0>
+    AnimationKey(E e) : Type(typeid(E)), Value(static_cast<long long>(e)), Name(ETG::EnumToString(e)) {}
+
+    bool operator==(const AnimationKey& other) const
+    {
+        return Type == other.Type && Value == other.Value && Name == other.Name;
+    }
 };
 
-//Variant necessary to provide hashing based on the given type.   
-using AnimationKey = std::variant<std::string, int, ETG::HeroStateEnum, ETG::HeroRunEnum, ETG::BulletManIdleEnum, ETG::BulletManRunEnum, ETG::BulletManShootingEnum, ETG::BulletManHitEnum,
-ETG::HeroIdleEnum, ETG::HeroDashEnum, ETG::GunStateEnum, ETG::EnemyStateEnum, ETG::HeroHit, ETG::HeroDeath, ETG::BulletManDeathEnum>;
-
-// 3) Custom hash + equality
-//Based on given key of variant, convert it to hash
 struct AnimationKeyHash
 {
     std::size_t operator()(const AnimationKey& key) const
     {
-        return std::visit([]<typename T0>(T0&& arg) -> std::size_t
-        {
-            using T = std::decay_t<T0>;
-            if constexpr (std::is_same_v<T, std::string>)
-            {
-                return std::hash<std::string>{}(arg);
-            }
-            else if constexpr (std::is_same_v<T, int>)
-            {
-                return std::hash<int>{}(arg);
-            }
-            else if constexpr (std::is_enum_v<T>)
-            {
-                using UnderlyingT = std::underlying_type_t<T>;
-                return std::hash<UnderlyingT>{}(static_cast<UnderlyingT>(arg));
-            }
-            else
-            {
-                static_assert(always_false<T>::value, "Unhandled key type");
-            }
-            return -1;
-        }, key);
+        return key.Type.hash_code() ^ (std::hash<long long>{}(key.Value) << 1) ^ (std::hash<std::string>{}(key.Name) << 2);
     }
 };
 
@@ -54,7 +42,7 @@ struct AnimationKeyEqual
 {
     bool operator()(const AnimationKey& lhs, const AnimationKey& rhs) const
     {
-        return lhs == rhs; // variant type supports operator==
+        return lhs == rhs;
     }
 };
 

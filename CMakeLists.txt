@@ -79,6 +79,7 @@ set(CORE_SOURCES
         src/Engine/Core/GameClass.cpp
         src/Engine/Core/GameClass.h
         src/Engine/Core/TypeID.h
+        src/Engine/Core/Direction.h
         src/Engine/Core/Scene/Scene.cpp
         src/Engine/Core/Scene/Scene.h
         src/Engine/Core/Components/BaseHealthComp.cpp
@@ -125,7 +126,9 @@ set(MANAGERS_SOURCES
         src/Engine/Managers/AssetManager.h
         src/Engine/Managers/Globals.cpp
         src/Game/Managers/GameManager.cpp
-        src/Game/Managers/GameState.h
+        src/Game/Managers/RegisterGameTypes.cpp
+        src/Game/Managers/RegisterGameTypes.h
+        src/Engine/Managers/GameState.h
         src/Engine/Managers/SpriteBatch.cpp
         src/Engine/Managers/InputManager.cpp
         src/Engine/Managers/TypeRegistry.h

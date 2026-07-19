@@ -1,5 +1,5 @@
 #include "GameObjectBase.h"
-#include "../../Game/Managers/GameState.h"
+#include "../Managers/GameState.h"
 #include <boost/type_index.hpp>
 #include <imgui.h>
 #include <iostream>

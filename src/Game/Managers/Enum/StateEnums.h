@@ -1,5 +1,8 @@
 #pragma once
 #include <boost/describe.hpp>
+//Direction moved to the engine (BaseAnimComp depends on it); re-exported here so game code
+//that includes StateEnums.h keeps seeing ETG::Direction.
+#include "../../../Engine/Core/Direction.h"
 
 namespace ETG
 {
@@ -121,19 +124,5 @@ namespace ETG
         Reload
     };
     BOOST_DESCRIBE_ENUM(GunStateEnum, Idle, Shoot, Reload)
-
-    enum class Direction
-    {
-        Right,
-        FrontHandRight,
-        FrontHandLeft,
-        Left,
-        BackDiagonalLeft,
-        BackHandLeft,
-        BackHandRight,
-        BackDiagonalRight,
-        Front_For_Dash //This will only set when Dashing with S key other than this, this value will never be set again 
-    };
-    BOOST_DESCRIBE_ENUM(Direction, Right, FrontHandRight, FrontHandLeft, Left, BackDiagonalLeft, BackHandLeft, BackHandRight, BackDiagonalRight, Front_For_Dash)
 
 }

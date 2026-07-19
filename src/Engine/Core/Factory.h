@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "../../Game/Managers/GameState.h"
+#include "../Managers/GameState.h"
 
 class Engine;
 

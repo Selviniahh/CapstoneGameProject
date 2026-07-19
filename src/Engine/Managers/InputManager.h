@@ -1,10 +1,10 @@
 #pragma once
 
+#include <SDL3/SDL_events.h>
 #include "../Platform/Platform.h"
 
 namespace ETG
 {
-    class Hero;
     class InputManager
     {
     private:
@@ -16,10 +16,10 @@ namespace ETG
         inline static float MinMoveSpeed = 0.25f;
         inline static float MaxMoveSpeed = 3.f;
 
-        //Hero Pointer. To avoid reference fetching in every frame, Hero ptr defined as member variable
-        inline static Hero* HeroPtr = nullptr;
-
     public:
+        //Last SDL event of the frame (set by GameManager::ProcessEvents); the editor reads this for focus handling
+        inline static SDL_Event GameEvent{};
+
         inline static ETG::Vector2f direction{};
         inline static float ZoomScale{};
         inline static ETG::Text debugText;
@@ -46,10 +46,7 @@ namespace ETG
 
         static float AdjustZoomFactor();
 
-        // In InputManager.h
-        static float GetMouseAngleRelativeToHero();
-
-        //I spent so much time to correctly get mouse position after zoom or move with View.  
+        //I spent so much time to correctly get mouse position after zoom or move with View.
         static ETG::Vector2f GetRelativeMousePos();
 
     private:

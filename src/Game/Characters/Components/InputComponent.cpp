@@ -5,6 +5,7 @@
 #include "HeroMoveComp.h"
 #include "../Hero.h"
 #include "../../Managers/GameManager.h"
+#include "../../../Engine/Editor/Engine.h"
 #include "../../../Engine/Managers/InputManager.h"
 #include "../../../Utils/DirectionUtils.h"
 #include "../../../Utils/Math.h"
@@ -24,6 +25,11 @@ namespace ETG
 
     void InputComponent::Update(Hero& hero) const
     {
+        //Shooting input lives here (game side); only registered while the game window has focus,
+        //matching the old InputManager behavior of freezing input when the editor UI captures the mouse.
+        if (Engine::IsGameWindowFocused())
+            Hero::IsShooting = ETG::Mouse::isButtonPressed(ETG::Mouse::Left);
+
         UpdateDirection(hero);
         HandleGunSwitch(hero);
         HandleDash(hero);
@@ -37,8 +43,10 @@ namespace ETG
 
     void InputComponent::UpdateDirection(Hero& hero) const
     {
-        // Convert mouse angle to [0..360)
-        float angle = Math::RadiansToDegrees(InputManager::GetMouseAngleRelativeToHero());
+        // Convert mouse angle to [0..360). Hero-relative angle is game logic, so it's computed
+        // here from the engine's world mouse position instead of inside InputManager.
+        const ETG::Vector2f mouseDiff = InputManager::WorldMousePos - hero.GetPosition();
+        float angle = Math::RadiansToDegrees(std::atan2(mouseDiff.y, mouseDiff.x));
         if (angle < 0.f) angle += 360.f;
 
         // Store on the Hero (used for gun rotation)
