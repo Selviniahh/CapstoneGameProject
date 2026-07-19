@@ -2,7 +2,7 @@
 #include "../../Engine/Managers/AssetManager.h"
 #include "../Characters/Hero.h"
 #include "../Guns/Base/GunBase.h"
-#include "../../Engine/Managers/GameState.h"
+#include "../../Engine/Editor/Engine.h"
 #include "../Items/Active/ActiveItemBase.h"
 #include "../Items/Passive/PassiveItemBase.h"
 #include "../../Engine/Managers/Globals.h"
@@ -20,14 +20,14 @@ namespace ETG
 
     void UserInterface::Initialize()
     {
-        if (!hero) hero = GameState::GetInstance().GetHero();
+        if (!hero) hero = Hero::Get();
         CurrentGun = hero->GetCurrentHoldingGun();
         if (!CurrentGun) throw std::runtime_error("Current Gun not found");
 
         // Calculate game screen size (accounting for engine UI), against the fixed logical
         // canvas rather than the real window size, so it never needs recalculating on resize.
         GameScreenSize = {
-            static_cast<float>(ETG::RenderWindow::LogicalSize.x) - GameState::GetInstance().GetEngineUISize()->x,
+            static_cast<float>(ETG::RenderWindow::LogicalSize.x) - Engine::Get()->GetEngineUISize().x,
             static_cast<float>(ETG::RenderWindow::LogicalSize.y)
         };
 
@@ -56,9 +56,9 @@ namespace ETG
         RightGunFrame->Update();
 
         //Get current Active item and update propetries
-        if (!GameState::GetInstance().GetEquippedActiveItems().empty())
+        if (!hero->EquippedActiveItems.empty())
         {
-            CurrActiveItem = GameState::GetInstance().GetEquippedActiveItems()[0];
+            CurrActiveItem = hero->EquippedActiveItems[0];
             LeftActiveItemFrame->SetActiveItem(CurrActiveItem);
             LeftProgressBar->SetActiveItem(CurrActiveItem);
         }
@@ -171,7 +171,7 @@ namespace ETG
     void UserInterface::DrawEquippedPassiveItemsAtLeftUI() const
     {
         int counter = 1;
-        for (const auto& items : GameState::GetInstance().GetEquippedPassiveItems())
+        for (const auto& items : hero->EquippedPassiveItems)
         {
             const ETG::Vector2f pos = {
                 InitialLeftOffsetX + (LeftXOffsetPerItem * counter++),

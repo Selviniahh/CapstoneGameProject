@@ -2,7 +2,6 @@
 #include "FrameLeftProgressBar.h"
 #include "../../Items/Active/ActiveItemBase.h"
 #include "../../../Engine/Managers/Globals.h"
-#include "../../../Engine/Managers/GameState.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"
@@ -86,7 +85,7 @@ void ETG::FrameLeftProgressBar::Draw()
     GameObjectBase::Draw();
 
     // Draw rectangle with higher depth to ensure it appears on top
-    ETG::RenderWindow* window = GameState::GetInstance().GetRenderWindow();
+    ETG::RenderWindow* window = ETG::Globals::Window.get();
     if (window && activeItem && activeItem->ActiveItemState != ActiveItemState::Ready)
     {
         // Fallback direct drawing in case SpriteBatch method fails

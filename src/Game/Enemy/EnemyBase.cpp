@@ -13,7 +13,7 @@
 
 namespace ETG
 {
-    EnemyBase::EnemyBase() : Hand(nullptr), Hero(GameState::GetInstance().GetHero())
+    EnemyBase::EnemyBase() : Hand(nullptr), Hero(Hero::Get())
     {
         CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
         CollisionComp->CollisionRadius = 4.f;
@@ -73,7 +73,7 @@ namespace ETG
             MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
 
             //Clear the delegates to not let any interaction
-            MoveComp->OnForceStart.Clear();
+            MoveComp->OnForVSYNC has been enabled by default. It would be important when I need to migrate to androidceStart.Clear();
             MoveComp->OnForceEnd.Clear();
             HealthComp->OnDamageTaken.Clear();
             CollisionComp->SetCollisionEnabled(false);

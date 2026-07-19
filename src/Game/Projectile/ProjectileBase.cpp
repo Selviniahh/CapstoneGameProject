@@ -79,7 +79,7 @@ void ETG::ProjectileBase::Update()
 void ETG::ProjectileBase::Draw()
 {
     IsVisible = true;
-    if (CollisionComp) CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
     auto& DrawableProps = GetDrawProperties();
     ETG::Sprite frame;
     frame.setTexture(*Texture);

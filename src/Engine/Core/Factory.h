@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "../Managers/GameState.h"
+#include "Scene/Scene.h"
 
 class Engine;
 
@@ -21,7 +21,7 @@ namespace ETG
     std::unique_ptr<T> CreateGameObjectDefault(Args&&... args)
     {
         auto obj = std::make_unique<T>(std::forward<Args>(args)...);
-        obj->Owner = GameState::GetInstance().GetSceneObj();
+        obj->Owner = Scene::Get();
         obj->template SetTypeInfo<T>(); //Set the type ID for this object
 
 
@@ -45,14 +45,13 @@ namespace ETG
 
     inline void RegisterGameObject(GameObjectBase* obj)
     {
-        GameState::GetInstance().GetSceneObjs().push_back(obj);
+        Scene::Get()->SceneObjs.push_back(obj);
     }
 
     //For now this function is only for updating hierarchy tab for removed game objects.
     inline void UnregisterGameObject(GameObjectBase* obj)
     {
-        auto& sceneObjs = GameState::GetInstance().GetSceneObjs();
-        std::erase(sceneObjs, obj);
+        std::erase(Scene::Get()->SceneObjs, obj);
     }
 
     //NOTE: NOT USED YET. For now I am unsure how this function should be. Game objects always constructed as unique_ptr. Removing them from container will already deallocate the game object. So

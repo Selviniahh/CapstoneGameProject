@@ -39,17 +39,12 @@ void ETG::GameManager::Initialize()
     Window = std::make_shared<ETG::RenderWindow>(static_cast<unsigned>(desktopWidth), static_cast<unsigned>(desktopHeight), "Enter The Gungeon Clone (SDL3)", true);
     Window->requestFocus();
     Window->setVSyncEnabled(true);
-    GameState::GetInstance().SetRenderWindow(Window.get());
-
-    //Initialize GameState instance before anything
-    GameState::GetInstance();
-    GameState::GetInstance().SetGameManager(this);
 
     //Scene is the ownership root every factory-created object attaches to, so it has to exist before
-    //anything else. It's still owned by WorldObjects; it's pushed into the list below in update order.
+    //anything else (constructing it publishes it as Scene::GetSelf() via SingleInstance). It's still
+    //owned by WorldObjects; it's pushed into the list below in update order.
     auto scene = std::make_unique<Scene>();
     scene->SetObjectNameToSelfClassName();
-    GameState::GetInstance().SetSceneObj(scene.get());
 
 
     //NOTE: Secondly EngineUI needs to be initialized
@@ -150,8 +145,7 @@ void ETG::GameManager::SweepDestroyedObjects()
     //with their owner. Purge those now-dangling registry entries so the hierarchy panel stays safe.
     if (anyDestroyed)
     {
-        auto& sceneObjs = GameState::GetInstance().GetSceneObjs();
-        std::erase_if(sceneObjs, [](const GameObjectBase* obj) { return !GameClass::IsValid(obj); });
+        std::erase_if(Scene::Get()->SceneObjs, [](const GameObjectBase* obj) { return !GameClass::IsValid(obj); });
     }
 }
 

@@ -5,6 +5,7 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
+#include "../../../Engine/Managers/Globals.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Active/Potion_of_Gun_Friendship.png"),
@@ -35,8 +36,8 @@ void ETG::DoubleShoot::Initialize()
 
             PlayRandomPickupSound();
 
-            //Add self to equipped passive items list
-            GameState::GetInstance().GetEquippedActiveItems().push_back(this);
+            //Add self to the hero's equipped active items
+            heroObj->EquippedActiveItems.push_back(this);
         }
     });
 }
@@ -52,7 +53,7 @@ void ETG::DoubleShoot::Update()
     if (ActiveItemState == ActiveItemState::Cooldown)
     {
         // Remove the modifier when effect ends
-        const auto hero = GameState::GetInstance().GetHero();
+        const auto hero = Hero::Get();
         const auto gun = hero->GetCurrentHoldingGun();
         if (gun->modifierManager.HasModifier("MultiShot"))
         {
@@ -64,7 +65,7 @@ void ETG::DoubleShoot::Update()
 void ETG::DoubleShoot::Draw()
 {
     ActiveItemBase::Draw();
-    CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    CollisionComp->Visualize(*ETG::Globals::Window);
 }
 
 void ETG::DoubleShoot::RequestUsage()
@@ -79,7 +80,7 @@ void ETG::DoubleShoot::RequestUsage()
         ConsumeTimer = 0;
 
         // Apply the double-shoot effect
-        const auto hero = GameState::GetInstance().GetHero();
+        const auto hero = Hero::Get();
         ApplyPerk(hero);
     }
 }

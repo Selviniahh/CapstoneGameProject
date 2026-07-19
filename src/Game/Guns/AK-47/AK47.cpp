@@ -4,6 +4,7 @@
 #include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Characters/Hero.h"
+#include "../../../Engine/Managers/Globals.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
@@ -68,7 +69,7 @@ void ETG::AK47::Update()
 void ETG::AK47::Draw()
 {
     GunBase::Draw();
-    if (CollisionComp) CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
 }
 
 ETG::AK47AnimComp::AK47AnimComp()

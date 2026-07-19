@@ -1,6 +1,6 @@
 #pragma once
 #include "InputManager.h"
-#include "GameState.h"
+#include "../Core/Scene/Scene.h"
 #include "Globals.h"
 #include "../../Utils/StrManipulateUtil.h"
 
@@ -30,7 +30,7 @@ namespace ETG
     public:
         void Draw(ETG::RenderWindow& window)
         {
-            const auto& SceneObjects = GameState::GetInstance().GetSceneObjs();
+            const auto& SceneObjects = Scene::Get()->SceneObjs;
 
             // Reset textPos to starting position each frame
             InputManager::textPos = {0.f, -20.f};

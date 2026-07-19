@@ -2,6 +2,8 @@
 #include <SDL3/SDL_main.h>
 #include "src/Game/Managers/GameManager.h"
 
+//The main entry point. The file has been kept as simple as possible. 
+//The whole initialization has been handled in GameManager
 int main(int argc, char* argv[])
 {
     ETG::GameManager GM{};

@@ -10,6 +10,7 @@ namespace ETG
     class DebugText;
     class UserInterface;
 
+    //The initialization, Update and Draw cycle of all objects are handled here. 
     class GameManager
     {
     public:

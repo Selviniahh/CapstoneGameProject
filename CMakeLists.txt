@@ -78,6 +78,7 @@ set(CORE_SOURCES
         src/Engine/Core/Factory.h
         src/Engine/Core/GameClass.cpp
         src/Engine/Core/GameClass.h
+        src/Engine/Core/SingleInstance.h
         src/Engine/Core/TypeID.h
         src/Engine/Core/Direction.h
         src/Engine/Core/Scene/Scene.cpp
@@ -128,7 +129,6 @@ set(MANAGERS_SOURCES
         src/Game/Managers/GameManager.cpp
         src/Game/Managers/RegisterGameTypes.cpp
         src/Game/Managers/RegisterGameTypes.h
-        src/Engine/Managers/GameState.h
         src/Engine/Managers/SpriteBatch.cpp
         src/Engine/Managers/InputManager.cpp
         src/Engine/Managers/TypeRegistry.h

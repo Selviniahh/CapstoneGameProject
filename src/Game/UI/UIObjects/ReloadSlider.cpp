@@ -14,7 +14,7 @@ ETG::ReloadSlider::ReloadSlider()
 
 void ETG::ReloadSlider::Initialize()
 {
-    Hero = GameState::GetInstance().GetHero();
+    Hero = Hero::Get();
 
     SliderBar->loadFromFile(AssetManager::Resolve("UI/Slider.png"));
     SliderValue->loadFromFile(AssetManager::Resolve("UI/SliderValue.png"));

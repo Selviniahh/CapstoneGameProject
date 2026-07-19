@@ -10,6 +10,7 @@
 #include "../../Guns/Base/GunBase.h"
 #include "../../Guns/Magnum/Magnum.h"
 #include "../../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../../Engine/Managers/Globals.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 namespace ETG
@@ -154,7 +155,7 @@ void ETG::BulletMan::Draw()
     if (!IsVisible) return;
     EnemyBase::Draw();
     SpriteBatch::Draw(GetDrawProperties());
-    if (CollisionComp) CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    if (CollisionComp) CollisionComp->Visualize(*Globals::Window);
 
     Gun->Draw();
     Hand->Draw();

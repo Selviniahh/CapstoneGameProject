@@ -1,10 +1,12 @@
 #pragma once
 #include <unordered_set>
 #include "../Core/GameObjectBase.h"
+#include "../Core/SingleInstance.h"
 
 struct ImFont;
 
-class Engine
+//The single editor instance (Engine::GetSelf()). Game code reads UI layout info (panel size) through it.
+class Engine : public ETG::SingleInstance<Engine>
 {
 public:
     void LoadFont();
@@ -13,6 +15,8 @@ public:
     void Draw();
     void DisplayProperties() const;
     static bool IsGameWindowFocused();
+
+    [[nodiscard]] const ETG::Vector2f& GetEngineUISize() const { return windowSize; }
 
     static bool CurrentGameFocus;
     static bool PreviousGameFocus;

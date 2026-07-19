@@ -20,7 +20,7 @@ void ETG::SpawnInitialLevel::Spawn(GameManager& game)
     game.SpawnGameObject<DoubleShoot>();
 
     //Game-specific editor widgets on the Scene panel (the engine's Scene only exposes the hook)
-    GameState::GetInstance().GetSceneObj()->PopulateGameWidgets = [&game]
+    Scene::Get()->PopulateGameWidgets = [&game]
     {
         static float spawnPos[2] = {0.f, 0.f};
         ImGui::InputFloat2("Spawn Pos", spawnPos);
@@ -32,7 +32,7 @@ void ETG::SpawnInitialLevel::Spawn(GameManager& game)
 
         // Display count of active enemies
         int enemyCount = 0;
-        for (const auto* obj : GameState::GetInstance().GetSceneObjs())
+        for (const auto* obj : Scene::Get()->SceneObjs)
         {
             if (GameClass::IsValid(obj) && dynamic_cast<const BulletMan*>(obj))
                 enemyCount++;

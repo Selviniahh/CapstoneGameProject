@@ -3,7 +3,6 @@
 #include "HeroMoveComp.h"
 #include "InputComponent.h"
 #include "../../Guns/Base/GunBase.h"
-#include "../../../Engine/Managers/GameState.h"
 #include "../../Characters/Hero.h"
 
 namespace ETG
@@ -15,7 +14,7 @@ namespace ETG
 {
     HeroAnimComp::HeroAnimComp()
     {
-        HeroPtr = GameState::GetInstance().GetHero();
+        HeroPtr = Hero::Get();
         IsGameObjectUISpecified = true;
         HeroAnimComp::SetAnimations();
         CurrentState = HeroPtr->GetState();

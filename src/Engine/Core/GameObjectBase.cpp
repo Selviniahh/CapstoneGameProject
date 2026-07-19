@@ -1,5 +1,5 @@
 #include "GameObjectBase.h"
-#include "../Managers/GameState.h"
+#include "Scene/Scene.h"
 #include <boost/type_index.hpp>
 #include <imgui.h>
 #include <iostream>
@@ -123,7 +123,9 @@ void ETG::GameObjectBase::PopulateSpecificWidgets()
 
 void ETG::GameObjectBase::IncrementName()
 {
-    const auto& SceneObjs = ETG::GameState::GetInstance().GetSceneObjs();
+    //The scene itself is named before any registry exists; nothing to collide with yet
+    if (!Scene::Get()) return;
+    const auto& SceneObjs = Scene::Get()->SceneObjs;
     const std::string BaseName = ObjectName;
 
     const bool nameTaken = std::ranges::any_of(SceneObjs, [this, &BaseName](GameObjectBase* obj) { return obj != this && obj->GetObjectName() == BaseName; });

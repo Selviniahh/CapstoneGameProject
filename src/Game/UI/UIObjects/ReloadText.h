@@ -2,7 +2,6 @@
 #include <cmath>
 #include "../../Characters/Hero.h"
 #include "../../../Engine/Core/GameObjectBase.h"
-#include "../../../Engine/Managers/GameState.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
@@ -50,7 +49,7 @@ namespace ETG
 
     inline void ReloadText::Initialize()
     {
-        Hero = GameState::GetInstance().GetHero();
+        Hero = Hero::Get();
         Texture = std::make_shared<ETG::Texture>();
         Texture->loadFromFile(AssetManager::Resolve("UI/ReloadText.png"));
         Origin.x = Texture->getSize().x / 2;

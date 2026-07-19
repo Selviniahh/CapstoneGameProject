@@ -3,7 +3,7 @@
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Components/BaseHealthComp.h"
 #include "../Enemy/EnemyBase.h"
-#include "../../Engine/Managers/GameState.h"
+#include "../../Engine/Managers/Globals.h"
 #include "../Items/Active/ActiveItemBase.h"
 #include "../Items/Passive/PassiveItemBase.h"
 #include "../../Engine/Managers/SpriteBatch.h"
@@ -23,7 +23,6 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
 {
     this->Position = Position;
     Depth = -1;
-    GameState::GetInstance().SetHero(this);
 
     Hand = ETG::CreateGameObjectAttached<class Hand>(this);
     RogueSpecial = ETG::CreateGameObjectAttached<class RogueSpecial>(this, Hand->GetRelativePosition());
@@ -195,7 +194,7 @@ void ETG::Hero::Draw()
     for (const auto guns : EquippedGuns)
         guns->Draw();
 
-    if (CollisionComp) CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
 }
 
 //----------------------------State Functionalities ----------------------------

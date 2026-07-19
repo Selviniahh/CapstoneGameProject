@@ -6,6 +6,7 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../../Utils/Math.h"
+#include "../../../Engine/Managers/Globals.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("Items/Passive/platinum_bullets_001.png"))
@@ -22,7 +23,7 @@ ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("
 void ETG::PlatinumBullets::Initialize()
 {
     PassiveItemBase::Initialize();
-    Hero = GameState::GetInstance().GetHero();
+    Hero = Hero::Get();
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
@@ -38,8 +39,8 @@ void ETG::PlatinumBullets::Initialize()
             Sounds[soundIndex].play();
             IsVisible = false;
 
-            //Add self to equipped passive items list
-            GameState::GetInstance().GetEquippedPassiveItems().push_back(this);
+            //Add self to the hero's equipped passive items
+            heroObj->EquippedPassiveItems.push_back(this);
         }
     });
 }
@@ -58,7 +59,7 @@ void ETG::PlatinumBullets::Update()
 void ETG::PlatinumBullets::Draw()
 {
     PassiveItemBase::Draw();
-    CollisionComp->Visualize(*GameState::GetInstance().GetRenderWindow());
+    CollisionComp->Visualize(*ETG::Globals::Window);
 }
 
 void ETG::PlatinumBullets::Perk(const class Hero* hero) const

@@ -1,6 +1,5 @@
 #include "EnemyMoveCompBase.h"
 #include "../../../Engine/Core/GameObjectBase.h"
-#include "../../../Engine/Managers/GameState.h"
 #include "../../Characters/Hero.h"
 #include "../../../Utils/Math.h"
 #include "../EnemyBase.h"
@@ -11,7 +10,7 @@ namespace ETG
     EnemyMoveCompBase::EnemyMoveCompBase(const float maxSpeed, const float acceleration, const float deceleration) : BaseMoveComp(maxSpeed, acceleration, deceleration)
     {
         IsGameObjectUISpecified = true;
-        Hero = GameState::GetInstance().GetHero();
+        Hero = Hero::Get();
     }
 
     EnemyMoveCompBase::~EnemyMoveCompBase() = default;

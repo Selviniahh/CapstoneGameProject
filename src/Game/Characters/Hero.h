@@ -2,6 +2,7 @@
 #include <vector>
 #include "../../Engine/Platform/Platform.h"
 #include "../../Engine/Core/GameObjectBase.h"
+#include "../../Engine/Core/SingleInstance.h"
 #include "../Managers/Enum/StateEnums.h"
 #include "../../Engine/Core/Factory.h"
 #include "../Guns/Base/GunBase.h"
@@ -12,6 +13,8 @@ namespace ETG
     class CollisionComponent;
     class ReloadText;
     class GunBase;
+    class ActiveItemBase;
+    class PassiveItemBase;
     class Hand;
     class RogueSpecial;
     class HeroAnimComp;
@@ -20,7 +23,8 @@ namespace ETG
     class ReloadSlider;
     class BaseHealthComp;
 
-    class Hero : public GameObjectBase
+    //The single player character; anyone (components, enemies, items, UI) can reach it as Hero::GetSelf()
+    class Hero : public GameObjectBase, public SingleInstance<Hero>
     {
     public:
         explicit Hero(ETG::Vector2f Position);
@@ -52,6 +56,11 @@ namespace ETG
         std::unique_ptr<BaseHealthComp> HealthComp;
 
         ActiveItemBase* CurrActiveItem{};
+
+        //Items the hero has picked up (non-owning; the items live in the world object list).
+        //Items register themselves here on pickup, UI reads these to draw the equipped item slots.
+        std::vector<ActiveItemBase*> EquippedActiveItems;
+        std::vector<PassiveItemBase*> EquippedPassiveItems;
 
         std::unique_ptr<HeroAnimComp> AnimationComp;
         std::unique_ptr<InputComponent> InputComp;

@@ -1,7 +1,6 @@
 #include "HeroMoveComp.h"
 #include "HeroAnimComp.h"
 #include "../../../Engine/Managers/InputManager.h"
-#include "../../../Engine/Managers/GameState.h"
 #include "../../../Utils/Math.h"
 #include "../Hero.h"  // For Hero
 #include "../../../Utils/DirectionUtils.h"
@@ -15,7 +14,7 @@ namespace ETG
     void HeroMoveComp::Initialize()
     {
         BaseMoveComp::Initialize();
-        if (!HeroPtr) HeroPtr = GameState::GetInstance().GetHero();
+        if (!HeroPtr) HeroPtr = Hero::Get();
 
         SetupDashListeners();
     }

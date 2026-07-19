@@ -7,7 +7,8 @@
 #include "Engine.h"
 #include "../Core/ComponentBase.h"
 #include "../Managers/AssetManager.h"
-#include "../Managers/GameState.h"
+#include "../Core/Scene/Scene.h"
+#include "../Managers/Globals.h"
 #include "../Managers/InputManager.h"
 #include "../Managers/TypeRegistry.h"
 #include "../../Utils/Math.h"
@@ -35,9 +36,6 @@ void Engine::Initialize()
     if (!ImGui_ImplSDLRenderer3_Init(Window->getNativeRenderer()))
         throw std::runtime_error("Cannot initialize the ImGUI SDL_Renderer backend");
 
-    GameState::GetInstance().SetEngine(this);
-
-    GameState::GetInstance().SetEngineUISize(&windowSize);
     windowSize = {400, (float)ETG::RenderWindow::LogicalSize.y};
     std::cout << std::unitbuf;
 
@@ -136,8 +134,7 @@ void Engine::UpdateDetailsPanel()
         ImGui::BeginChild("HierarchyScrollingRegion", ImVec2(0, hierarchyHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 
         // Assuming Scene is the root object
-        GameObjectBase* sceneObj = GameState::GetInstance().GetSceneObj();
-        DisplayHierarchy(sceneObj);
+        DisplayHierarchy(Scene::Get());
 
         ImGui::EndChild(); // End the scrollable region
     }
@@ -162,7 +159,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
 
     //Is current object has any children prepare to make it expandible node tree instead of just selectable.
     bool currObjHasChildren = false;
-    for (const auto* sceneObj : GameState::GetInstance().GetSceneObjs())
+    for (const auto* sceneObj : Scene::Get()->SceneObjs)
     {
         if (sceneObj->Owner == object)
         {
@@ -172,7 +169,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
     }
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-    if (object == GameState::GetInstance().GetSceneObj()) flags |= ImGuiTreeNodeFlags_DefaultOpen; //Default expand the scene objects
+    if (object == Scene::Get()) flags |= ImGuiTreeNodeFlags_DefaultOpen; //Default expand the scene objects
     if (SelectedObj == object) flags |= ImGuiTreeNodeFlags_Selected;
 
     //Create tree node if the object has children. If not create single selectable widget
@@ -190,7 +187,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
     //Find all the children of current object and Draw all of them
     if (isOpen)
     {
-        for (const auto& sceneObj : GameState::GetInstance().GetSceneObjs())
+        for (const auto& sceneObj : Scene::Get()->SceneObjs)
         {
             if (sceneObj->Owner == object)
             {
