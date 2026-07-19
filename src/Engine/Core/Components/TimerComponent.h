@@ -1,7 +1,7 @@
 #pragma once
 #include "../GameClass.h"
 #include "../Events/EventDelegate.h"
-#include "../../Managers/Globals.h"
+#include "../../Managers/RenderContext.h"
 #include "../ComponentBase.h"
 
 namespace ETG

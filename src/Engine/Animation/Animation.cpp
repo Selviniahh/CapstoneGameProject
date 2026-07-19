@@ -1,9 +1,10 @@
+#include "../Managers/Time.h"
 #include "Animation.h"
 
 #include <iostream>
 
 #include "../Managers/AssetManager.h"
-#include "../Managers/Globals.h"
+#include "../Managers/RenderContext.h"
 #include "../Managers/SpriteBatch.h"
 #include <memory>
 
@@ -34,7 +35,7 @@ void Animation::Update()
     //NOTE: Skip playing next frame if we only want to play the last frame
     if (IsOnLastFrame) return;
     
-    AnimTimeLeft -= ETG::Globals::FrameTick;
+    AnimTimeLeft -= ETG::Time::FrameTick;
     if (AnimTimeLeft <= 0)
     {
         CurrentFrame++;
@@ -56,7 +57,7 @@ void Animation::Draw(const ETG::Vector2f position, const float layerDepth, const
     frame.setColor(ETG::Color::White);
     frame.setRotation(rotation);
     frame.setOrigin(Origin);
-    frame.setScale(ETG::Globals::DefaultScale * flipX, ETG::Globals::DefaultScale);
+    frame.setScale(ETG::RenderContext::DefaultScale * flipX, ETG::RenderContext::DefaultScale);
 
     ETG::GlobSpriteBatch.Draw(frame, layerDepth);
 }

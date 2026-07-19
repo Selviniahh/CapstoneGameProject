@@ -4,7 +4,7 @@
 #include "../Characters/Hand/Hand.h"
 #include "../Characters/Hero.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Core/Factory.h"
 #include "../../Engine/Core/Components/BaseHealthComp.h"
 #include "../Projectile/ProjectileBase.h"
@@ -73,7 +73,7 @@ namespace ETG
             MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
 
             //Clear the delegates to not let any interaction
-            MoveComp->OnForVSYNC has been enabled by default. It would be important when I need to migrate to androidceStart.Clear();
+            MoveComp->OnForceStart.Clear();
             MoveComp->OnForceEnd.Clear();
             HealthComp->OnDamageTaken.Clear();
             CollisionComp->SetCollisionEnabled(false);

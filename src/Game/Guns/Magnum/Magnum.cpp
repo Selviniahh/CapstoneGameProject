@@ -5,7 +5,7 @@
 #include "../../Characters/Hero.h"
 #include "../../Enemy/EnemyBase.h"
 #include "../../../Utils/Math.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::Magnum::Magnum(const ETG::Vector2f& pos) : GunBase(pos,
@@ -73,7 +73,7 @@ void ETG::Magnum::Update()
 void ETG::Magnum::Draw()
 {
     GunBase::Draw();
-    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
+    if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
 void ETG::Magnum::EnqueueProjectiles(int shotCount, float EffectiveSpread)

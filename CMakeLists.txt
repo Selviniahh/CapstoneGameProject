@@ -125,7 +125,9 @@ set(UI_SOURCES
 set(MANAGERS_SOURCES
         src/Engine/Managers/AssetManager.cpp
         src/Engine/Managers/AssetManager.h
-        src/Engine/Managers/Globals.cpp
+        src/Engine/Managers/RenderContext.cpp
+        src/Engine/Managers/Time.cpp
+        src/Engine/Managers/Time.h
         src/Game/Managers/GameManager.cpp
         src/Game/Managers/RegisterGameTypes.cpp
         src/Game/Managers/RegisterGameTypes.h

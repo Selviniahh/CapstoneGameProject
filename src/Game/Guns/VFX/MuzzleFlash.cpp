@@ -2,7 +2,7 @@
 #include <complex>
 #include <filesystem>
 #include <numbers>
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 
 namespace ETG

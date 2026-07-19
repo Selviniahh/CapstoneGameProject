@@ -5,14 +5,15 @@
 #include "../../Engine/Managers/DebugTexts.h"
 #include "../../Engine/Managers/InputManager.h"
 #include "../../Engine/Managers/SpriteBatch.h"
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
+#include "../../Engine/Managers/Time.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Scene/Scene.h"
 #include "../UI/UserInterface.h"
 #include "../Levels/SpawnInitialLevel.h"
 #include "RegisterGameTypes.h"
 
-using namespace ETG::Globals;
+using namespace ETG::RenderContext;
 
 ETG::GameManager::~GameManager() = default;
 
@@ -53,7 +54,8 @@ void ETG::GameManager::Initialize()
     //Reflection type list is game content; the engine only provides the registry machinery
     RegisterGameTypes();
 
-    Globals::Initialize(Window);
+    RenderContext::Initialize(Window);
+    Time::Initialize();
     InputManager::InitializeDebugText();
 
     //Scene joins WorldObjects first, then the level content is spawned through the same pending-spawn
@@ -72,7 +74,7 @@ void ETG::GameManager::Initialize()
 void ETG::GameManager::Update()
 {
     EngineUI.Update();
-    Globals::Update();
+    Time::Update();
     InputManager::Update();
 
     //Objects spawned last frame join the list before anyone updates, so they never draw un-updated
@@ -94,7 +96,7 @@ void ETG::GameManager::Draw()
     //Everything is drawn against the fixed logical canvas (RenderWindow::LogicalSize);
     //SDL's permanently-active logical presentation letterboxes it onto the real window,
     //regardless of how the window is resized.
-    Window->setView(Globals::MainView);
+    Window->setView(RenderContext::MainView);
 
     GlobSpriteBatch.begin();
     for (const auto& obj : WorldObjects) 
@@ -165,11 +167,11 @@ void ETG::GameManager::ProcessEvents()
             HasFocus = true;
             //The game was paused while unfocused; restart the tick clock so the paused duration
             //doesn't hit the simulation as one giant DeltaTime.
-            Globals::ResetTick();
+            Time::ResetTick();
         }
         if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
-            Globals::Font.reset();
+            DebugText::Font.reset();
             Window->close();
             return;
         }

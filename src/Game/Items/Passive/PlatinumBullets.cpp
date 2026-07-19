@@ -6,7 +6,7 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../../Utils/Math.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("Items/Passive/platinum_bullets_001.png"))
@@ -59,7 +59,7 @@ void ETG::PlatinumBullets::Update()
 void ETG::PlatinumBullets::Draw()
 {
     PassiveItemBase::Draw();
-    CollisionComp->Visualize(*ETG::Globals::Window);
+    CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
 void ETG::PlatinumBullets::Perk(const class Hero* hero) const

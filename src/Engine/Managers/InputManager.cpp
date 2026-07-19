@@ -1,6 +1,7 @@
 #include "InputManager.h"
 #include <complex>
-#include "Globals.h"
+#include "RenderContext.h"
+#include "DebugTexts.h"
 #include "../Editor/Engine.h"
 
 void ETG::InputManager::Update()
@@ -11,7 +12,7 @@ void ETG::InputManager::Update()
     // Update PreviousGameFocus at the end of the frame to track state correctly
     Engine::PreviousGameFocus = Engine::CurrentGameFocus;
 
-    ZoomScale = GetZoomScale(Globals::MainView, *Globals::Window);
+    ZoomScale = GetZoomScale(RenderContext::MainView, *RenderContext::Window);
 
     const float adjustedZoomFactor = AdjustZoomFactor();
     const float adjustedMoveFactor = AdjustMoveFactor();
@@ -24,22 +25,23 @@ void ETG::InputManager::Update()
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::S)) direction.y++;
 
     //Camera Effects:
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::E)) Globals::MainView.zoom(1.0f - adjustedZoomFactor);
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Q)) Globals::MainView.zoom(1.0f + adjustedZoomFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::E)) RenderContext::MainView.zoom(1.0f - adjustedZoomFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Q)) RenderContext::MainView.zoom(1.0f + adjustedZoomFactor);
 
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Up)) Globals::MainView.move(0, -adjustedMoveFactor);
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Down)) Globals::MainView.move(0, +adjustedMoveFactor);
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Right)) Globals::MainView.move(+adjustedMoveFactor, 0);
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Left)) Globals::MainView.move(-adjustedMoveFactor, 0);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Up)) RenderContext::MainView.move(0, -adjustedMoveFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Down)) RenderContext::MainView.move(0, +adjustedMoveFactor);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Right)) RenderContext::MainView.move(+adjustedMoveFactor, 0);
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Left)) RenderContext::MainView.move(-adjustedMoveFactor, 0);
 
     ViewLocalMousePos = GetRelativeMousePos();
-    WorldMousePos = Globals::Window->mapPixelToCoords(ETG::Mouse::getPosition(*Globals::Window), Globals::MainView);
+    WorldMousePos = RenderContext::Window->mapPixelToCoords(ETG::Mouse::getPosition(*RenderContext::Window), RenderContext::MainView);
 }
 
 
 void ETG::InputManager::InitializeDebugText()
 {
-    debugText.setFont(*Globals::Font);
+    DebugText::LoadFont();
+    debugText.setFont(*DebugText::Font);
     debugText.setCharacterSize(16);
     debugText.setFillColor(ETG::Color::Yellow);
 }
@@ -75,10 +77,10 @@ float ETG::InputManager::AdjustZoomFactor()
 ETG::Vector2f ETG::InputManager::GetRelativeMousePos()
 {
     //Mouse world position
-    const ETG::Vector2f MousePos = Globals::Window->mapPixelToCoords(ETG::Mouse::getPosition(*Globals::Window), Globals::MainView);
+    const ETG::Vector2f MousePos = RenderContext::Window->mapPixelToCoords(ETG::Mouse::getPosition(*RenderContext::Window), RenderContext::MainView);
 
     // Calculate the top-left corner of the view in world coordinates
-    const ETG::Vector2f viewTopLeft = Globals::MainView.getCenter() - (Globals::MainView.getSize() / 2.0f);
+    const ETG::Vector2f viewTopLeft = RenderContext::MainView.getCenter() - (RenderContext::MainView.getSize() / 2.0f);
 
     // Subtract the view's top-left to get relative mouse position
     return MousePos - viewTopLeft;

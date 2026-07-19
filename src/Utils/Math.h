@@ -1,8 +1,9 @@
 #pragma once
+#include "../Engine/Managers/Time.h"
 #include "../Engine/Platform/Platform.h"
 #include <complex>
 #include <numbers>
-#include "../Engine/Managers/Globals.h"
+#include "../Engine/Managers/RenderContext.h"
 #include <iostream>
 #include <random>
 
@@ -88,7 +89,7 @@ public:
     static T SinWaveLerp(T a, T b, T interval, float& timer)
     {
         //Update the timer (0 to  and back)
-        timer += ETG::Globals::FrameTick / interval;
+        timer += ETG::Time::FrameTick / interval;
         if (timer > 1.0f) timer = 0.0f;
 
         //Multiplying by π transforms this range into [0, π]

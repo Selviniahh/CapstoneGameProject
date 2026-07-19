@@ -25,6 +25,9 @@ namespace ETG
 
         static void AddDebugCircle(const ETG::Vector2f& pos, float radius = 10.f, const ETG::Color& color = ETG::Color::Red, float thickness = 1.0f);
 
+        //Queue a single 1x1 (green) pixel into the global batch; used for origin/point visualization
+        static bool DrawSinglePixelAtLoc(const ETG::Vector2f& Loc, ETG::Vector2i scale = {1, 1}, float rotation = 0);
+
     private:
         struct Vertex
         {

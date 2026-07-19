@@ -4,7 +4,7 @@
 #include <cmath>
 #include <numbers>
 #include <SDL3/SDL.h>
-#include "Globals.h"
+#include "RenderContext.h"
 #include "../../Utils/TextureUtils.h"
 
 //A forward declaration I've never seen before
@@ -166,7 +166,7 @@ void ETG::SpriteBatch::AddDebugCircle(const ETG::Vector2f& pos, const float radi
     circle.setFillColor(ETG::Color::Transparent);
     circle.setOutlineColor(color);
     circle.setOutlineThickness(thickness);
-    Globals::Window->draw(circle);
+    RenderContext::Window->draw(circle);
 }
 
 
@@ -206,4 +206,30 @@ void ETG::SpriteBatch::drawRectOutline(const ETG::FloatRect& rect, const ETG::Co
     rightEdge.setScale(thickness, rect.height);
     rightEdge.setColor(color);
     Draw(rightEdge, depth);
+}
+
+bool ETG::SpriteBatch::DrawSinglePixelAtLoc(const ETG::Vector2f& Loc, const ETG::Vector2i scale, const float rotation)
+{
+    static ETG::Texture tex;
+    static bool isLoaded = false;
+    if (!isLoaded)
+    {
+        ETG::Image greenPixel;
+        greenPixel.create(1, 1, ETG::Color::Green);
+        if (!tex.loadFromImage(greenPixel)) return true;
+        isLoaded = true;
+    }
+
+    // Set up the sprite with the 1x1 green texture
+    //NOTE: Order of sprite setting should be Texture -> Origin -> Scale -> Position
+    ETG::Sprite frame;
+    frame.setTexture(tex);
+    frame.setOrigin(0.5f, 0.5f); // Center of 1x1 pixel
+    frame.setScale(scale.x, scale.y);
+    frame.setPosition(Loc); // Position it at the specified location
+    frame.setRotation(rotation);
+
+    // Draw the sprite
+    GlobSpriteBatch.Draw(frame, -1);
+    return false;
 }

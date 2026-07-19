@@ -1,10 +1,11 @@
+#include "../../../Engine/Managers/Time.h"
 #include <filesystem>
 #include "GunBase.h"
 #include <random>
 
 #include "../../Characters/Hero.h"
 #include "../../Projectile/ProjectileBase.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Engine/Core/Factory.h"
 #include "../../UI/UIObjects/ReloadSlider.h"
@@ -83,14 +84,14 @@ namespace ETG
     {
         GameObjectBase::Update();
 
-        Timer += Globals::FrameTick;
+        Timer += Time::FrameTick;
 
         //Fire all the bullets inside bulletQueue and remove them from the vector
         if (!bulletQueue.empty())
         {
             for (auto it = bulletQueue.begin(); it != bulletQueue.end();)
             {
-                it->timeToFire -= Globals::FrameTick;
+                it->timeToFire -= Time::FrameTick;
                 if (it->timeToFire <= 0)
                 {
                     //Time to fie this bullet

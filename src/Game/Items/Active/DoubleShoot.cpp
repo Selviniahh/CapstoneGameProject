@@ -5,7 +5,7 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Modifiers/Gun/MultiShotModifier.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Active/Potion_of_Gun_Friendship.png"),
@@ -65,7 +65,7 @@ void ETG::DoubleShoot::Update()
 void ETG::DoubleShoot::Draw()
 {
     ActiveItemBase::Draw();
-    CollisionComp->Visualize(*ETG::Globals::Window);
+    CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
 void ETG::DoubleShoot::RequestUsage()

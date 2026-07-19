@@ -5,7 +5,7 @@
 #include "../../Characters/Hero.h"
 #include "SawedOff.h"
 #include "../../../Utils/Math.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
@@ -72,7 +72,7 @@ void ETG::SawedOff::Update()
 void ETG::SawedOff::Draw()
 {
     GunBase::Draw();
-    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
+    if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
 //Because we will do something different, we need to override this function without calling base function

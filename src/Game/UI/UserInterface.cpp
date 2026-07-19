@@ -5,7 +5,7 @@
 #include "../../Engine/Editor/Engine.h"
 #include "../Items/Active/ActiveItemBase.h"
 #include "../Items/Passive/PassiveItemBase.h"
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Managers/SpriteBatch.h"
 #include "../../Engine/Core/Factory.h"
 #include "UIObjects/AmmoCounter.h"

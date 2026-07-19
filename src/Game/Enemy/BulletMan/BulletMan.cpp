@@ -1,3 +1,4 @@
+#include "../../../Engine/Managers/Time.h"
 #include "BulletMan.h"
 #include <filesystem>
 #include "../../../Engine/Platform/Platform.h"
@@ -10,7 +11,7 @@
 #include "../../Guns/Base/GunBase.h"
 #include "../../Guns/Magnum/Magnum.h"
 #include "../../../Engine/Core/Components/BaseHealthComp.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 namespace ETG
@@ -98,7 +99,7 @@ void ETG::BulletMan::UpdateShooting()
     // Decrement the attack timer
     if (attackCooldownTimer > 0)
     {
-        attackCooldownTimer -= Globals::FrameTick;
+        attackCooldownTimer -= Time::FrameTick;
     }
 
     // Make actual shooting happen
@@ -155,7 +156,7 @@ void ETG::BulletMan::Draw()
     if (!IsVisible) return;
     EnemyBase::Draw();
     SpriteBatch::Draw(GetDrawProperties());
-    if (CollisionComp) CollisionComp->Visualize(*Globals::Window);
+    if (CollisionComp) CollisionComp->Visualize(*RenderContext::Window);
 
     Gun->Draw();
     Hand->Draw();

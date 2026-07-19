@@ -8,7 +8,7 @@
 #include "../Core/ComponentBase.h"
 #include "../Managers/AssetManager.h"
 #include "../Core/Scene/Scene.h"
-#include "../Managers/Globals.h"
+#include "../Managers/RenderContext.h"
 #include "../Managers/InputManager.h"
 #include "../Managers/TypeRegistry.h"
 #include "../../Utils/Math.h"
@@ -21,7 +21,7 @@ bool Engine::AbsoluteOrientationOpen = false;
 bool Engine::RelativeOrientationOpen = false;
 bool Engine::PropertiesOpen = false;
 
-using namespace ETG::Globals;
+using namespace ETG::RenderContext;
 using namespace ETG;
 
 void Engine::Initialize()

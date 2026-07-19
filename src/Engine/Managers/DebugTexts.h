@@ -1,7 +1,9 @@
 #pragma once
 #include "InputManager.h"
 #include "../Core/Scene/Scene.h"
-#include "Globals.h"
+#include "RenderContext.h"
+#include "Time.h"
+#include "AssetManager.h"
 #include "../../Utils/StrManipulateUtil.h"
 
 namespace ETG
@@ -28,6 +30,16 @@ namespace ETG
     class DebugText
     {
     public:
+        //The debug overlay owns the engine font; nothing else needs a global font
+        inline static std::unique_ptr<ETG::Font> Font;
+
+        static void LoadFont()
+        {
+            Font = std::make_unique<ETG::Font>();
+            if (!Font->loadFromFile(AssetManager::Resolve("Fonts/SegoeUI.ttf")))
+                throw std::runtime_error("Failed to load font");
+        }
+
         void Draw(ETG::RenderWindow& window)
         {
             const auto& SceneObjects = Scene::Get()->SceneObjs;
@@ -50,13 +62,13 @@ namespace ETG
 
             // Moving state
             DrawDebugText("Moving: " + std::string(InputManager::IsMoving() ? "true" : "false"), window);
-            DrawDebugText("WindowSize: " + std::to_string(Globals::ScreenSize.x) + " " + std::to_string(Globals::ScreenSize.y), window);
+            DrawDebugText("WindowSize: " + std::to_string(RenderContext::ScreenSize.x) + " " + std::to_string(RenderContext::ScreenSize.y), window);
 
-            DrawDebugText("FPS: " + std::to_string(1 / Globals::FrameTick), window);
+            DrawDebugText("FPS: " + std::to_string(1 / Time::FrameTick), window);
             DrawDebugText("Zoom Scale: " + std::to_string(InputManager::ZoomScale), window);
 
-            DrawDebugText("View Center: " + std::to_string(Globals::MainView.getCenter().x) + " " + std::to_string(Globals::MainView.getCenter().y), window);
-            DrawDebugText("View Size: " + std::to_string(Globals::MainView.getSize().x) + " " + std::to_string(Globals::MainView.getSize().y), window);
+            DrawDebugText("View Center: " + std::to_string(RenderContext::MainView.getCenter().x) + " " + std::to_string(RenderContext::MainView.getCenter().y), window);
+            DrawDebugText("View Size: " + std::to_string(RenderContext::MainView.getSize().x) + " " + std::to_string(RenderContext::MainView.getSize().y), window);
 
             DebugTextManager::DrawQueuedTexts(window);
         }

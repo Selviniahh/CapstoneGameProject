@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Editor/Engine.h"
 #include "../../Engine/Core/Factory.h"
 
@@ -20,7 +20,7 @@ namespace ETG
         void ProcessEvents();
         [[nodiscard]] bool WindowHasFocus() const { return HasFocus; }
 
-        [[nodiscard]] bool IsRunning() const { return Globals::Window && Globals::Window->isOpen(); }
+        [[nodiscard]] bool IsRunning() const { return RenderContext::Window && RenderContext::Window->isOpen(); }
         void Update();
         void Draw();
 
@@ -39,7 +39,9 @@ namespace ETG
         }
 
     private:
+        //When an object needs to be spawns, it gets added to PendingSpawns. This function transfers those objects into WorldObjects and refreshes PendingSpawns   
         void FlushPendingSpawns();
+        
         void SweepDestroyedObjects();
 
         //Central owning list of every world object. Update/Draw iterate this list in order;

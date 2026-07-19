@@ -1,7 +1,7 @@
 #include <imgui.h>
 #include "CollisionComponent.h"
 #include "../../Core/GameObjectBase.h"
-#include "../../Managers/Globals.h"
+#include "../../Managers/RenderContext.h"
 #include "../../Managers/SpriteBatch.h"
 
 namespace ETG
@@ -174,7 +174,7 @@ namespace ETG
                     circle.setPosition(CalculateImpactPoint(otherComp));
                     circle.setFillColor(ETG::Color::Green);
                     if (circle.getPosition() != ETG::Vector2f{0, 0})
-                        Globals::Window->draw(circle);
+                        RenderContext::Window->draw(circle);
                 }
             }
         }

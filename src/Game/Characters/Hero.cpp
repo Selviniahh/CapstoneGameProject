@@ -3,7 +3,7 @@
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Components/BaseHealthComp.h"
 #include "../Enemy/EnemyBase.h"
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
 #include "../Items/Active/ActiveItemBase.h"
 #include "../Items/Passive/PassiveItemBase.h"
 #include "../../Engine/Managers/SpriteBatch.h"
@@ -194,7 +194,7 @@ void ETG::Hero::Draw()
     for (const auto guns : EquippedGuns)
         guns->Draw();
 
-    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
+    if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
 //----------------------------State Functionalities ----------------------------

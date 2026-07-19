@@ -1,3 +1,4 @@
+#include "../../../Engine/Managers/Time.h"
 #include "ReloadSlider.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Characters/Hero.h"
@@ -86,7 +87,7 @@ void ETG::ReloadSlider::StartAnimation()
         const ETG::Vector2f LeftMidPos = ETG::Vector2f{TopLeft.x / 2, TopLeft.y / 2} + ETG::Vector2f{BottomLeft.x / 2, BottomLeft.y / 2};
         const ETG::Vector2f RightMidPos = ETG::Vector2f{TopRight.x / 2, TopRight.y / 2} + ETG::Vector2f{BottomRight.x / 2, BottomRight.y / 2};
         SliderValProps.Position.x = Math::IntervalLerp(LeftMidPos.x, RightMidPos.x, Gun->ReloadTime, reloadTimer);
-        reloadTimer += Globals::FrameTick;
+        reloadTimer += Time::FrameTick;
 
         // 1. Primary method: Position-based check with tolerance
         bool positionReached = std::abs(SliderValProps.Position.x - RightMidPos.x) <= PositionTolerance;

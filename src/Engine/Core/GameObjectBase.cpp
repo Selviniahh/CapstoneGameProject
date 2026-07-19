@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include "Factory.h"
-#include "../Managers/Globals.h"
 #include "../Managers/SpriteBatch.h"
 #include "../../Utils/StrManipulateUtil.h"
 
@@ -36,7 +35,7 @@ void ETG::GameObjectBase::VisualizeOrigin() const
 {
     if (DrawOriginPoint)
     {
-        Globals::DrawSinglePixelAtLoc(DrawProps.Position, ETG::Vector2i(1, 1), Rotation);
+        SpriteBatch::DrawSinglePixelAtLoc(DrawProps.Position, ETG::Vector2i(1, 1), Rotation);
     }
 }
 

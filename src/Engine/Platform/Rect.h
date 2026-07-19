@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <ostream>
 #include "Vector2.h"
 
 namespace ETG
@@ -63,6 +64,16 @@ namespace ETG
             return false;
         }
     };
+
+    //Debug printing (std::cout << rect)
+    template <typename T>
+    std::ostream& operator<<(std::ostream& lhs, const Rect<T>& rhs)
+    {
+        return lhs << "Left: " << rhs.left
+            << ", Top: " << rhs.top
+            << ", Width: " << rhs.width
+            << ", Height: " << rhs.height;
+    }
 
     using IntRect = Rect<int>;
     using FloatRect = Rect<float>;

@@ -1,3 +1,4 @@
+#include "../../../Engine/Managers/Time.h"
 #include "HeroMoveComp.h"
 #include "HeroAnimComp.h"
 #include "../../../Engine/Managers/InputManager.h"
@@ -29,13 +30,13 @@ namespace ETG
         //Update dash cooldown timer
         if (DashCooldown >= 0)
         {
-            DashCooldownTimer -= Globals::FrameTick;
+            DashCooldownTimer -= Time::FrameTick;
         }
 
         //handle dash movement if dashing
         if (HeroPtr->AnimationComp->IsDashing)
         {
-            DashTimer += Globals::FrameTick;
+            DashTimer += Time::FrameTick;
             // DashDuration = HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Dash].AnimationDict[HeroPtr->AnimationComp->CurrentDashDirection].GetTotalAnimationTime();
             DashDuration = HeroPtr->AnimationComp->GetCurrentAnimation()->GetTotalAnimationTime();
             if (DashTimer <= DashDuration)
@@ -82,7 +83,7 @@ namespace ETG
         const float dashProgress = DashTimer / DashDuration;
 
         //Use bell curve to get velocity
-        const ETG::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Globals::FrameTick);
+        const ETG::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Time::FrameTick);
 
         HeroPtr->SetPosition(HeroPtr->GetPosition() + dashVelocity);
 

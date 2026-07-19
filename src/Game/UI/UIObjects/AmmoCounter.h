@@ -3,7 +3,7 @@
 #include <string>
 #include <filesystem>
 #include "../../../Engine/Core/GameObjectBase.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 namespace ETG
@@ -82,7 +82,7 @@ namespace ETG
     {
         // Draw text directly to the window
         // Note: This doesn't use SpriteBatch since text works differently
-        ETG::RenderWindow* window = Globals::Window.get();
+        ETG::RenderWindow* window = RenderContext::Window.get();
         if (window)
         {
             window->draw(ammoText);

@@ -1,7 +1,6 @@
 #pragma once
 #include "../ComponentBase.h"
 #include "../../Managers/SpriteBatch.h"
-#include "../../Managers/Globals.h"
 
 
 namespace ETG
@@ -42,7 +41,7 @@ namespace ETG
         if (!IsVisible) return;
         ComponentBase::Draw();
         SpriteBatch::Draw(GetDrawProperties());
-        Globals::DrawSinglePixelAtLoc(Position, {1, 1}, Rotation);
+        SpriteBatch::DrawSinglePixelAtLoc(Position, {1, 1}, Rotation);
     }
 
     inline void ArrowComp::Initialize()

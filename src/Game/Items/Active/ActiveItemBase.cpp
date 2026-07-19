@@ -1,5 +1,6 @@
+#include "../../../Engine/Managers/Time.h"
 #include "ActiveItemBase.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& activateResPath, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
@@ -45,8 +46,8 @@ void ETG::ActiveItemBase::Update()
     GameObjectBase::Update();
 
     //Just increment the corresponding timer normally first
-    if (ActiveItemState == ActiveItemState::Consuming) ConsumeTimer += Globals::FrameTick;
-    else if (ActiveItemState == ActiveItemState::Cooldown) CoolDownTimer += Globals::FrameTick;
+    if (ActiveItemState == ActiveItemState::Consuming) ConsumeTimer += Time::FrameTick;
+    else if (ActiveItemState == ActiveItemState::Cooldown) CoolDownTimer += Time::FrameTick;
 
     //If current state is consuming and consume time is up, set ActiveItemState to cooldown state 
     if (ActiveItemState == ActiveItemState::Consuming && ConsumeTimer >= TotalConsumeTime)

@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <ostream>
 
 namespace ETG
 {
@@ -66,6 +67,13 @@ namespace ETG
     constexpr Vector2<T> operator*(T scalar, const Vector2<T>& v)
     {
         return {v.x * scalar, v.y * scalar};
+    }
+
+    //Debug printing (std::cout << vec)
+    template <typename T>
+    std::ostream& operator<<(std::ostream& lhs, const Vector2<T>& rhs)
+    {
+        return lhs << "X: " << rhs.x << " Y: " << rhs.y;
     }
 
     using Vector2f = Vector2<float>;

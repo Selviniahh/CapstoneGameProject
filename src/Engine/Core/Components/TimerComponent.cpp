@@ -1,3 +1,4 @@
+#include "../../Managers/Time.h"
 #include "TimerComponent.h"
 
 namespace ETG
@@ -11,7 +12,7 @@ namespace ETG
         if (!bIsRunning || bIsFinished) return;
 
         // Increment timer with frame delta time
-        CurrentTime += Globals::FrameTick;
+        CurrentTime += Time::FrameTick;
 
         // Check if timer is finished
         if (CurrentTime >= TotalTime)

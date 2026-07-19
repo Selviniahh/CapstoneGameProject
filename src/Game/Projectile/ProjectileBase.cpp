@@ -1,3 +1,4 @@
+#include "../../Engine/Managers/Time.h"
 #include "ProjectileBase.h"
 #include <valarray>
 #include "../Characters/Hero.h"
@@ -5,7 +6,7 @@
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Components/TimerComponent.h"
 #include "../Enemy/EnemyBase.h"
-#include "../../Engine/Managers/Globals.h"
+#include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Managers/SpriteBatch.h"
 
 ETG::ProjectileBase::~ProjectileBase() = default;
@@ -59,7 +60,7 @@ void ETG::ProjectileBase::Update()
     TimerComp->Update();
     CollisionComp->Update();
 
-    const ETG::Vector2f movement = Globals::FrameTick * ProjVelocity;
+    const ETG::Vector2f movement = Time::FrameTick * ProjVelocity;
     Position += movement;
 
     //Calculate distance traveled so far
@@ -79,7 +80,7 @@ void ETG::ProjectileBase::Update()
 void ETG::ProjectileBase::Draw()
 {
     IsVisible = true;
-    if (CollisionComp) CollisionComp->Visualize(*ETG::Globals::Window);
+    if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
     auto& DrawableProps = GetDrawProperties();
     ETG::Sprite frame;
     frame.setTexture(*Texture);

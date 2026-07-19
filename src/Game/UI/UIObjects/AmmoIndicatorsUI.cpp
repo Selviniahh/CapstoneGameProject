@@ -1,7 +1,7 @@
 #include "AmmoIndicatorsUI.h"
 #include "AmmoBarUI.h"
 #include "../../Guns/Base/GunBase.h"
-#include "../../../Engine/Managers/Globals.h"
+#include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 
 namespace ETG

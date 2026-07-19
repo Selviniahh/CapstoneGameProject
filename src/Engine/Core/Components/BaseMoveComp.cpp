@@ -1,5 +1,6 @@
+#include "../../Managers/Time.h"
 #include "BaseMoveComp.h"
-#include "../../Managers/Globals.h"
+#include "../../Managers/RenderContext.h"
 #include "../../../Utils/Math.h"
 
 namespace ETG
@@ -20,7 +21,7 @@ namespace ETG
         // Don't process normal movement when being forced
         if (IsBeingForced) return;
 
-        const float deltaTime = Globals::FrameTick; // delta time from your globals
+        const float deltaTime = Time::FrameTick; // delta time from your globals
 
         //There's a movement input
         if (inputDir != ETG::Vector2f(0.f, 0.f))
@@ -74,7 +75,7 @@ namespace ETG
         if (!IsBeingForced) return;
         if (!Owner) return;
 
-        ForceTimer += Globals::FrameTick;
+        ForceTimer += Time::FrameTick;
 
         if (ForceTimer < ForceMaxDuration)
         {
@@ -83,7 +84,7 @@ namespace ETG
             const float currentForce = Math::IntervalLerp(ForceMagnitude * ForceSpeed, 0.0f, ForceMaxDuration, ForceTimer);
 
             // Apply force to position
-            Owner->SetPosition(Owner->GetPosition() + ForceDirection * currentForce * Globals::FrameTick);
+            Owner->SetPosition(Owner->GetPosition() + ForceDirection * currentForce * Time::FrameTick);
         }
         else
         {

@@ -1,3 +1,4 @@
+#include "../../../Engine/Managers/Time.h"
 #include "HeroAnimComp.h"
 
 #include "HeroMoveComp.h"
@@ -115,7 +116,7 @@ namespace ETG
 
         case HeroStateEnum::Dash:
             newKey = CurrentDashDirection;
-            DashTimer += Globals::FrameTick;
+            DashTimer += Time::FrameTick;
             break;
 
         case HeroStateEnum::Hit:
