@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <unordered_map>
 #include <vector>
 #include <SDL3/SDL_events.h>
 #include "Globals.h"
@@ -58,9 +57,6 @@ namespace ETG
         std::unique_ptr<DebugText> DebugText;
 
     public:
-        //Hold only scene objects. Used for displaying details panel
-        std::unordered_map<std::string, GameObjectBase*> SceneObjects;
-
         static SDL_Event GameEvent;
     };
 }

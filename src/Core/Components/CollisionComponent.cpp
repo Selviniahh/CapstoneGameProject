@@ -15,10 +15,11 @@ namespace ETG
 
     CollisionComponent::~CollisionComponent()
     {
-        const auto it = std::ranges::find(AllCollisionRegistries, this);
-        if (it != AllCollisionRegistries.end())
+        std::erase(AllCollisionRegistries, this);
+
+        for (CollisionComponent* component : AllCollisionRegistries)
         {
-            AllCollisionRegistries.erase(it);
+            component->CurrentCollisions.erase(this);
         }
     }
 

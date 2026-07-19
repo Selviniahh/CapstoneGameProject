@@ -46,7 +46,7 @@ namespace ETG
 
         // Display count of active enemies
         int enemyCount = 0;
-        for (const auto* obj : GameState::GetInstance().GetOrderedSceneObjs())
+        for (const auto* obj : GameState::GetInstance().GetSceneObjs())
         {
             // “Nesne geçerliyse ve obj gerçekten BulletMan ise…”
             if (GameClass::IsValid(obj) && dynamic_cast<const BulletMan*>(obj))

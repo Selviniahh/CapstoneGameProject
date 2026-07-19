@@ -163,7 +163,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
 
     //Is current object has any children prepare to make it expandible node tree instead of just selectable.
     bool currObjHasChildren = false;
-    for (const auto& [name, sceneObj] : GameState::GetInstance().GetSceneObjs())
+    for (const auto* sceneObj : GameState::GetInstance().GetSceneObjs())
     {
         if (sceneObj->Owner == object)
         {
@@ -191,7 +191,7 @@ void Engine::DisplayHierarchy(GameObjectBase* object)
     //Find all the children of current object and Draw all of them
     if (isOpen)
     {
-        for (const auto& sceneObj : GameState::GetInstance().GetOrderedSceneObjs())
+        for (const auto& sceneObj : GameState::GetInstance().GetSceneObjs())
         {
             if (sceneObj->Owner == object)
             {

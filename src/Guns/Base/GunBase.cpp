@@ -117,6 +117,7 @@ namespace ETG
 
         // Update gun animation.
         AnimationComp->Update(CurrentGunState, CurrentGunState);
+        ComputeDrawProperties();
 
         // Update muzzle flash position and animation.
         MuzzleFlash->Update();
@@ -156,7 +157,7 @@ namespace ETG
             (*it)->Update();
             if ((*it)->IsPendingDestroy())
             {
-                UnregisterGameObject(it->get()->GetObjectName());
+                UnregisterGameObject(it->get());
 
                 //Because initialized projectile moved to this container with std::move: "projectiles.push_back(std::move(proj));", owner of the object is this container.
                 //Simply removing the element from the vector will invoke

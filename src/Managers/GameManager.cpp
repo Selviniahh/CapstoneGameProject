@@ -48,9 +48,8 @@ void ETG::GameManager::Initialize()
     Window->setFramerateLimit(Globals::FPS);
     GameState::GetInstance().SetRenderWindow(Window.get());
 
-    //Initialize GameState instance before anything and initialize SceneObj vector
+    //Initialize GameState instance before anything
     GameState::GetInstance();
-    GameState::GetInstance().SetSceneObjs(SceneObjects);
     GameState::GetInstance().SetGameManager(this);
 
     //Scene is the ownership root every factory-created object attaches to, so it has to exist before
@@ -148,7 +147,7 @@ void ETG::GameManager::SweepDestroyedObjects()
     {
         if ((*it)->IsPendingDestroy())
         {
-            UnregisterGameObject((*it)->GetObjectName());
+            UnregisterGameObject(it->get());
             it = WorldObjects.erase(it); //unique_ptr deallocates the object here
             anyDestroyed = true;
         }
@@ -162,9 +161,8 @@ void ETG::GameManager::SweepDestroyedObjects()
     //with their owner. Purge those now-dangling registry entries so the hierarchy panel stays safe.
     if (anyDestroyed)
     {
-        std::erase_if(SceneObjects, [](const auto& entry) { return !GameClass::IsValid(entry.second); });
-        auto& orderedObjs = GameState::GetInstance().GetOrderedSceneObjs();
-        std::erase_if(orderedObjs, [](const GameObjectBase* obj) { return !GameClass::IsValid(obj); });
+        auto& sceneObjs = GameState::GetInstance().GetSceneObjs();
+        std::erase_if(sceneObjs, [](const GameObjectBase* obj) { return !GameClass::IsValid(obj); });
     }
 }
 

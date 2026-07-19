@@ -37,7 +37,6 @@ namespace ETG
         });
 
         HealthComp = ETG::CreateGameObjectAttached<BaseHealthComp>(this, 30.f);
-        HealthComp->Initialize();
 
         EnemyBase::Initialize();
     }

@@ -8,8 +8,8 @@ class Engine;
 namespace ETG
 {
     //Forward declarations
-    void RegisterGameObject(const std::string& name, GameObjectBase* obj);
-    void UnregisterGameObject(const std::string& name);
+    void RegisterGameObject(GameObjectBase* obj);
+    void UnregisterGameObject(GameObjectBase* obj);
 
     //NOTE: So important. Implemented Factory Method.
     //It's required to first construct the object, afterwards call some functions automatically for all game objects. Calling stuffs in Constructor of the base class will not be applicable for RTTI
@@ -24,9 +24,9 @@ namespace ETG
         obj->Owner = GameState::GetInstance().GetSceneObj();
         obj->template SetTypeInfo<T>(); //Set the type ID for this object
 
-        
-        const std::string objName = obj->SetObjectNameToSelfClassName();
-        RegisterGameObject(objName, obj.get());
+
+        obj->SetObjectNameToSelfClassName();
+        RegisterGameObject(obj.get());
         return obj;
     }
 
@@ -36,37 +36,23 @@ namespace ETG
         auto obj = std::make_unique<T>(std::forward<Args>(args)...);
         obj->Owner = OwnerObj;
         obj->template SetTypeInfo<T>(); //Set the type ID for this object
-        
-        // After full construction, set the object name based on its true dynamic type name and Set obj to unordered_map and vector
-        const std::string objName = obj->SetObjectNameToSelfClassName();
-        RegisterGameObject(objName, obj.get());
+
+        // After full construction, set the object name based on its true dynamic type name and register it to the scene list
+        obj->SetObjectNameToSelfClassName();
+        RegisterGameObject(obj.get());
         return obj;
     }
 
-    //Insert element to unordered_map and vector
-
-    inline void RegisterGameObject(const std::string& name, GameObjectBase* obj)
+    inline void RegisterGameObject(GameObjectBase* obj)
     {
-        auto& sceneObjs = GameState::GetInstance().GetSceneObjs();
-        sceneObjs[name] = obj;
-
-        auto& orderedObjList = GameState::GetInstance().GetOrderedSceneObjs();
-        orderedObjList.push_back(obj);
+        GameState::GetInstance().GetSceneObjs().push_back(obj);
     }
 
-    //For now this function is only for updating hierarchy tab for removed game objects. 
-    inline void UnregisterGameObject(const std::string& name)
+    //For now this function is only for updating hierarchy tab for removed game objects.
+    inline void UnregisterGameObject(GameObjectBase* obj)
     {
         auto& sceneObjs = GameState::GetInstance().GetSceneObjs();
-        auto* obj = sceneObjs[name];
-
-        //Remove from scene objects unordered_map firstly 
-        sceneObjs.erase(name);
-
-        //Remove from ordered list
-        auto& orderedObjList = GameState::GetInstance().GetOrderedSceneObjs();
-        const auto it = std::ranges::remove(orderedObjList, obj).begin(); //Move objects at the `End iterator` position that needs to removed. This will remove everything that satisfies the condition
-        orderedObjList.erase(it, orderedObjList.end()); //remove all the objects starting with it to end. Read above comment firstly
+        std::erase(sceneObjs, obj);
     }
 
     //NOTE: NOT USED YET. For now I am unsure how this function should be. Game objects always constructed as unique_ptr. Removing them from container will already deallocate the game object. So
@@ -76,7 +62,7 @@ namespace ETG
     {
         if (!obj) return; // Safety check
 
-        UnregisterGameObject(obj->SetObjectNameToSelfClassName());
+        UnregisterGameObject(obj.get());
 
         // Reset the unique_ptr to release memory
         obj.reset();

@@ -21,7 +21,7 @@ Boost modules are included as Git submodules under `deps/`.
 git clone --recurse-submodules https://github.com/Selviniahh/CapstoneGameProject.git
 cd CapstoneGameProject
 cmake -G Ninja -B build
-cmake --build build --config Release
+cmake --build build --parallel --config Release
 .\build\bin\ETG.exe
 ```
 

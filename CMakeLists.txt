@@ -12,7 +12,7 @@ option(BUILD_SHARED_LIBS "Build project libraries as shared libraries" ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 #- CMAKE_INSTALL_BINDIR → usually in "bin"
-#CMAKE_INSTALL_LIBDIR -> usually "lib"
+#CMAKE_INSTALL_LIBDIR -> usually "lib"  
 include(GNUInstallDirs)
 
 # Places Statik libs under (.a, .lib) build/lib.

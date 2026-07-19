@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <iostream>
 
+#include "Factory.h"
 #include "../Managers/Globals.h"
 #include "../Managers/SpriteBatch.h"
 #include "../Utils/StrManipulateUtil.h"
@@ -18,6 +19,7 @@ ETG::GameObjectBase::~GameObjectBase()
 {
     //Since the pointer doesn't own the memory, I don't need to bother with memory leak for the pointer. However just in case I set it to nullptr in destructor
     AnimInterface = nullptr;
+    UnregisterGameObject(this);
 }
 
 void ETG::GameObjectBase::Initialize()
@@ -124,14 +126,16 @@ void ETG::GameObjectBase::IncrementName()
     const auto& SceneObjs = ETG::GameState::GetInstance().GetSceneObjs();
     const std::string BaseName = ObjectName;
 
-    if (SceneObjs.contains(BaseName))
+    const bool nameTaken = std::ranges::any_of(SceneObjs, [this, &BaseName](GameObjectBase* obj) { return obj != this && obj->GetObjectName() == BaseName; });
+    if (nameTaken)
     {
         std::vector<signed int> Suffixes;
         Suffixes.push_back(1);
 
-        for (const auto& [objectName, gameObject] : SceneObjs)
+        for (auto* gameObject : SceneObjs)
         {
-            if (objectName == ObjectName) continue;
+            const std::string& objectName = gameObject->GetObjectName();
+            if (gameObject == this || objectName == ObjectName) continue;
 
             // Only process if it contains the base name and has potential numeric suffix
             if (objectName.starts_with(BaseName))

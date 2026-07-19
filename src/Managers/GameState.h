@@ -1,5 +1,5 @@
 #pragma once
-#include <unordered_map>
+#include <vector>
 #include "../Core/Scene/Scene.h"
 #include "../Engine/Engine.h"
 #include "../Items/Active/ActiveItemBase.h"
@@ -25,8 +25,7 @@ namespace ETG
 
         [[nodiscard]] Hero* GetHero() const { return MainHero; }
         [[nodiscard]] GameManager* GetGameManager() const { return GameManagerPtr; } //Spawn runtime objects through this
-        [[nodiscard]] std::unordered_map<std::string, GameObjectBase*>& GetSceneObjs() const { return *SceneObjs; } //Original method for fast lookups
-        [[nodiscard]] std::vector<GameObjectBase*>& GetOrderedSceneObjs() {return OrderedSceneObjs;} //New, for ordered hierarchy pane 
+        [[nodiscard]] std::vector<GameObjectBase*>& GetSceneObjs() { return SceneObjs; } //Single scene registry; insertion-ordered so the hierarchy panel stays stable
         [[nodiscard]] ETG::Vector2f* GetEngineUISize() const { return EngineUISize; }
         [[nodiscard]] Engine* GetEngine() const { return Engine; }
         [[nodiscard]] Scene* GetSceneObj() const { return SceneObj; }
@@ -36,7 +35,6 @@ namespace ETG
 
         void SetHero(Hero* hero) { MainHero = hero; }
         void SetGameManager(GameManager* gameManager) { GameManagerPtr = gameManager; }
-        void SetSceneObjs(std::unordered_map<std::string, GameObjectBase*>& sceneObj) { SceneObjs = &sceneObj; }
         void SetEngineUISize(ETG::Vector2f* size) { EngineUISize = size; }
         void SetEngine(Engine* engine) { Engine = engine; }
         void SetSceneObj(Scene* sceneObj) { SceneObj = sceneObj; }
@@ -51,9 +49,8 @@ namespace ETG
         Hero* MainHero = nullptr;
         GameManager* GameManagerPtr = nullptr;
 
-        //Game objects (non-owning pointers)
-        std::unordered_map<std::string, GameObjectBase*>* SceneObjs = nullptr;
-        std::vector<GameObjectBase*> OrderedSceneObjs; //Ordered for display
+        //Game objects (non-owning pointers), in insertion order
+        std::vector<GameObjectBase*> SceneObjs;
 
         Scene* SceneObj = nullptr;
         ETG::RenderWindow* Window;
