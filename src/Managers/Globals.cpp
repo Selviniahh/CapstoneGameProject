@@ -53,6 +53,11 @@ namespace ETG::Globals
         DeltaTime = FrameTick;
     }
 
+    void ResetTick()
+    {
+        LastTickTime = Clock::now();
+    }
+
     bool DrawSinglePixelAtLoc(const ETG::Vector2f& Loc, const ETG::Vector2i scale, const float rotation)
     {
         static ETG::Texture tex;

@@ -1,8 +1,6 @@
-2. Update/Draw listesi elle yazılmış, registry kullanılmıyor. GameManager.cpp:82-138'de her obje (Hero, Ak47, SawedOff, Magnum...) tek tek member olarak tutulup elle update/draw ediliyor. Halbuki SceneObjects registry'n zaten var — ama sadece ImGui hierarchy paneli için kullanılıyor. Bu modelde runtime'da obje spawn/destroy etmek mümkün değil, oysa Gungeon klonu demek oda oda düşman spawn'ı demek. Sahiplik merkezi bir vector<unique_ptr<GameObjectBase>>'e geçmeli, GameManager o listeyi dönmeli. Bu, projedeki en büyük mimari kısıt.
+[//]: # (3. Input tamamen klavye+mouse'a gömülü. InputManager.cpp:25-31 doğrudan isKeyPressed&#40;A/D/W/S&#41; ve Mouse::isButtonPressed çağırıyor; kodda tek bir SDL_EVENT_FINGER_* yok. Bunu "MoveAxis / AimDirection / ShootPressed" gibi soyut aksiyonlara çevirip InputManager'ın altına klavye ve touch backend'leri koymadan mobilde oyun oynanamaz.)
 
-3. Input tamamen klavye+mouse'a gömülü. InputManager.cpp:25-31 doğrudan isKeyPressed(A/D/W/S) ve Mouse::isButtonPressed çağırıyor; kodda tek bir SDL_EVENT_FINGER_* yok. Bunu "MoveAxis / AimDirection / ShootPressed" gibi soyut aksiyonlara çevirip InputManager'ın altına klavye ve touch backend'leri koymadan mobilde oyun oynanamaz.
-
-4. Frame pacing mobile uygun değil. RenderWindow.cpp:107-116 SDL_DelayNS ile elle 170 FPS limiti — mobilde bu pil yakar ve titrer. Doğrusu SDL_SetRenderVSync(renderer, 1); delay tabanlı limit sadece vsync kapalı masaüstü fallback'i olmalı.
+4. Frame pacing mobile uygun değil. RenderWindow.cpp:107-116 SDL_DelayNS ile elle 170 FPS limiti — mobilde bu pil yakar ve titrer. Doğrusu SDL_SetRenderVSync(renderer, 1); delay tabanl limit sadece vsync kapalı masaüstü fallback'i olmalı.
 
 Ciddi logic bugları
 

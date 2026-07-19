@@ -20,8 +20,7 @@ namespace ETG
         void ProcessEvents();
         [[nodiscard]] bool WindowHasFocus() const { return HasFocus; }
 
-        //I might delete this later on
-        static bool IsRunning() { return Globals::Window->isOpen(); }
+        [[nodiscard]] bool IsRunning() const { return Globals::Window && Globals::Window->isOpen(); }
         void Update();
         void Draw();
 

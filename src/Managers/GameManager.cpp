@@ -81,29 +81,26 @@ void ETG::GameManager::Initialize()
     DebugText = std::make_unique<class DebugText>();
 }
 
+//Pause is decided in the main loop: while the window is unfocused, main never calls Update/Draw
 void ETG::GameManager::Update()
 {
-    if (HasFocus)
-    {
-        EngineUI.Update();
-        Globals::Update();
-        InputManager::Update();
+    EngineUI.Update();
+    Globals::Update();
+    InputManager::Update();
 
-        //Objects spawned last frame join the list before anyone updates, so they never draw un-updated
-        FlushPendingSpawns();
+    //Objects spawned last frame join the list before anyone updates, so they never draw un-updated
+    FlushPendingSpawns();
 
-        for (const auto& obj : WorldObjects) 
-            obj->Update();
-        UI->Update();
+    for (const auto& obj : WorldObjects)
+        obj->Update();
+    UI->Update();
 
-        //Deallocate everything marked with MarkForDestroy during this frame
-        SweepDestroyedObjects();
-    }
+    //Deallocate everything marked with MarkForDestroy during this frame
+    SweepDestroyedObjects();
 }
 
 void ETG::GameManager::Draw()
 {
-    if (!HasFocus) return;
     Window->clear({1,255,255,255});
 
     //NOTE: Draw the main game scene with Custom view. These draws will be drawn zoomed.
@@ -177,7 +174,13 @@ void ETG::GameManager::ProcessEvents()
         GameEvent = event;
 
         if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) HasFocus = false;
-        if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) HasFocus = true;
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED)
+        {
+            HasFocus = true;
+            //The game was paused while unfocused; restart the tick clock so the paused duration
+            //doesn't hit the simulation as one giant DeltaTime.
+            Globals::ResetTick();
+        }
         if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
             Globals::Font.reset();

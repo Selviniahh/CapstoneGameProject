@@ -29,6 +29,10 @@ namespace ETG::Globals
     //Function to update elapsed time
     void Update();
 
+    //Restart the tick clock. Call when resuming after a pause (e.g. focus regained) so the
+    //paused duration doesn't land on the next frame as one giant FrameTick.
+    void ResetTick();
+
     //Initialize global variables
     void Initialize(const std::shared_ptr<ETG::RenderWindow>& window);
 
