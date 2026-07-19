@@ -2,8 +2,8 @@
 #include <stdexcept>
 
 #include "Math.h"
-#include "../Managers/Enum/StateEnums.h"
-#include "../Characters/Hero.h"
+#include "../Game/Managers/Enum/StateEnums.h"
+#include "../Game/Characters/Hero.h"
 
 ETG::Direction ETG::DirectionUtils::LastDashDirection{};
 

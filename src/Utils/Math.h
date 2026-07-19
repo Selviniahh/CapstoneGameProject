@@ -1,8 +1,8 @@
 #pragma once
-#include "Platform/Platform.h"
+#include "../Engine/Platform/Platform.h"
 #include <complex>
 #include <numbers>
-#include "../Managers/Globals.h"
+#include "../Engine/Managers/Globals.h"
 #include <iostream>
 #include <random>
 

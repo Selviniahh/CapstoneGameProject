@@ -52,143 +52,148 @@ find_package(Threads REQUIRED)
 # Sources
 # ------------------------------------------------------------------------------
 set(PLATFORM_SOURCES
-        src/Platform/Vector2.h
-        src/Platform/Rect.h
-        src/Platform/Color.h
-        src/Platform/View.h
-        src/Platform/Texture.cpp
-        src/Platform/Texture.h
-        src/Platform/Sprite.h
-        src/Platform/RenderWindow.cpp
-        src/Platform/RenderWindow.h
-        src/Platform/Shapes.h
-        src/Platform/Input.cpp
-        src/Platform/Input.h
-        src/Platform/Audio.cpp
-        src/Platform/Audio.h
-        src/Platform/Text.cpp
-        src/Platform/Text.h
-        src/Platform/Platform.h
+        src/Engine/Platform/Vector2.h
+        src/Engine/Platform/Rect.h
+        src/Engine/Platform/Color.h
+        src/Engine/Platform/View.h
+        src/Engine/Platform/Texture.cpp
+        src/Engine/Platform/Texture.h
+        src/Engine/Platform/Sprite.h
+        src/Engine/Platform/RenderWindow.cpp
+        src/Engine/Platform/RenderWindow.h
+        src/Engine/Platform/Shapes.h
+        src/Engine/Platform/Input.cpp
+        src/Engine/Platform/Input.h
+        src/Engine/Platform/Audio.cpp
+        src/Engine/Platform/Audio.h
+        src/Engine/Platform/Text.cpp
+        src/Engine/Platform/Text.h
+        src/Engine/Platform/Platform.h
 )
 
 set(CORE_SOURCES
-        src/Core/GameObjectBase.cpp
-        src/Core/GameObjectBase.h
-        src/Core/ComponentBase.h
-        src/Core/Factory.h
-        src/Core/GameClass.cpp
-        src/Core/GameClass.h
-        src/Core/TypeID.h
-        src/Core/Scene/Scene.cpp
-        src/Core/Scene/Scene.h
-        src/Core/Components/BaseHealthComp.cpp
-        src/Core/Components/BaseHealthComp.h
-        src/Core/Components/BaseMoveComp.cpp
-        src/Core/Components/BaseMoveComp.h
-        src/Core/Components/BaseAnimComp.h
-        src/Core/Components/ArrowComp.h
-        src/Core/Components/CollisionComponent.cpp
-        src/Core/Components/CollisionComponent.h
-        src/Core/Components/TimerComponent.cpp
-        src/Core/Components/TimerComponent.h
-        src/Core/Events/EventDelegate.h
+        src/Engine/Core/GameObjectBase.cpp
+        src/Engine/Core/GameObjectBase.h
+        src/Engine/Core/ComponentBase.h
+        src/Engine/Core/Factory.h
+        src/Engine/Core/GameClass.cpp
+        src/Engine/Core/GameClass.h
+        src/Engine/Core/TypeID.h
+        src/Engine/Core/Scene/Scene.cpp
+        src/Engine/Core/Scene/Scene.h
+        src/Engine/Core/Components/BaseHealthComp.cpp
+        src/Engine/Core/Components/BaseHealthComp.h
+        src/Engine/Core/Components/BaseMoveComp.cpp
+        src/Engine/Core/Components/BaseMoveComp.h
+        src/Engine/Core/Components/BaseAnimComp.h
+        src/Engine/Core/Components/ArrowComp.h
+        src/Engine/Core/Components/CollisionComponent.cpp
+        src/Engine/Core/Components/CollisionComponent.h
+        src/Engine/Core/Components/TimerComponent.cpp
+        src/Engine/Core/Components/TimerComponent.h
+        src/Engine/Core/Events/EventDelegate.h
 )
 
 set(ENGINE_SOURCES
-        src/Engine/Engine.cpp
-        src/Engine/Engine.h
-        src/Engine/Reflection.h
-        src/Engine/UI/EngineUI.cpp
-        src/Engine/UI/EngineUI.h
-        src/Engine/UI/UIUtils.cpp
-        src/Engine/UI/UIUtils.h
+        src/Engine/Editor/Engine.cpp
+        src/Engine/Editor/Engine.h
+        src/Engine/Editor/Reflection.h
+        src/Engine/Editor/UI/EngineUI.cpp
+        src/Engine/Editor/UI/EngineUI.h
+        src/Engine/Editor/UI/UIUtils.cpp
+        src/Engine/Editor/UI/UIUtils.h
 )
 
 set(UI_SOURCES
-        src/UI/UserInterface.cpp
-        src/UI/UIObjects/AmmoBarUI.cpp
-        src/UI/UIObjects/AmmoBarUI.h
-        src/UI/UIObjects/AmmoIndicatorsUI.cpp
-        src/UI/UIObjects/AmmoIndicatorsUI.h
-        src/UI/UIObjects/ReloadText.h
-        src/UI/UIObjects/AmmoCounter.h
-        src/UI/UIObjects/ReloadSlider.cpp
-        src/UI/UIObjects/ReloadSlider.h
-        src/UI/UIObjects/FrameBar.h
-        src/UI/UIObjects/FrameBar.cpp
-        src/UI/UIObjects/FrameLeftProgressBar.cpp
-        src/UI/UIObjects/FrameLeftProgressBar.h
+        src/Game/UI/UserInterface.cpp
+        src/Game/UI/UIObjects/AmmoBarUI.cpp
+        src/Game/UI/UIObjects/AmmoBarUI.h
+        src/Game/UI/UIObjects/AmmoIndicatorsUI.cpp
+        src/Game/UI/UIObjects/AmmoIndicatorsUI.h
+        src/Game/UI/UIObjects/ReloadText.h
+        src/Game/UI/UIObjects/AmmoCounter.h
+        src/Game/UI/UIObjects/ReloadSlider.cpp
+        src/Game/UI/UIObjects/ReloadSlider.h
+        src/Game/UI/UIObjects/FrameBar.h
+        src/Game/UI/UIObjects/FrameBar.cpp
+        src/Game/UI/UIObjects/FrameLeftProgressBar.cpp
+        src/Game/UI/UIObjects/FrameLeftProgressBar.h
 )
 
 set(MANAGERS_SOURCES
-        src/Managers/AssetManager.cpp
-        src/Managers/AssetManager.h
-        src/Managers/Globals.cpp
-        src/Managers/GameManager.cpp
-        src/Managers/GameState.h
-        src/Managers/SpriteBatch.cpp
-        src/Managers/InputManager.cpp
-        src/Managers/TypeRegistry.h
-        src/Managers/Enum/StateFlags.h
+        src/Engine/Managers/AssetManager.cpp
+        src/Engine/Managers/AssetManager.h
+        src/Engine/Managers/Globals.cpp
+        src/Game/Managers/GameManager.cpp
+        src/Game/Managers/GameState.h
+        src/Engine/Managers/SpriteBatch.cpp
+        src/Engine/Managers/InputManager.cpp
+        src/Engine/Managers/TypeRegistry.h
+        src/Game/Managers/Enum/StateFlags.h
+)
+
+set(LEVELS_SOURCES
+        src/Game/Levels/SpawnInitialLevel.cpp
+        src/Game/Levels/SpawnInitialLevel.h
 )
 
 set(ANIMATION_SOURCES
-        src/Animation/Animation.cpp
+        src/Engine/Animation/Animation.cpp
 )
 
 set(CHARACTERS_SOURCES
-        src/Characters/Hero.cpp
-        src/Characters/Components/HeroAnimComp.cpp
-        src/Characters/Components/InputComponent.cpp
-        src/Characters/Components/HeroMoveComp.cpp
-        src/Characters/Hand/Hand.cpp
-        src/Characters/Hand/Hand.h
+        src/Game/Characters/Hero.cpp
+        src/Game/Characters/Components/HeroAnimComp.cpp
+        src/Game/Characters/Components/InputComponent.cpp
+        src/Game/Characters/Components/HeroMoveComp.cpp
+        src/Game/Characters/Hand/Hand.cpp
+        src/Game/Characters/Hand/Hand.h
 )
 
 set(GUNS_SOURCES
-        src/Guns/Base/GunBase.cpp
-        src/Guns/Base/GunBase.h
-        src/Guns/RogueSpecial/RogueSpecial.cpp
-        src/Guns/RogueSpecial/RogueSpecial.h
-        src/Guns/VFX/MuzzleFlash.cpp
-        src/Guns/VFX/MuzzleFlash.h
-        src/Guns/AK-47/AK47.cpp
-        src/Guns/AK-47/AK47.h
-        src/Guns/SawedOff/SawedOff.cpp
-        src/Guns/SawedOff/SawedOff.h
-        src/Guns/Magnum/Magnum.cpp
-        src/Guns/Magnum/Magnum.h
+        src/Game/Guns/Base/GunBase.cpp
+        src/Game/Guns/Base/GunBase.h
+        src/Game/Guns/RogueSpecial/RogueSpecial.cpp
+        src/Game/Guns/RogueSpecial/RogueSpecial.h
+        src/Game/Guns/VFX/MuzzleFlash.cpp
+        src/Game/Guns/VFX/MuzzleFlash.h
+        src/Game/Guns/AK-47/AK47.cpp
+        src/Game/Guns/AK-47/AK47.h
+        src/Game/Guns/SawedOff/SawedOff.cpp
+        src/Game/Guns/SawedOff/SawedOff.h
+        src/Game/Guns/Magnum/Magnum.cpp
+        src/Game/Guns/Magnum/Magnum.h
 )
 
 set(PROJECTILE_SOURCES
-        src/Projectile/ProjectileBase.cpp
-        src/Projectile/ProjectileBase.h
+        src/Game/Projectile/ProjectileBase.cpp
+        src/Game/Projectile/ProjectileBase.h
 )
 
 set(ENEMY_SOURCES
-        src/Enemy/EnemyBase.cpp
-        src/Enemy/EnemyBase.h
-        src/Enemy/BulletMan/BulletMan.cpp
-        src/Enemy/BulletMan/BulletMan.h
-        src/Enemy/BulletMan/Components/BulletManAnimComp.cpp
-        src/Enemy/BulletMan/Components/BulletManAnimComp.h
-        src/Enemy/Components/EnemyMoveCompBase.cpp
-        src/Enemy/Components/EnemyMoveCompBase.h
+        src/Game/Enemy/EnemyBase.cpp
+        src/Game/Enemy/EnemyBase.h
+        src/Game/Enemy/BulletMan/BulletMan.cpp
+        src/Game/Enemy/BulletMan/BulletMan.h
+        src/Game/Enemy/BulletMan/Components/BulletManAnimComp.cpp
+        src/Game/Enemy/BulletMan/Components/BulletManAnimComp.h
+        src/Game/Enemy/Components/EnemyMoveCompBase.cpp
+        src/Game/Enemy/Components/EnemyMoveCompBase.h
 )
 
 set(ITEMS_SOURCES
-        src/Items/Active/ActiveItemBase.h
-        src/Items/Active/ActiveItemBase.cpp
-        src/Items/Active/DoubleShoot.cpp
-        src/Items/Active/DoubleShoot.h
-        src/Items/Passive/PassiveItemBase.h
-        src/Items/Passive/PlatinumBullets.cpp
-        src/Items/Passive/PlatinumBullets.h
+        src/Game/Items/Active/ActiveItemBase.h
+        src/Game/Items/Active/ActiveItemBase.cpp
+        src/Game/Items/Active/DoubleShoot.cpp
+        src/Game/Items/Active/DoubleShoot.h
+        src/Game/Items/Passive/PassiveItemBase.h
+        src/Game/Items/Passive/PlatinumBullets.cpp
+        src/Game/Items/Passive/PlatinumBullets.h
 )
 
 set(MODIFIERS_SOURCES
-        src/Modifiers/ModifierManager.h
-        src/Modifiers/Gun/MultiShotModifier.h
+        src/Game/Modifiers/ModifierManager.h
+        src/Game/Modifiers/Gun/MultiShotModifier.h
 )
 
 set(UTILS_SOURCES
@@ -209,6 +214,7 @@ add_library(etgcore
         ${ENGINE_SOURCES}
         ${ANIMATION_SOURCES}
         ${MANAGERS_SOURCES}
+        ${LEVELS_SOURCES}
         ${CHARACTERS_SOURCES}
         ${GUNS_SOURCES}
         ${UI_SOURCES}

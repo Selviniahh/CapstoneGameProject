@@ -1,7 +1,7 @@
 #pragma once
-#include "Platform/Platform.h"
+#include "../../Engine/Platform/Platform.h"
 
-#include "../../Animation/Animation.h"
+#include "../../Engine/Animation/Animation.h"
 
 namespace ETG
 {

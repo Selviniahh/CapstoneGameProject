@@ -1,6 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include "src/Managers/GameManager.h"
+#include "src/Game/Managers/GameManager.h"
 
 int main(int argc, char* argv[])
 {

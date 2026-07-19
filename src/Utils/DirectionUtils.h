@@ -1,8 +1,8 @@
 #pragma once
 #include <functional>
 #include <string>
-#include "Platform/Platform.h"
-#include "../../src/Managers/Enum/StateEnums.h"
+#include "../Engine/Platform/Platform.h"
+#include "../Game/Managers/Enum/StateEnums.h"
 
 //NOTE: For now this class hosts basic enum operations for both hero and enemy. Later on I will decide if it's worth to separate this class
 namespace ETG

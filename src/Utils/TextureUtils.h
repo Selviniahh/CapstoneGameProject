@@ -1,6 +1,6 @@
 #pragma once
-#include "Platform/Platform.h"
-#include "Platform/Platform.h"
+#include "../Engine/Platform/Platform.h"
+#include "../Engine/Platform/Platform.h"
 #include <memory>
 
 // A small free function to retrieve a 1×1 pixel texture (or any color).
