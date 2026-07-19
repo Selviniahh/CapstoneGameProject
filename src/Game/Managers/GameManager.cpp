@@ -38,7 +38,7 @@ void ETG::GameManager::Initialize()
     }
     Window = std::make_shared<ETG::RenderWindow>(static_cast<unsigned>(desktopWidth), static_cast<unsigned>(desktopHeight), "Enter The Gungeon Clone (SDL3)", true);
     Window->requestFocus();
-    Window->setFramerateLimit(Globals::FPS);
+    Window->setVSyncEnabled(true);
     GameState::GetInstance().SetRenderWindow(Window.get());
 
     //Initialize GameState instance before anything

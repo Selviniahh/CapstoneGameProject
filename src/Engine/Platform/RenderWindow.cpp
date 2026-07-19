@@ -180,6 +180,14 @@ namespace ETG
         return {static_cast<float>(m_logicalSize.x) / viewSize.x, static_cast<float>(m_logicalSize.y) / viewSize.y};
     }
 
+    bool RenderWindow::setVSyncEnabled(bool enabled) const
+    {
+        if (!m_renderer)
+            return false;
+        
+        return SDL_SetRenderVSync(m_renderer, enabled ? 1 : SDL_RENDERER_VSYNC_DISABLED);
+    }
+
     //---------------- Immediate mode drawing ----------------
     void RenderWindow::draw(const RectangleShape& rect)
     {

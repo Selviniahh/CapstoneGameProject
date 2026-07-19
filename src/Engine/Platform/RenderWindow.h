@@ -54,6 +54,8 @@ namespace ETG
         [[nodiscard]] Vector2f worldToScreen(const Vector2f& world) const;
         //Scale factor from world units to pixels of the current view (x, y)
         [[nodiscard]] Vector2f worldToScreenScale() const;
+        
+        bool setVSyncEnabled(bool enabled) const;
 
         //---------------- Immediate mode drawing (uses the current view) ----------------
         void draw(const RectangleShape& rect);
