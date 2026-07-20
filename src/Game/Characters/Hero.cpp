@@ -129,7 +129,12 @@ void ETG::Hero::UpdateAnimations()
 void ETG::Hero::UpdateHand() const
 {
     const ETG::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(CurrentDirection) ? ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-7.f, 5.f};
-    Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
+
+    //Facing is already baked into the ternary above, so feed only the scale magnitude into the rotation:
+    //FlipSpritesX flips the hero by setting Scale.x = -1, and passing that in would mirror the offset a second time.
+    const ETG::Vector2f ScaleMagnitude{std::abs(Scale.x), std::abs(Scale.y)};
+    Hand->SetPosition(Position + Math::RotateVector(Rotation, ScaleMagnitude, Hand->HandOffset + HandOffsetForHero));
+    Hand->SetRotation(Rotation); //Hand sprite turns with the hero body
     Hand->Update();
 
     //If dashing or hit anim playing do not draw gun and hand

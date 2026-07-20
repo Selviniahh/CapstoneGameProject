@@ -1,0 +1,301 @@
+ Net önerim: Bu proje için en uygun çözüm HFSM2 + data-driven AnimationSet. Ama asıl
+  kurtarıcı HFSM2 değil; state × direction × character kombinasyonları için ayrı enum üretmeyi
+  bırakmak.
+
+  DirectionUtils aslında locomotion sistemi değil. Şunların hepsini aynı yerde yapıyor:
+
+  - Açıyı yöne çeviriyor.
+  - Klavyeyi doğrudan okuyor.
+  - Dash yönünü saklıyor.
+  - Gameplay state’ini animation enum’una çeviriyor.
+  - Hero ve BulletMan’e özel kurallar içeriyor.
+
+  Bu ilk çalışan sürüm için normal. Fakat ölçeklenmez.
+
+  ## Şu anki patlama nereden geliyor?
+
+  Yalnızca şu altı dosya şimdiden 782 satır:
+
+  - DirectionUtils
+  - StateEnums
+  - StateFlags
+  - HeroAnimComp
+  - BulletManAnimComp
+
+  Documents/ssh/EnterTheGungeonClone/src/Game/Managers/Enum/StateEnums.h:9 içinde aynı kavramı
+  tekrar tekrar tanımlıyorsun:
+
+  HeroRunEnum
+  HeroIdleEnum
+  HeroDashEnum
+
+  BulletManRunEnum
+  BulletManIdleEnum
+  BulletManShootingEnum
+  BulletManHitEnum
+  BulletManDeathEnum
+
+  Sonra Documents/ssh/EnterTheGungeonClone/src/Utils/DirectionUtils.cpp:64 bunların her biri
+  için ayrı çevirme fonksiyonu yazıyor. Yeni karakter ve state geldikçe:
+
+  karakter sayısı × state sayısı × yön sayısı
+
+  oranında kod büyür.
+
+  Ek olarak birkaç somut problem var:
+
+  - Direction aralıkları 22, 67 gibi noktalarda üst üste biniyor ve unordered_map sırası
+    garanti değil.
+
+  - Player yönleri 22/67, enemy yönleri 22.5/67.5 kullanıyor.
+  - FrontHandRight, BackHandLeft, Front_For_Dash gibi isimler gameplay anlamıyla görsel anlamı
+    karıştırıyor.
+
+  - Dash yönü Documents/ssh/EnterTheGungeonClone/src/Utils/DirectionUtils.cpp:143.
+  - Hareket sistemi AnimationComp->IsDashing okuyor; animation sistemi hareketi sonlandırıyor.
+    İki sistem birbirine dairesel bağımlı.
+
+  - Documents/ssh/EnterTheGungeonClone/src/Engine/Core/Components/BaseAnimComp.h:77 önce
+    CurrentAnimStateKey = animKey yapıp sonra değişmiş mi diye kontrol ediyor. Dolayısıyla
+    ChangeAnimStateIfRequired() karşılaştırması fiilen daima false oluyor.
+
+  ## Kurulması gereken yapı
+
+  ### 1. Tek yön tipi
+
+  enum class Facing8 : std::uint8_t
+  {
+      East,
+      SouthEast,
+      South,
+      SouthWest,
+      West,
+      NorthWest,
+      North,
+      NorthEast
+  };
+
+  Açı aralığı map’i yerine tek matematik fonksiyonu:
+
+  Facing8 FacingFromVector(Vector2f direction);
+
+  Sıfır vector geldiyse son facing korunur. Böylece bütün if angle >= ... blokları silinir.
+
+  ### 2. Gameplay state ile animation yönünü ayır
+
+  Gameplay:
+
+  enum class LocomotionState
+  {
+      Idle,
+      Move,
+      Dash,
+      Knockback,
+      Dead
+  };
+
+  enum class CombatState
+  {
+      Ready,
+      Firing,
+      Reloading
+  };
+
+  Hero aynı anda yürüyüp ateş edebildiği için her şeyi tek state enum’una doldurmamak önemli.
+
+  Animation tarafı:
+
+  enum class AnimAction
+  {
+      Idle,
+      Move,
+      Dash,
+      Shoot,
+      Hit,
+      Death,
+      Reload
+  };
+
+  struct AnimKey
+  {
+      AnimAction Action;
+      Facing8 Facing;
+  };
+
+  Böylece şunlar tamamen silinebilir:
+
+  HeroRunEnum
+  HeroIdleEnum
+  BulletManRunEnum
+  BulletManIdleEnum
+  BulletManHitEnum
+  BulletManDeathEnum
+
+  ### 3. Her karakter için yalnızca veri tanımla
+
+  AnimationSet bulletManAnimations{
+      {AnimAction::Idle, Facing8::North, idleBack},
+      {AnimAction::Idle, Facing8::East,  idleRight},
+      {AnimAction::Move, Facing8::West,  runLeft},
+      {AnimAction::Hit,  Facing8::East,  hitRight},
+      {AnimAction::Death, Facing8::North, deathBack}
+  };
+
+  Sol tarafın sprite’ı yoksa yeni enum ve fonksiyon yazma:
+
+  {AnimAction::Shoot, Facing8::West, shootRight, .FlipX = true}
+
+  Eksik yönler fallback/mirror ile çözülür. Böylece kod yalnızca gerçekten var olan asset
+  sayısı kadar büyür.
+
+  ## Hangi kütüphane?
+
+  Tek dependency seçecek olsam HFSM2 seçerdim. Header-only, MIT lisanslı, allocation yapmayan,
+  C++11+ ve oyunlara uygun hierarchical/orthogonal state desteği olan bir FSM kütüphanesi.
+  C++23 projenize ve vendored dependency düzeninize rahat oturur. Özellikle Alive →
+  Idle/Move/Dash/Hit ile Dead hiyerarşisini ve movement/combat gibi paralel bölgeleri temiz
+  şekilde modelleyebilir. HFSM2 resmî dokümantasyonu (https://hfsm.dev/)
+
+  Alternatif Boost.Ext SML (https://boost-ext.github.io/sml/index.html) de tek-header ve
+  hızlıdır; fakat DSL ve template ağırlığı şu aşamada kodu anlamayı zorlaştırabilir. Senin
+  projen için HFSM2’nin hiyerarşik oyun-state yaklaşımı daha doğal.
+
+  EnTT kullanmanı önermem. EnTT güçlü bir ECS’tir ama yalnızca locomotion için mevcut
+  OOP/component mimarini ECS’ye çevirmek büyük bir yeniden yazım olur; enum patlamasını da tek
+  başına çözmez. EnTT resmî ECS dokümantasyonu
+  (https://github.com/skypjack/entt/wiki/Entity-Component-System)
+
+  Box2D de bu problemin çözümü değil. Box2D hareketin fizik/collision tarafını çözebilir;
+  state ve animation seçmez. Ayrıca Box2D 3.1’in character mover özelliği deneysel, capsule
+  tabanlı ve daha çok FPS/platform türü hareketlere yönelik. Top-down ETG hareketi için normal
+  body/velocity yaklaşımı daha uygun olabilir. Box2D Character Mover dokümantasyonu
+  (https://box2d.org/documentation/md_character.html)
+
+  SDL zaten düşük seviyeli input/render/audio erişimi sağlar; locomotion gibi yüksek seviye
+  oyun katmanlarını bilerek uygulamaya bırakır. SDL3 dokümantasyonu
+  (https://wiki.libsdl.org/SDL3/FAQDevelopment)
+
+  ## Uygulama sırası
+
+  En düşük riskli geçiş:
+
+  1. Facing8 ve FacingFromVector() oluştur.
+  2. AnimAction + AnimKey + AnimationSet oluştur.
+  3. Önce BulletMan’i yeni sisteme taşı.
+  4. BulletMan’e özel bütün direction enum/fonksiyonlarını sil.
+  5. Hero’yu taşı; dash’in klavye okumasını InputIntent içine al.
+  6. Gameplay transition’ları HFSM2’ye geçir.
+  7. Box2D’yi daha sonra yalnızca movement/collision katmanına ekle.
+
+  Yani kararım:
+
+  > SDL + HFSM2 + kendi küçük data-driven AnimationSet/Facing8 katmanın.
+
+  HFSM2 state geçişlerindeki spaghetti’yi çözer; AnimationSet ise seni gerçekten 50 bin
+  satırlık enum ve mapping patlamasından kurtarır.
+
+─ Worked for 2m 53s ──────────────────────────────────────────────────────────────────────────
+
+
+› flat ile finite arasindaki fark ne? HFSM2 yazari High-Performance Flat Finite State Machine
+  mi yazmis yoksa ben mi karistiriyorum?
+
+
+• İsimlerde iki ayrı eksen karışıyor: “finite” state sayısının sonlu olduğunu, “flat/
+  hierarchical” ise state’lerin nasıl düzenlendiğini anlatıyor. FFSM2 ve HFSM2’nin aynı yazar/
+  proje ailesi olduğunu resmî sayfadan netleştiriyorum.
+
+• Searching the web
+
+• Searched the web
+
+──────────────────────────────────────────────────────────────────────────────────────────────
+
+• Karıştırmadın. Aynı geliştirici Andrew Gresyk iki ayrı kütüphane yazmış:
+
+  - FFSM2: High-Performance Flat Finite State Machine
+  - HFSM2: High-Performance Hierarchical Finite State Machine
+
+  “Finite” ve “flat” birbirinin alternatifi değil:
+
+  - Finite: Makinenin sonlu sayıda state’i var.
+  - Flat: Bütün state’ler aynı seviyede.
+  - Hierarchical: State’ler parent/child şeklinde gruplanabiliyor.
+
+  ## Flat FSM
+
+  Bütün state’ler kardeştir:
+
+  Idle
+  Run
+  Dash
+  Hit
+  Shooting
+  Reloading
+  Dead
+
+  Geçişler:
+
+  Idle → Run
+  Run → Dash
+  Dash → Idle
+  Run → Hit
+  Hit → Idle
+  Her state → Dead
+
+  State sayısı arttıkça aynı kurallar tekrar edilir. Örneğin Dead durumuna geçişi birçok state
+  için ayrı ayrı tanımlaman gerekebilir.
+
+  FFSM2 bunun için yapılmış hafif ve hızlı bir flat FSM kütüphanesi. FFSM2 resmî sitesi
+  (https://flat.hfsm.dev/)
+
+  ## Hierarchical FSM
+
+  Ortak davranışlar parent state altında gruplanır:
+
+  Character
+  ├── Alive
+  │   ├── Idle
+  │   ├── Move
+  │   ├── Dash
+  │   └── Hit
+  └── Dead
+
+  Alive içindeki bütün state’ler ortak kuralları paylaşabilir:
+
+  Alive → Dead
+
+  Bunu Idle → Dead, Move → Dead, Dash → Dead diye tekrar tekrar yazman gerekmez.
+
+  Daha da önemlisi HFSM2 orthogonal, yani aynı anda çalışan bölgeleri destekliyor:
+
+  Alive
+  ├── Locomotion
+  │   ├── Idle
+  │   ├── Move
+  │   └── Dash
+  │
+  └── Combat
+      ├── Ready
+      ├── Shooting
+      └── Reloading
+
+  Böylece karakter aynı anda:
+
+  Locomotion = Move
+  Combat     = Shooting
+
+  olabilir. Senin Hero’n yürürken ateş edebildiği için bu model oldukça uygun. HFSM2 resmî
+  olarak hierarchical ve orthogonal region desteği sunuyor. HFSM2 resmî sitesi
+  (https://hfsm.dev/)
+
+  Kısacası:
+
+  FSM   = genel kavram
+  FFSM2 = flat FSM kütüphanesi
+  HFSM2 = hierarchical FSM kütüphanesi
+
+  Senin mevcut beş state’li Hero’n için FFSM2 yeterli olabilirdi. Fakat uzun vadede movement,
+  combat, hit reaction, death ve AI ekleneceği için HFSM2 daha doğru seçim. Yine de yön ve
+  animation clip eşleştirmelerini HFSM2 state’lerine dönüştürmemelisin; Facing8 + AnimationSet
+  ayrı katman olarak kalmalı.

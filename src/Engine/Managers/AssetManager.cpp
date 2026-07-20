@@ -1,6 +1,9 @@
 //hello world
 #include "AssetManager.h"
 #include <SDL3/SDL.h>
+#include <stdexcept>
+#include <unordered_map>
+#include "../Platform/Texture.h"
 
 namespace ETG
 {
@@ -44,6 +47,30 @@ namespace ETG
     {
         if (!Initialized) Initialize();
         return (ResourceRoot / relativePath).generic_string();
+    }
+
+    std::shared_ptr<Texture> AssetManager::LoadTexture(const std::filesystem::path& relativePath)
+    {
+        if (!Initialized) Initialize();
+
+        static std::unordered_map<std::string, std::shared_ptr<Texture>> TextureCache;
+
+        //Accept both raw relative paths and paths already passed through Resolve()
+        //Search if the path exsists first
+        std::string path = relativePath.generic_string();
+        if (!relativePath.is_absolute() && !path.starts_with(ResourceRoot.generic_string()))
+            path = Resolve(relativePath);
+
+        if (const auto it = TextureCache.find(path); it != TextureCache.end())
+            return it->second;
+
+        //The Texture hasn't been found. So create a texture and add it into the TextureCache
+        auto texture = std::make_shared<Texture>();
+        if (!texture->loadFromFile(path))
+            throw std::runtime_error("Failed to load texture: " + path);
+
+        TextureCache.emplace(path, texture);
+        return texture;
     }
 
     std::vector<unsigned char> AssetManager::LoadBytes(const std::filesystem::path& relativePath)

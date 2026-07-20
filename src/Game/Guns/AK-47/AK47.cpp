@@ -40,9 +40,7 @@ void ETG::AK47::Initialize()
 
     
     // Load the projectile texture for AK-47
-    const auto projPath = AssetManager::Resolve("Projectiles/bullet_variant_002.png");
-    if (!ProjTexture->loadFromFile(projPath))
-        throw std::runtime_error("Failed to load Projectile_AK-47.png from path: " + projPath);
+    ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_002.png");
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {

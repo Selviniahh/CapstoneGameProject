@@ -1,6 +1,7 @@
 #pragma once
 #include "../ComponentBase.h"
 #include "../../Managers/SpriteBatch.h"
+#include "../../Managers/AssetManager.h"
 
 
 namespace ETG
@@ -23,9 +24,7 @@ namespace ETG
 
     inline ArrowComp::ArrowComp(const std::string& texturePath)
     {
-        if (!Texture) Texture = std::make_shared<ETG::Texture>();
-        if (!Texture->loadFromFile(texturePath))
-            throw std::runtime_error(texturePath + " not found");
+        Texture = AssetManager::LoadTexture(texturePath);
 
         Origin = {
             static_cast<float>(Texture->getSize().x / 2),

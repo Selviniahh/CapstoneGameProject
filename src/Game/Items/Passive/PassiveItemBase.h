@@ -17,10 +17,7 @@ namespace ETG
         explicit PassiveItemBase(const std::string& resourcePath)
         {
             //Load the texture
-            Texture = std::make_shared<ETG::Texture>();
-
-            if (!Texture->loadFromFile(resourcePath))
-                std::cerr << "Failed to load hand texture" << std::endl;
+            Texture = AssetManager::LoadTexture(resourcePath);
 
             // Load sound effects
             if (!PickupSoundBuffers[0].loadFromFile(AssetManager::Resolve("Sounds/Pickup1.ogg")))

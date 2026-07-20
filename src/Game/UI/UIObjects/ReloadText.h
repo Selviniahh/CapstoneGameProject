@@ -50,8 +50,7 @@ namespace ETG
     inline void ReloadText::Initialize()
     {
         Hero = Hero::Get();
-        Texture = std::make_shared<ETG::Texture>();
-        Texture->loadFromFile(AssetManager::Resolve("UI/ReloadText.png"));
+        Texture = AssetManager::LoadTexture("UI/ReloadText.png");
         Origin.x = Texture->getSize().x / 2;
         Origin.y = Texture->getSize().y / 2;
         Scale = ETG::Vector2f{0.2f, 0.2f};

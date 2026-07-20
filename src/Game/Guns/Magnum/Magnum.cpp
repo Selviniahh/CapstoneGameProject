@@ -39,9 +39,7 @@ void ETG::Magnum::Initialize()
     ArrowComp->arrowOffset = {20.f, -8.f};
     CollisionComp->Initialize();
 
-    const auto projPath = AssetManager::Resolve("Projectiles/bullet_variant_003.png");
-    if (!ProjTexture->loadFromFile(projPath))
-        throw std::runtime_error("Failed to load Projectile_SawedOff.png from path: " + projPath);
+    ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_003.png");
 
     //For now inside the gun if it collides with hero, hero will pick it up. We can do it instead inside hero later
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)

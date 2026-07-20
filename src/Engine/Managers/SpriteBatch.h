@@ -16,7 +16,7 @@ namespace ETG
 
         //NOTE: Sprites added to a batch are transformed based on the active view
         void Draw(const Sprite& sprite, float depth);
-        void drawRectOutline(const ETG::FloatRect& rect, const ETG::Color& color, float thickness, float depth);
+        void drawRectOutline(const FloatRect& rect, const Color& color, float thickness, float depth);
 
         void end(ETG::RenderWindow& window);
 

@@ -17,6 +17,7 @@ namespace ETG
 void ETG::SpriteBatch::begin()
 {
     sprites.clear();
+    drawCounter = 0;
 }
 
 void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
@@ -35,13 +36,20 @@ void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
     const float cosR = std::cos(rad);
     const float sinR = std::sin(rad);
 
+    //Yerel koordinatlardan dunya/ekran koordinatlarina donustur
     const auto transformPoint = [&](const float localX, const float localY) -> ETG::Vector2f
     {
+        //Noktayı origin’e göre hizalayıp ölçeklendiriyor. Örneğin origin, sprite’ın merkeziyse dönüş merkez etrafında gerçekleşir.
         const float x = (localX - origin.x) * scale.x;
         const float y = (localY - origin.y) * scale.y;
+        
+        //Rotation matrix 
+        float rotatedX = x * cosR - y * sinR;
+        float rotatedY = x * sinR + y * cosR;
+        
         return {
-            position.x + x * cosR - y * sinR,
-            position.y + x * sinR + y * cosR
+            position.x + rotatedX,
+            position.y + rotatedY
         };
     };
 

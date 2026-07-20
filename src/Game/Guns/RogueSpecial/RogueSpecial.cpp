@@ -34,9 +34,7 @@ void ETG::RogueSpecial::Initialize()
     MuzzleFlash->SetOffset({37.f, -6.f});
 
     // Load the projectile texture for RogueSpecial.
-    const auto projPath = AssetManager::Resolve("Projectiles/RogueSpecial/Projectile_RogueSpecial.png");
-    if (!ProjTexture->loadFromFile(projPath))
-        throw std::runtime_error("Failed to load Projectile_RogueSpecial.png from path: " + projPath);
+    ProjTexture = AssetManager::LoadTexture("Projectiles/RogueSpecial/Projectile_RogueSpecial.png");
 
     GunBase::Initialize();
 }

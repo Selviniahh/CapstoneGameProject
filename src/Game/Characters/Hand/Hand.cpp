@@ -15,11 +15,8 @@ ETG::Hand::Hand()
 
 void ETG::Hand::Initialize()
 {
-    Texture = std::make_shared<ETG::Texture>();
+    Texture = AssetManager::LoadTexture("Player/rogue_hand_001.png");
 
-    if (!Texture->loadFromFile(AssetManager::Resolve("Player/rogue_hand_001.png")))
-        std::cerr << "Failed to load hand texture" << std::endl;
-    
     GameObjectBase::Initialize();
 }
 

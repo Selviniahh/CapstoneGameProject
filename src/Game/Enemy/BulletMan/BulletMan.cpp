@@ -35,7 +35,9 @@ ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
 
     Gun = ETG::CreateGameObjectAttached<Magnum>(this, Hand->GetRelativePosition());
     Gun->Initialize();
-    Gun->ProjTexture->loadFromFile(AssetManager::Resolve("Projectiles/Enemy/8x8_enemy_projectile_001.png"));
+    //Reassign instead of loading in place: ProjTexture is shared through the texture cache, loading
+    //into it would overwrite the hero's Magnum projectile texture too.
+    Gun->ProjTexture = AssetManager::LoadTexture("Projectiles/Enemy/8x8_enemy_projectile_001.png");
 }
 
 ETG::BulletMan::~BulletMan() = default;

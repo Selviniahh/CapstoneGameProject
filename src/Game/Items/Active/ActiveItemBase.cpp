@@ -6,11 +6,8 @@
 ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& activateResPath, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
 {
     //Load the texture
-    Texture = std::make_shared<ETG::Texture>();
+    Texture = AssetManager::LoadTexture(resourcePath);
 
-    if (!Texture->loadFromFile(resourcePath))
-        std::cerr << "Failed to load hand texture" << std::endl;
-    
     Origin = ETG::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
 
     // Load sound effects

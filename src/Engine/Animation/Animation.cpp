@@ -7,6 +7,7 @@
 #include "../Managers/RenderContext.h"
 #include "../Managers/SpriteBatch.h"
 #include <memory>
+#include <unordered_map>
 
 Animation::Animation(const std::shared_ptr<ETG::Texture>& texture, const float eachFrameSpeed, const int frameX, const int frameY, const int row)
     : FrameX(frameX), FrameY(frameY), FrameInterval(eachFrameSpeed), Texture(texture)
@@ -140,69 +141,124 @@ bool Animation::IsPlayingLastFrame() const
     return IsOnLastFrame;
 }
 
+namespace
+{
+    struct SheetData
+    {
+        std::shared_ptr<ETG::Texture> Texture;
+        std::vector<ETG::IntRect> FrameRects;
+    };
+
+    struct LoadedFrames
+    {
+        std::vector<ETG::Image> Images;
+        int TotalWidth{};
+        int MaxHeight{};
+    };
+
+    std::string MakeSheetCacheKey(const std::string& relativePath,
+                                  const std::string& fileName,
+                                  const std::string& extension,
+                                  const bool isSingleSprite)
+    {
+        return relativePath + "/" + fileName + "." + extension + (isSingleSprite ? "|single" : "");
+    }
+
+    LoadedFrames LoadFrames(const std::string& relativePath,
+                            const std::string& fileName,
+                            const std::string& extension,
+                            const bool isSingleSprite)
+    {
+        LoadedFrames loadedFrames;
+        int counter = 0;
+        std::string basePath = ETG::AssetManager::Resolve(std::filesystem::path(relativePath) / fileName);
+        const char lastChar = basePath.back();
+        std::string filePath;
+
+        if (lastChar >= '0' && lastChar <= '9')
+        {
+            counter = lastChar - '0';
+            basePath.pop_back();
+            filePath = basePath + std::to_string(counter) + "." + extension;
+        }
+        else
+        {
+            filePath = basePath + "." + extension;
+        }
+
+        if (!std::filesystem::exists(filePath))
+            throw std::runtime_error("File not found at: " + filePath);
+
+        while (true)
+        {
+            filePath = isSingleSprite
+                           ? basePath + "." += extension
+                           : basePath + std::to_string(counter) + "." + extension;
+            if (!std::filesystem::exists(filePath)) break;
+
+            ETG::Image image;
+            if (!image.loadFromFile(filePath))
+                throw std::runtime_error("Failed to load image: " + filePath);
+
+            loadedFrames.TotalWidth += static_cast<int>(image.getSize().x);
+            loadedFrames.MaxHeight = std::max(loadedFrames.MaxHeight, static_cast<int>(image.getSize().y));
+            loadedFrames.Images.push_back(std::move(image));
+
+            ++counter;
+            if (isSingleSprite) break;
+        }
+
+        return loadedFrames;
+    }
+
+    SheetData StitchFrames(const LoadedFrames& loadedFrames)
+    {
+        ETG::Image spriteImage;
+        spriteImage.create(loadedFrames.TotalWidth, loadedFrames.MaxHeight, ETG::Color::Transparent);
+
+        unsigned int xOffset = 0;
+        std::vector<ETG::IntRect> frameRects;
+        frameRects.reserve(loadedFrames.Images.size());
+
+        for (const auto& image : loadedFrames.Images)
+        {
+            spriteImage.copy(image, xOffset, 0);
+            frameRects.emplace_back(xOffset, 0, image.getSize().x, image.getSize().y);
+            xOffset += image.getSize().x;
+        }
+
+        auto texture = std::make_shared<ETG::Texture>();
+        texture->loadFromImage(spriteImage);
+        return {std::move(texture), std::move(frameRects)};
+    }
+
+    Animation MakeAnimation(const SheetData& sheet,
+                            const float frameSpeed,
+                            const std::string& animationPath)
+    {
+        Animation animation(sheet.Texture, frameSpeed, static_cast<int>(sheet.FrameRects.size()), 1);
+        animation.FrameRects = sheet.FrameRects;
+        animation.AnimPathName = animationPath;
+        return animation;
+    }
+}
+
 Animation Animation::CreateSpriteSheet(const std::string& RelativePath, const std::string& FileName, const std::string& Extension, const float eachFrameSpeed, bool IsSingleSprite)
 {
-    std::vector<ETG::Image> imageArr;
-    int counter = 0;
-    int totalWidth = 0, maxHeight = 0;
-    std::string basePath = ETG::AssetManager::Resolve(std::filesystem::path(RelativePath) / FileName);
-    char LastChar = basePath[basePath.length() - 1];
-    std::string filePath;
+    //Stitched sheets are cached process-wide: every AnimComp instance of the same type shares one
+    //texture, so identical objects can batch together (SpriteBatch batches by texture pointer) and
+    //spawning at runtime causes no disk IO.
+    static std::unordered_map<std::string, SheetData> sheetCache;
 
-    if (static_cast<int>(LastChar) >= 48 && static_cast<int>(LastChar) <= 57)
-    {
-        counter = LastChar - '0';
-        basePath[basePath.length() - 1] = counter + '0';
-        basePath.erase(basePath.length() - 1, basePath.length() - 2);
-        filePath = basePath + std::to_string(counter) + "." + Extension;
-    }
-    else
-    {
-        filePath = basePath + "." + Extension;
-    }
+    const std::string cacheKey = MakeSheetCacheKey(RelativePath, FileName, Extension, IsSingleSprite);
+    const std::string animationPath = RelativePath + FileName;
 
-    // Check firstly if filepath is valid
-    if (!std::filesystem::exists(filePath)) throw std::runtime_error("File not found at: " + filePath);
+    if (const auto it = sheetCache.find(cacheKey); it != sheetCache.end())
+        return MakeAnimation(it->second, eachFrameSpeed, animationPath);
 
-    // Load all the given textures 
-    while (true)
-    {
-        ETG::Image singleImage;
-        filePath = IsSingleSprite ? basePath + "." + Extension : basePath + std::to_string(counter) + "." + Extension;
-        if (!std::filesystem::exists(filePath)) break;
+    LoadedFrames loadedFrames = LoadFrames(RelativePath, FileName, Extension, IsSingleSprite);
+    SheetData sheet = StitchFrames(loadedFrames);
+    const auto cacheEntry = sheetCache.emplace(cacheKey, std::move(sheet));
 
-        if (!singleImage.loadFromFile(filePath))
-            throw std::runtime_error("Failed to load image: " + filePath);
-
-        imageArr.push_back(singleImage);
-        totalWidth += int(singleImage.getSize().x);
-        maxHeight = std::max(maxHeight, int(singleImage.getSize().y));
-        counter++;
-        if (IsSingleSprite) break;
-    }
-
-    // Create the spritesheet as image
-    ETG::Image spriteImage;
-    spriteImage.create(totalWidth, maxHeight, ETG::Color::Transparent);
-
-    // Copy images into the image
-    unsigned int xOffset = 0;
-    std::vector<ETG::Rect<int>> customFrameRects;
-    for (auto& image : imageArr)
-    {
-        spriteImage.copy(image, xOffset, 0);
-        // Create frame rect based on the actual image size
-        ETG::IntRect frameRect(xOffset, 0, image.getSize().x, image.getSize().y);
-        customFrameRects.push_back(frameRect);
-        xOffset += image.getSize().x;
-    }
-
-    auto spriteTex = std::make_shared<ETG::Texture>();
-    spriteTex->loadFromImage(spriteImage);
-
-    Animation anim(spriteTex, eachFrameSpeed, int(imageArr.size()), 1);
-    // Overwrite the auto-generated frame rectangles with our custom ones
-    anim.FrameRects = customFrameRects;
-    anim.AnimPathName = RelativePath + FileName;
-    return anim;
+    return MakeAnimation(cacheEntry.first->second, eachFrameSpeed, animationPath);
 }
