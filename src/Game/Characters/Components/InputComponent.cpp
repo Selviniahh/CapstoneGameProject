@@ -11,8 +11,8 @@
 #include "../../../Utils/Math.h"
 #include "../../../Utils/StrManipulateUtil.h"
 
-//This class will set `HeroPtr->CurrentHeroState`
-//HeroAnimComp will set real animation based on HeroPtr->CurrentHeroState
+//This class reads input and files requests on the Hero (RequestDash) or sets values the state machine's guards read
+//(CurrentDirection, IsShooting). It never assigns a state: HeroStateMachine decides, HeroAnimComp then draws it.
 
 namespace ETG
 {
@@ -34,8 +34,9 @@ namespace ETG
         HandleGunSwitch(hero);
         HandleDash(hero);
 
-        //Reload the gun if R pressed and hero is not dashing 
-        if (!hero.AnimationComp->IsDashing && ETG::Keyboard::isKeyPressed(ETG::Keyboard::R))
+        //Reload the gun if R pressed. NOTE: this used to check "not dashing", which also let a dead hero reload.
+        //CanShoot covers the dash case plus the dead / hit cases the old check missed
+        if (hero.CanShoot() && ETG::Keyboard::isKeyPressed(ETG::Keyboard::R))
         {
             hero.CurrentGun->Reload();
         }
@@ -63,17 +64,14 @@ namespace ETG
         }
     }
 
-    void InputComponent::HandleDash(const Hero& hero)
+    //NOTE: Input files a request, it does not start a dash. Whether the hero is already dashing, dead or mid-hit is
+    //not input's business to know: the state machine either has a legal transition into Dash right now or it doesn't
+    void InputComponent::HandleDash(Hero& hero)
     {
-        // If right-clicked, start dashing if possible
-        if (ETG::Mouse::isButtonPressed(ETG::Mouse::Right) && !hero.AnimationComp->IsDashing && hero.MoveComp->IsDashAvailable())
-        {
-            const HeroDashEnum dashDirection = DirectionUtils::GetDashDirectionEnum(); // If you put breakpoint this line, direction enum will always be unknown so put breakpoint below this line to capture dash direction
-            if (dashDirection != HeroDashEnum::Unknown)
-            {
-                hero.AnimationComp->StartDash(dashDirection);
-            }
-        }
+        if (!ETG::Mouse::isButtonPressed(ETG::Mouse::Right)) return;
+
+        // If you put breakpoint this line, direction enum will always be unknown so put breakpoint below this line to capture dash direction
+        hero.RequestDash(DirectionUtils::GetDashDirectionEnum());
     }
 
     void InputComponent::HandleGunSwitch(Hero& hero) const

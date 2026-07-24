@@ -15,7 +15,7 @@ namespace ETG
     {
     public:
         InputComponent();
-        static void HandleDash(const Hero& hero);
+        static void HandleDash(Hero& hero);
         void Update(Hero& hero) const;
 
     public:

@@ -1,5 +1,8 @@
 #include "Hero.h"
 #include <filesystem>
+#include <imgui.h>
+#include "../../Engine/Editor/UI/UIUtils.h"
+#include "../../Engine/Managers/Time.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Components/BaseHealthComp.h"
 #include "../Enemy/EnemyBase.h"
@@ -23,6 +26,12 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
 {
     this->Position = Position;
     Depth = -1;
+
+    //NOTE: Built before the components because they ask the hero for its state while constructing (HeroAnimComp
+    //does, in its constructor). Building and entering the tree touches no component, so this ordering is safe
+    StateMachine = std::make_unique<HeroStateMachine>();
+    StateMachine->Build();
+    StateMachine->Start(*this);
 
     Hand = ETG::CreateGameObjectAttached<class Hand>(this);
     RogueSpecial = ETG::CreateGameObjectAttached<class RogueSpecial>(this, Hand->GetRelativePosition());
@@ -53,22 +62,14 @@ void ETG::Hero::Initialize()
 {
     GameObjectBase::Initialize();
 
-    //NOTE: damage taken at here
+    //NOTE: damage taken at here. The listener only reports what happened; entering the Hit state and applying the
+    //knockback is the machine's job, so the two can no longer drift apart
     HealthComp->OnDamageTaken.AddListener([this](const float damage, const float forceMagnitude, const GameObjectBase* instigator)
     {
-        //IF dead ignore the damage
-        if (CurrentHeroState == HeroStateEnum::Die) return;
-
-        this->SetState(HeroStateEnum::Hit);
-        const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
-        MoveComp->ApplyForce(knockbackDir, forceMagnitude, 0.2f);
+        RequestHit(Math::Normalize(Position - instigator->GetPosition()), forceMagnitude);
     });
 
-    //NOTE: Hero will die at here
-    HealthComp->OnDeath.AddListener([this](GameObjectBase* instigator)
-    {
-        this->SetState(HeroStateEnum::Die);
-    });
+    //NOTE: No death listener is needed any more. The Alive -> Dead transition watches HealthComp->IsDead() itself
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
@@ -89,7 +90,7 @@ void ETG::Hero::Initialize()
                 projectile->Owner->Owner->IsA<EnemyBase>())
             {
                 const auto enemy = static_cast<EnemyBase*>(projectile->Owner->Owner);
-                if (HasAnyFlag(StateFlags, HeroStateFlags::PreventDamage)) return;
+                if (!CanTakeDamage()) return;
 
                 HealthComp->ApplyDamage(0.5, HitKnockBackMagnitude, enemy);
                 projectile->MarkForDestroy();
@@ -174,10 +175,14 @@ void ETG::Hero::HandleActiveItem() const
 void ETG::Hero::Update()
 {
     GameObjectBase::Update();
+
+    //Order matters: the components gather input and resolve forces, the machine then decides the state and runs the
+    //behaviour belonging to it, and only then do the animations render whatever state we ended up in
     UpdateComponents();
+    StateMachine->Tick(*this, Time::FrameTick);
     UpdateAnimations();
 
-    //NOTE: Reload Text: Will run only if reload needed 
+    //NOTE: Reload Text: Will run only if reload needed
     ReloadText->Update();
 
     HandleShooting();
@@ -203,23 +208,38 @@ void ETG::Hero::Draw()
 }
 
 //----------------------------State Functionalities ----------------------------
-void ETG::Hero::SetState(const HeroStateEnum& state)
+void ETG::Hero::RequestDash(const HeroDashEnum direction)
 {
-    CurrentHeroState = state;
+    if (direction == HeroDashEnum::Unknown) return;
 
-    switch (state)
-    {
-    case HeroStateEnum::Idle: StateFlags = HeroStateFlags::StateIdle;
-        break;
-    case HeroStateEnum::Run: StateFlags = HeroStateFlags::StateRun;
-        break;
-    case HeroStateEnum::Dash: StateFlags = HeroStateFlags::StateDash;
-        break;
-    case HeroStateEnum::Die: StateFlags = HeroStateFlags::StateDie;
-        break;
-    case HeroStateEnum::Hit: StateFlags = HeroStateFlags::StateHit;
-        break;
-    }
+    CurrentDashDirection = direction;
+    DashRequested = true;
+}
+
+void ETG::Hero::RequestHit(const ETG::Vector2f& knockbackDir, const float forceMagnitude)
+{
+    //NOTE: This is the old `if (CurrentHeroState == Die) return;` from the damage listener. Dead is a terminal
+    //subtree, so a request filed from in there would sit around unconsumed forever
+    if (!StateMachine->IsAlive()) return;
+
+    PendingKnockbackDir = knockbackDir;
+    PendingKnockbackForce = forceMagnitude;
+    HitRequested = true;
+}
+
+void ETG::Hero::PopulateSpecificWidgets()
+{
+    GameObjectBase::PopulateSpecificWidgets();
+
+    //NOTE: The old UI showed a single CurrentHeroState enum. The full path is strictly more informative:
+    //it tells you which subtree you are in, which is what decides the hero's capabilities
+    UIUtils::BeginProperty("State Path");
+    ImGui::Text("%s", StateMachine->GetActivePathName().c_str());
+    UIUtils::EndProperty();
+
+    UIUtils::BeginProperty("Time In State");
+    ImGui::Text("%.3f s", StateMachine->TimeInState());
+    UIUtils::EndProperty();
 }
 
 //----------------------------Gun Switch Functionalities ----------------------------

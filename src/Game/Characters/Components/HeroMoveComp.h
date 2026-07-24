@@ -8,19 +8,29 @@ namespace ETG
     class Hero; // Forward-declare the hero.
     enum class HeroDashEnum;
 
+    //NOTE: This component no longer decides anything about state. It used to set Idle/Run/Dash itself and keep its
+    //own dash timer alongside a second one in HeroAnimComp. Now it only does movement maths, when the machine asks
     class HeroMoveComp : public BaseMoveComp
     {
     public:
         HeroMoveComp();
 
-        void UpdateMovement();
+        //Only resolves forces. Normal movement and dashing are driven by the hero's state machine nodes
         void Update() override;
         void Initialize() override;
-        void MakeDashMovement();
-        void ApplyDashImpulse();
+
+        //Called from the Locomotion node's tick
+        void UpdateMovement();
+
+        //Called from the Dash node's enter / tick / exit
+        void BeginDash();
+        void MakeDashMovement(float elapsed);
+        void StartDashCooldown();
 
         [[nodiscard]] bool IsDashAvailable() const;
-        void StartDashCooldown();
+
+        //How long the current dash direction's animation runs for
+        [[nodiscard]] float GetDashDuration() const;
 
     public:
 
@@ -29,16 +39,16 @@ namespace ETG
         //Dash
         float DashAmount = 300;
         float DashCooldown = 0.5; //After dash is over, the cooldown to be able to dash again
-        float DashDuration{}; //Dash will take this variable's value as total dash time. Calculated as current dash animation's TotalAnimationTime. 
+
+        //NOTE: if any dash animation has fewer frames (i.e Dash/Right), that dash would complete sooner. For this
+        //reason the Dash state refuses to end before this much time has passed
+        float MinDashDuration = 0.2f;
 
     private:
-        void SetupDashListeners();
-
         float DashCooldownTimer = 0.f; //After each dash this will be assigned to `DashCooldown` and once it gets 0, dash will be available again
-        float DashTimer = 0.f; //Current Dash duration timer
-        ETG::Vector2f DashDirection; //This will set (-1, 1) based on DashDirectionEnum 
+        ETG::Vector2f DashDirection; //This will set (-1, 1) based on DashDirectionEnum
 
         BOOST_DESCRIBE_CLASS(HeroMoveComp, (BaseMoveComp),
-                             (HeroPtr, DashAmount, DashCooldown, DashDuration), (), ())
+                             (HeroPtr, DashAmount, DashCooldown, MinDashDuration), (), ())
     };
 }

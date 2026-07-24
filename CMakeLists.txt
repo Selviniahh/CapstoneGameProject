@@ -94,6 +94,8 @@ set(CORE_SOURCES
         src/Engine/Core/Components/TimerComponent.cpp
         src/Engine/Core/Components/TimerComponent.h
         src/Engine/Core/Events/EventDelegate.h
+        src/Engine/Core/StateMachine/StateNode.h
+        src/Engine/Core/StateMachine/HierarchicalStateMachine.h
 )
 
 set(ENGINE_SOURCES
@@ -135,6 +137,8 @@ set(MANAGERS_SOURCES
         src/Engine/Managers/InputManager.cpp
         src/Engine/Managers/TypeRegistry.h
         src/Game/Managers/Enum/StateFlags.h
+        src/Game/Managers/Enum/FlagOperators.h
+        src/Game/Managers/Enum/HeroCapability.h
 )
 
 set(LEVELS_SOURCES
@@ -148,6 +152,8 @@ set(ANIMATION_SOURCES
 
 set(CHARACTERS_SOURCES
         src/Game/Characters/Hero.cpp
+        src/Game/Characters/HeroStateMachine.cpp
+        src/Game/Characters/HeroStateMachine.h
         src/Game/Characters/Components/HeroAnimComp.cpp
         src/Game/Characters/Components/InputComponent.cpp
         src/Game/Characters/Components/HeroMoveComp.cpp

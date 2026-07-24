@@ -6,7 +6,8 @@
 #include "../Managers/Enum/StateEnums.h"
 #include "../../Engine/Core/Factory.h"
 #include "../Guns/Base/GunBase.h"
-#include "../Managers/Enum/StateFlags.h"
+#include "../Managers/Enum/HeroCapability.h"
+#include "HeroStateMachine.h"
 
 namespace ETG
 {
@@ -39,6 +40,7 @@ namespace ETG
         void Update() override;
         void Initialize() override;
         void Draw() override;
+        void PopulateSpecificWidgets() override;
         [[nodiscard]] GunBase* GetCurrentHoldingGun() const;
 
     public:
@@ -46,7 +48,9 @@ namespace ETG
         static Direction CurrentDirection;
         static bool IsShooting;
 
-        HeroStateFlags StateFlags{HeroStateFlags::StateIdle};
+        //NOTE: The single owner of "what is the hero doing right now". Nothing outside this machine assigns a state;
+        //the rest of the code either asks it a question or files a request through RequestDash / RequestHit
+        std::unique_ptr<HeroStateMachine> StateMachine;
 
         std::unique_ptr<RogueSpecial> RogueSpecial;
         std::unique_ptr<HeroMoveComp> MoveComp;
@@ -71,16 +75,30 @@ namespace ETG
         int currentGunIndex = 0; // Track the index of current gun
         float HitKnockBackMagnitude = 150.f;
         float EnemyCollideKnockBackMag = 350.f;
+        float HitForceDuration = 0.2f; //How long the knockback from taking a hit lasts
 
-        //Helper methods for state management
-        void SetState(const HeroStateEnum& state);
-        [[nodiscard]] HeroStateEnum GetState() const { return CurrentHeroState; }
+        //<---------- State queries ---------->
+        //NOTE: There is deliberately no SetState. A state is entered when a transition's guard passes, never by
+        //whoever happens to be running at the time
+        [[nodiscard]] HeroStateEnum GetState() const { return StateMachine->GetActiveLeaf(); }
 
-        [[nodiscard]] inline bool CanSwitchGuns() const { return !CurrentGun->IsReloading && !HasAnyFlag(StateFlags, HeroStateFlags::PreventGunSwitching); }
-        [[nodiscard]] inline bool CanMove() const { return !HasAnyFlag(StateFlags, HeroStateFlags::PreventMovement); }
-        [[nodiscard]] inline bool CanShoot() const { return !HasAnyFlag(StateFlags, HeroStateFlags::PreventShooting); }
-        [[nodiscard]] inline bool CanFlipAnims() const { return !HasAnyFlag(StateFlags, HeroStateFlags::PreventAnimFlip); }
-        [[nodiscard]] inline bool CanUseActiveItems() const { return !HasAnyFlag(StateFlags, HeroStateFlags::PreventActiveItemUsage); }
+        [[nodiscard]] inline bool CanSwitchGuns() const { return !CurrentGun->IsReloading && StateMachine->HasCapability(HeroCapability::CanSwitchGuns); }
+        [[nodiscard]] inline bool CanMove() const { return StateMachine->HasCapability(HeroCapability::CanMove); }
+        [[nodiscard]] inline bool CanShoot() const { return StateMachine->HasCapability(HeroCapability::CanShoot); }
+        [[nodiscard]] inline bool CanFlipAnims() const { return StateMachine->HasCapability(HeroCapability::CanFlipAnims); }
+        [[nodiscard]] inline bool CanUseActiveItems() const { return StateMachine->HasCapability(HeroCapability::CanUseActiveItems); }
+        [[nodiscard]] inline bool CanTakeDamage() const { return StateMachine->HasCapability(HeroCapability::CanTakeDamage); }
+
+        //<---------- State requests ---------->
+        //One-shot intents. The machine decides whether and when they become a state change, and clears them on entry
+        void RequestDash(HeroDashEnum direction);
+        void RequestHit(const ETG::Vector2f& knockbackDir, float forceMagnitude);
+
+        bool DashRequested{};
+        bool HitRequested{};
+        HeroDashEnum CurrentDashDirection{HeroDashEnum::Unknown};
+        ETG::Vector2f PendingKnockbackDir{};
+        float PendingKnockbackForce{};
 
         //When equipping a new gun pickup
         void EquipGun(GunBase* newGun);
@@ -91,12 +109,11 @@ namespace ETG
         void SwitchToNextGun();
 
         BOOST_DESCRIBE_CLASS(Hero, (GameObjectBase),
-                             (MouseAngle, CurrentDirection, CurrentHeroState, IsShooting, HitKnockBackMagnitude),
+                             (MouseAngle, CurrentDirection, IsShooting, HitKnockBackMagnitude, HitForceDuration, CurrentDashDirection),
                              (),
                              ())
 
     private:
         void UpdateGunVisibility() const;
-        HeroStateEnum CurrentHeroState{HeroStateEnum::Idle};
     };
 }

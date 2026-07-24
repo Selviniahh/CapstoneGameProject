@@ -16,71 +16,40 @@ namespace ETG
     {
         BaseMoveComp::Initialize();
         if (!HeroPtr) HeroPtr = Hero::Get();
-
-        SetupDashListeners();
     }
 
-    //Instead of using lerp math class I decided to do this inline just like in here 
-
+    //NOTE: Forces (knockback from a hit, from death) have to keep resolving no matter which state the hero is in,
+    //so they stay on the normal component update. Everything else moved into the state machine's nodes
     void HeroMoveComp::Update()
     {
-        // Call the base update (it doing nothing for now)
         BaseMoveComp::Update();
 
-        //Update dash cooldown timer
-        if (DashCooldown >= 0)
-        {
-            DashCooldownTimer -= Time::FrameTick;
-        }
-
-        //handle dash movement if dashing
-        if (HeroPtr->AnimationComp->IsDashing)
-        {
-            DashTimer += Time::FrameTick;
-            // DashDuration = HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Dash].AnimationDict[HeroPtr->AnimationComp->CurrentDashDirection].GetTotalAnimationTime();
-            DashDuration = HeroPtr->AnimationComp->GetCurrentAnimation()->GetTotalAnimationTime();
-            if (DashTimer <= DashDuration)
-            {
-                MakeDashMovement();
-            }
-            else
-            {
-                HeroPtr->AnimationComp->IsDashing = false;
-            }
-        }
-
-        // Do normal movement only if not dashing 
-        if (!HeroPtr->AnimationComp->IsDashing)
-        {
-            UpdateMovement();
-        }
+        if (DashCooldownTimer > 0.f) DashCooldownTimer -= Time::FrameTick;
     }
 
-    void HeroMoveComp::ApplyDashImpulse()
+    void HeroMoveComp::BeginDash()
     {
-        HeroPtr->AnimationComp->IsDashing = true;
-        DashTimer = 0.f;
         DashDirection = DirectionUtils::GetDashDirectionVector();
     }
 
-    void HeroMoveComp::SetupDashListeners()
+    float HeroMoveComp::GetDashDuration() const
     {
-        HeroPtr->AnimationComp->OnDashStart.AddListener([this](const HeroDashEnum direction)
-        {
-            ApplyDashImpulse();
-        });
+        //NOTE: Looked up by state and direction rather than by asking for "the current animation". The animation
+        //component updates after the state machine, so on the very first dash tick "current" would still be the
+        //idle animation and the dash would be paced with the wrong duration
+        auto& dashAnims = HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Dash].AnimationDict;
+        const auto it = dashAnims.find(HeroPtr->CurrentDashDirection);
 
-        HeroPtr->AnimationComp->OnDashEnd.AddListener([this]()
-        {
-            HeroPtr->AnimationComp->IsDashing = false;
-            DashTimer = 0.f;
-        });
+        return it != dashAnims.end() ? it->second.GetTotalAnimationTime() : 0.f;
     }
 
-    void HeroMoveComp::MakeDashMovement()
+    void HeroMoveComp::MakeDashMovement(const float elapsed)
     {
-        //Calculate dash progress (0 to DashDuration). For now DashDuration will only be 0.46 seconds for Right and Left dash. Rest will be 0.62 seconds
-        const float dashProgress = DashTimer / DashDuration;
+        const float dashDuration = GetDashDuration();
+        if (dashDuration <= 0.f) return;
+
+        //Calculate dash progress (0 to 1). For now this will only be 0.46 seconds for Right and Left dash. Rest will be 0.62 seconds
+        const float dashProgress = elapsed / dashDuration;
 
         //Use bell curve to get velocity
         const ETG::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Time::FrameTick);
@@ -94,30 +63,17 @@ namespace ETG
     void HeroMoveComp::UpdateMovement()
     {
         // Determine input direction.
-        ETG::Vector2f inputDir(0.f, 0.f);
-        if (InputManager::IsMoving() && !HeroPtr->AnimationComp->IsDashing && HeroPtr->GetState() != HeroStateEnum::Die && HeroPtr->GetState() != HeroStateEnum::Hit)
-        {
-            inputDir = InputManager::direction;
-            HeroPtr->SetState(HeroStateEnum::Run);
-        }
-        else if (HeroPtr->MoveComp->HeroPtr->AnimationComp->IsDashing && HeroPtr->GetState() != HeroStateEnum::Die && HeroPtr->GetState() != HeroStateEnum::Hit)
-        {
-            HeroPtr->SetState(HeroStateEnum::Dash);
-        }
-
-        //If not dead or hit, set to idle as last resort
-        else if (HeroPtr->GetState() != HeroStateEnum::Die && HeroPtr->GetState() != HeroStateEnum::Hit)
-        {
-            HeroPtr->SetState(HeroStateEnum::Idle);
-        }
+        const ETG::Vector2f inputDir = InputManager::IsMoving() ? InputManager::direction : ETG::Vector2f{0.f, 0.f};
 
         // Use the base helper to update velocity and position.
         BaseMoveComp::UpdateMovement(inputDir, const_cast<ETG::Vector2f&>(HeroPtr->GetPosition()));
     }
 
+    //NOTE: The Die / Hit checks that used to live here are gone. Dash is a child of Alive, and its transition is
+    //only ever evaluated while the hero is inside that subtree, so being dead already rules it out
     bool HeroMoveComp::IsDashAvailable() const
     {
-        return DashCooldownTimer <= 0.f && HeroPtr->GetState() != HeroStateEnum::Die && HeroPtr->GetState() != HeroStateEnum::Hit;
+        return DashCooldownTimer <= 0.f;
     }
 
     void HeroMoveComp::StartDashCooldown()

@@ -6,6 +6,9 @@
 
 namespace ETG
 {
+    //NOTE: This class used to own the dash: it held IsDashing and a dash timer, set the hero's state, ended the dash
+    //and started the move component's cooldown. All of that belongs to the state machine now. What is left is what
+    //an animation component should have been doing all along: pick the right animation for whatever state we are in
     class HeroAnimComp : public BaseAnimComp<HeroStateEnum>
     {
     public:
@@ -14,31 +17,22 @@ namespace ETG
         //Override
         void Update() override;
         void SetAnimations() override;
-        void StartDash(HeroDashEnum direction);
-        void EndDash();
-        bool IsDashAnimFinished() const;
 
     public:
-        //Dash state
-        bool IsDashing = false;
-
-        //Animation interval time for next frame. Lower is faster. Higher is slower.  
+        //Animation interval time for next frame. Lower is faster. Higher is slower.
         float DashAnimFrameInterval = 0.075;
-        //NOTE: if any dash animation's frames are less (i.e Dash/Right), that dash will take less time to complete. Idk if this is a problem. For this reason we have MinDashDuration. But all dash frames are enough to make minimum half second so, for now MinDashDuration doesn't have any effect.
         float IdleAnimFrameInterval = 0.15;
         float RunAnimFrameInterval = 0.15;
-        HeroDashEnum CurrentDashDirection = HeroDashEnum::Unknown;
-
-        EventDelegate<HeroDashEnum> OnDashStart;
-        EventDelegate<> OnDashEnd;
 
     private:
+        //Registers "which sub-animation plays for this state", replacing the switch that used to be in Update()
+        void SetKeyResolvers();
+
+        //Keeps the editor-tweakable intervals live
+        void ApplyFrameInterval(const HeroStateEnum& state, const AnimationKey& key);
+
         Hero* HeroPtr = nullptr;
 
-        //At least for 0.2 do not let dash to be stopped. Adding or removing these won't have any affect. 
-        float DashTimer = 0.0f;
-        float MinDashDuration = 0.2f;
-
-        BOOST_DESCRIBE_CLASS(HeroAnimComp, (BaseAnimComp), (HeroPtr,DashAnimFrameInterval,IdleAnimFrameInterval, RunAnimFrameInterval, CurrentDashDirection), (), ())
+        BOOST_DESCRIBE_CLASS(HeroAnimComp, (BaseAnimComp), (HeroPtr, DashAnimFrameInterval, IdleAnimFrameInterval, RunAnimFrameInterval), (), ())
     };
 }

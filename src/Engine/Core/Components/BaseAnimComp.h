@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <imgui.h>
 #include "../ComponentBase.h"
@@ -34,6 +35,20 @@ namespace ETG
 
 
     public:
+        //Given the owner's current state, which sub-animation (usually a direction) should play.
+        //NOTE: This replaces the switch each derived anim component used to carry. The mapping is data now, so a new
+        //state is one registration next to its animations instead of another case label in another switch
+        using KeyResolver = std::function<AnimationKey()>;
+
+        void SetKeyResolver(StateEnum state, KeyResolver resolver) { KeyResolvers[state] = std::move(resolver); }
+
+        //Falls back to the key currently playing when a state has no resolver registered
+        [[nodiscard]] AnimationKey ResolveKey(const StateEnum& state) const
+        {
+            const auto it = KeyResolvers.find(state);
+            return it != KeyResolvers.end() ? it->second() : CurrentAnimStateKey;
+        }
+
         template <typename DirectionEnum>
         void AddAnimationsForState(StateEnum state, const std::vector<Animation>& animations);
 
@@ -61,6 +76,7 @@ namespace ETG
         
         //Animation properties
         std::unordered_map<StateEnum, AnimationManager> AnimManagerDict{};
+        std::unordered_map<StateEnum, KeyResolver> KeyResolvers{};
         StateEnum CurrentState;
         AnimationKey CurrentAnimStateKey;
 
@@ -76,8 +92,14 @@ namespace ETG
     template <typename StateEnum>
     void BaseAnimComp<StateEnum>::Update(const StateEnum& stateEnum, const AnimationKey& animKey)
     {
+        //The state has to be current before the restart below, so the restart hits the new state's manager
         CurrentState = stateEnum;
-        CurrentAnimStateKey = animKey;
+
+        //NOTE: This has to run BEFORE the lookups below, and CurrentAnimStateKey must not be assigned beforehand.
+        //It used to be the other way around: the key was assigned first and this was called last, which made its
+        //`newKey != CurrentAnimStateKey` check permanently false. The restart never fired, which is why callers had
+        //to restart animations by hand (HeroAnimComp::StartDash and its hit handler both did)
+        ChangeAnimStateIfRequired(animKey);
 
         auto& animManager = AnimManagerDict[CurrentState];
         animManager.Update(CurrentAnimStateKey);
@@ -86,9 +108,7 @@ namespace ETG
         CurrTexRect = animState.CurrRect;
         CurrentTex = animState.GetCurrentFrameAsTexture();
         Owner->Texture = CurrentTex;
-        Owner->SetOrigin(animManager.AnimationDict[CurrentAnimStateKey].Origin);
-
-        ChangeAnimStateIfRequired(animKey);
+        Owner->SetOrigin(animState.Origin);
     }
 
     template <typename StateEnum>

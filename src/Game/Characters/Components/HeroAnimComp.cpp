@@ -5,6 +5,7 @@
 #include "InputComponent.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Characters/Hero.h"
+#include "../../../Utils/DirectionUtils.h"
 
 namespace ETG
 {
@@ -18,6 +19,7 @@ namespace ETG
         HeroPtr = Hero::Get();
         IsGameObjectUISpecified = true;
         HeroAnimComp::SetAnimations();
+        SetKeyResolvers();
         CurrentState = HeroPtr->GetState();
     }
 
@@ -41,7 +43,6 @@ namespace ETG
             Animation::CreateSpriteSheet("Player/Idle/Front", "rogue_idle_front_hand_left_001", "png", IdleAnimFrameInterval),
             Animation::CreateSpriteSheet("Player/Idle/Right", "rogue_idle_hands_001", "png", IdleAnimFrameInterval),
         };
-        const auto idleEnumValues = ConstructEnumVector<HeroIdleEnum>();
         AddAnimationsForState<HeroIdleEnum>(HeroStateEnum::Idle, idleAnims);
 
         //Dash
@@ -60,102 +61,53 @@ namespace ETG
         };
         AddAnimationsForState<HeroHit>(HeroStateEnum::Hit, spinAnim);
 
-        //Death 
+        //Death
         const auto DeathAnim = std::vector<Animation>{
             Animation::CreateSpriteSheet("Player/ShotDeath", "rogue_shot_death_001", "png", 0.10),
         };
         AddAnimationsForState<HeroDeath>(HeroStateEnum::Die, DeathAnim);
     }
 
-    void HeroAnimComp::StartDash(HeroDashEnum direction)
+    //NOTE: This replaces the switch that used to open Update(). Adding a state is now one registration next to its
+    //animations instead of another case label. The Direction -> sub-enum helpers are unchanged, just wired up here
+    void HeroAnimComp::SetKeyResolvers()
     {
-        if (IsDashing) return;
-
-        IsDashing = true;
-        DashTimer = 0.f; //Reset the timer
-        CurrentDashDirection = direction;
-
-        //Explicitly restart the animation to ensure it plays fully
-        auto& anim = HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Dash].AnimationDict[direction];
-        anim.FrameInterval = DashAnimFrameInterval;
-        anim.Restart();
-        HeroPtr->SetState(HeroStateEnum::Dash);
-        OnDashStart.Broadcast(direction);
+        SetKeyResolver(HeroStateEnum::Idle, [this] { return AnimationKey{DirectionUtils::GetHeroIdleDirectionEnum(HeroPtr->CurrentDirection)}; });
+        SetKeyResolver(HeroStateEnum::Run, [this] { return AnimationKey{DirectionUtils::GetHeroRunEnum(HeroPtr->CurrentDirection)}; });
+        SetKeyResolver(HeroStateEnum::Dash, [this] { return AnimationKey{HeroPtr->CurrentDashDirection}; });
+        SetKeyResolver(HeroStateEnum::Hit, [] { return AnimationKey{HeroHit::JustHit}; });
+        SetKeyResolver(HeroStateEnum::Die, [] { return AnimationKey{HeroDeath::Dead}; });
     }
 
-    //NOTE: IF we called this function in Update before the base Update, We would have to manually reset Dash animation at here
-    void HeroAnimComp::EndDash()
+    void HeroAnimComp::ApplyFrameInterval(const HeroStateEnum& state, const AnimationKey& key)
     {
-        if (!IsDashing) return;
-        IsDashing = false;
-        HeroPtr->MoveComp->StartDashCooldown();
-        OnDashEnd.Broadcast();
-    }
+        float interval;
+        switch (state)
+        {
+        case HeroStateEnum::Idle: interval = IdleAnimFrameInterval;
+            break;
+        case HeroStateEnum::Run: interval = RunAnimFrameInterval;
+            break;
+        case HeroStateEnum::Dash: interval = DashAnimFrameInterval;
+            break;
+        default: return; //Hit and Die run at the interval baked into their animation
+        }
 
-    bool HeroAnimComp::IsDashAnimFinished() const
-    {
-        if (!HeroPtr || !HeroPtr->AnimationComp) return true;
-        return HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Dash].IsAnimationFinished();
+        auto& animations = AnimManagerDict[state].AnimationDict;
+        const auto it = animations.find(key);
+        if (it != animations.end()) it->second.FrameInterval = interval;
     }
 
     void HeroAnimComp::Update()
     {
-        AnimationKey newKey;
+        const HeroStateEnum state = HeroPtr->GetState();
+        const AnimationKey key = ResolveKey(state);
 
-        switch (HeroPtr->GetState())
-        {
-        case HeroStateEnum::Idle:
-            newKey = DirectionUtils::GetHeroIdleDirectionEnum(HeroPtr->CurrentDirection);
-            HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Idle].AnimationDict[newKey].FrameInterval = IdleAnimFrameInterval;
-            break;
+        ApplyFrameInterval(state, key);
 
-        case HeroStateEnum::Run:
-            newKey = DirectionUtils::GetHeroRunEnum(HeroPtr->CurrentDirection);
-            HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Run].AnimationDict[newKey].FrameInterval = RunAnimFrameInterval;
-            break;
-
-        case HeroStateEnum::Dash:
-            newKey = CurrentDashDirection;
-            DashTimer += Time::FrameTick;
-            break;
-
-        case HeroStateEnum::Hit:
-            newKey = HeroHit::JustHit;
-            break;
-
-        case HeroStateEnum::Die:
-            newKey = HeroDeath::Dead;
-            break;
-
-        default:
-            break;
-        }
-
-        //NOTE: I know calling base here and then executing rest of the codes looks weird however, during state changes the base animation's `ChangeAnimStateIfRequired` will restart animation if state has ever changes
-        //If the dash functionality below executed before this base, the dash animation will not restart so after executing once `IsDashAnimFinished` will always return true forever
-        //One option is to extract  `ChangeAnimStateIfRequired` from base and call here however I believe in every anim state change, generally all animations needs to restart so I don't wanna move a generic function into it's child 
-        BaseAnimComp<HeroStateEnum>::Update(HeroPtr->GetState(), newKey);
-
-        //If Dash animation is complete, Stop Dash and set Current state to idle
-        if (IsDashing && DashTimer >= MinDashDuration && IsDashAnimFinished())
-        {
-            EndDash();
-        }
-
-        //After hit, hit animation needs to be played once and then it will be set to idle
-        if (HeroPtr->GetState() == HeroStateEnum::Hit && HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Hit].IsAnimationFinished())
-        {
-            //Restart current hit animation otherwise after first play, above IsAnimationFinished will always return true
-            HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Hit].CurrentAnim->Restart();
-
-            //After hit animation is finished, set idle state 
-            HeroPtr->SetState(HeroStateEnum::Idle);
-        }
-
-        //NOTE: If hero is dead and animation is finished, set the animation to last frame. Hero's animation and state will never change ever again after death
-        if (HeroPtr->GetState() == HeroStateEnum::Die && HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Die].IsAnimationFinished())
-        {
-            HeroPtr->AnimationComp->AnimManagerDict[HeroStateEnum::Die].CurrentAnim->PlayOnlyLastFrame();
-        }
+        //NOTE: Nothing after this call. The dash-finished, hit-finished and stay-dead rules that used to live down
+        //here are transitions and node ticks in HeroStateMachine now. This is also why nothing restarts animations
+        //by hand any more: BaseAnimComp restarts on its own whenever the key changes
+        BaseAnimComp<HeroStateEnum>::Update(state, key);
     }
 }
