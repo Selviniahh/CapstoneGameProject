@@ -3,56 +3,61 @@
 
 #include "Math.h"
 
-void ETG::DirectionUtils::PopulateDirectionRanges(DirectionMap mapToFill)
+namespace
 {
-    mapToFill[{0, 22}] = Direction::Right;
-    mapToFill[{22, 67}] = Direction::FrontHandRight;
-    mapToFill[{67, 112}] = Direction::FrontHandLeft;
-    mapToFill[{112, 157}] = Direction::Left;
-    mapToFill[{157, 202}] = Direction::BackDiagonalLeft;
-    mapToFill[{202, 247}] = Direction::BackHandLeft;
-    mapToFill[{247, 292}] = Direction::BackHandRight;
-    mapToFill[{292, 337}] = Direction::BackDiagonalRight;
-    mapToFill[{337, 360}] = Direction::Right;
+    //Every arc is 45 degrees wide and centred on its compass point, so its edges sit half a sector either side.
+    //Right is centred on 0, which is the one arc that has to be written as two entries
+    constexpr float SectorHalf = 22.5f;
+
+    ETG::DirectionUtils::DirectionRanges MakeDefaultRanges()
+    {
+        using ETG::Direction;
+
+        return {
+            {{360.f - SectorHalf, 360.f}, Direction::Right},
+            {{0.f, SectorHalf}, Direction::Right},
+            {{45.f - SectorHalf, 45.f + SectorHalf}, Direction::DownRight},
+            {{90.f - SectorHalf, 90.f + SectorHalf}, Direction::Down},
+            {{135.f - SectorHalf, 135.f + SectorHalf}, Direction::DownLeft},
+            {{180.f - SectorHalf, 180.f + SectorHalf}, Direction::Left},
+            {{225.f - SectorHalf, 225.f + SectorHalf}, Direction::UpLeft},
+            {{270.f - SectorHalf, 270.f + SectorHalf}, Direction::Up},
+            {{315.f - SectorHalf, 315.f + SectorHalf}, Direction::UpRight},
+        };
+    }
+}
+
+ETG::DirectionUtils::DirectionRanges& ETG::DirectionUtils::GetRanges()
+{
+    static DirectionRanges ranges = MakeDefaultRanges();
+    return ranges;
+}
+
+void ETG::DirectionUtils::ResetRangesToDefault()
+{
+    GetRanges() = MakeDefaultRanges();
+}
+
+ETG::Direction ETG::DirectionUtils::GetDirectionFromAngle(const float angle)
+{
+    for (const auto& [range, direction] : GetRanges())
+        if (angle >= range.first && angle < range.second)
+            return direction;
+
+    throw std::out_of_range("Angle is outside every direction range. Angle is: " + std::to_string(angle));
+}
+
+float ETG::DirectionUtils::GetAngleToTarget(const ETG::Vector2f& targetPosition, const ETG::Vector2f& origin)
+{
+    const ETG::Vector2f difference = targetPosition - origin;
+
+    float angle = Math::RadiansToDegrees(std::atan2(difference.y, difference.x));
+    if (angle < 0.f) angle += 360.f;
+
+    return angle;
 }
 
 ETG::Direction ETG::DirectionUtils::GetDirectionToTarget(const ETG::Vector2f& targetPosition, const ETG::Vector2f& selfPosition)
 {
-    const ETG::Vector2f dirVector = Math::Normalize(targetPosition - selfPosition);
-
-    // Calculate angle in degrees (0-360)
-    float angle = atan2(dirVector.y, dirVector.x) * 180.0f / std::numbers::pi;
-    if (angle < 0) angle += 360.0f;
-
-    // Map angle to direction (each direction covers 45 degrees) Right is 0 degrees, and we go counter-clockwise
-    if (angle >= 337.5f || angle < 22.5f)
-        return Direction::Right;
-    else if (angle >= 22.5f && angle < 67.5f)
-        return Direction::FrontHandRight;
-    else if (angle >= 67.5f && angle < 112.5f)
-        return Direction::FrontHandLeft;
-    else if (angle >= 112.5f && angle < 157.5f)
-        return Direction::Left;
-    else if (angle >= 157.5f && angle < 202.5f)
-        return Direction::BackDiagonalLeft;
-    else if (angle >= 202.5f && angle < 247.5f)
-        return Direction::BackHandLeft;
-    else if (angle >= 247.5f && angle < 292.5f)
-        return Direction::BackHandRight;
-    else
-        return Direction::BackDiagonalRight;
-}
-
-ETG::Direction ETG::DirectionUtils::GetDirectionFromAngle(const std::unordered_map<std::pair<int, int>, Direction, PairHash>& DirectionMap, const float angle)
-{
-    //The first std::pair is key and element. Second std::pair is the key's type itself
-    for (const auto& [fst, snd] : DirectionMap)
-    {
-        //Check if angle within any defined range
-        if (angle >= fst.first && angle <= fst.second)
-        {
-            return snd;
-        }
-    }
-    throw std::out_of_range("Mouse angle is out of defined ranges. Angle is: " + std::to_string(angle));
+    return GetDirectionFromAngle(GetAngleToTarget(targetPosition, selfPosition));
 }

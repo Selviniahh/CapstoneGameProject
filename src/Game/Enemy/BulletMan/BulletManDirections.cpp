@@ -1,58 +1,83 @@
 #include "BulletManDirections.h"
 
+//NOTE: Every mapping here is mirror symmetric: whatever the right half gets, the left half gets its mirror.
+//It could not be before, because the Direction values themselves were not laid out symmetrically
 namespace ETG
 {
+    //Three sprites for eight arcs, so the diagonals share with the cardinal they lean on
     BulletManIdleEnum BulletManDirections::GetIdleEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight || currDir == Direction::BackHandLeft ||
-            currDir == Direction::BackDiagonalRight)
+        switch (currDir)
+        {
+        case Direction::Up:
+        case Direction::UpRight:
+        case Direction::UpLeft:
             return BulletManIdleEnum::Idle_Back;
 
-        if (currDir == Direction::Right || currDir == Direction::FrontHandRight)
+        case Direction::Right:
+        case Direction::DownRight:
             return BulletManIdleEnum::Idle_Right;
 
-        if (currDir == Direction::Left || currDir == Direction::FrontHandLeft || currDir == Direction::BackDiagonalLeft)
+        case Direction::Left:
+        case Direction::DownLeft:
             return BulletManIdleEnum::Idle_Left;
+
+        case Direction::Down:
+            return BulletManIdleEnum::Idle_Right;
+        }
 
         return BulletManIdleEnum::Idle_Back; // Default case
     }
 
     BulletManRunEnum BulletManDirections::GetRunEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight || currDir == Direction::BackDiagonalRight)
+        switch (currDir)
+        {
+        case Direction::Up:
+        case Direction::UpRight:
             return BulletManRunEnum::Run_Right_Back;
 
-        if (currDir == Direction::BackHandLeft || currDir == Direction::BackDiagonalLeft)
+        case Direction::UpLeft:
             return BulletManRunEnum::Run_Left_Back;
 
-        if (currDir == Direction::Right || currDir == Direction::FrontHandRight)
+        case Direction::Right:
+        case Direction::DownRight:
+        case Direction::Down:
             return BulletManRunEnum::Run_Right;
 
-        if (currDir == Direction::Left || currDir == Direction::FrontHandLeft)
+        case Direction::Left:
+        case Direction::DownLeft:
             return BulletManRunEnum::Run_Left;
+        }
 
         return BulletManRunEnum::Run_Left; // Default case
     }
 
     BulletManShootingEnum BulletManDirections::GetShootingEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight) return BulletManShootingEnum::Shoot_Right;
-        if (currDir == Direction::BackDiagonalRight) return BulletManShootingEnum::Shoot_Right;
-        if (currDir == Direction::Right) return BulletManShootingEnum::Shoot_Right;
-        if (currDir == Direction::FrontHandRight) return BulletManShootingEnum::Shoot_Right;
-        return BulletManShootingEnum::Shoot_Left; // else  return left
+        return IsFacingRight(currDir) ? BulletManShootingEnum::Shoot_Right : BulletManShootingEnum::Shoot_Left;
     }
 
     BulletManHitEnum BulletManDirections::GetHitEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight) return BulletManHitEnum::Hit_Back_Right;
-        if (currDir == Direction::BackDiagonalRight) return BulletManHitEnum::Hit_Back_Right;
-        if (currDir == Direction::Right) return BulletManHitEnum::Hit_Right;
-        if (currDir == Direction::FrontHandRight) return BulletManHitEnum::Hit_Right;
-        if (currDir == Direction::BackHandLeft) return BulletManHitEnum::Hit_Back_Left;
-        if (currDir == Direction::BackDiagonalLeft) return BulletManHitEnum::Hit_Back_Left;
-        if (currDir == Direction::Left) return BulletManHitEnum::Hit_Left;
-        if (currDir == Direction::FrontHandLeft) return BulletManHitEnum::Hit_Left;
+        switch (currDir)
+        {
+        case Direction::Up:
+        case Direction::UpRight:
+            return BulletManHitEnum::Hit_Back_Right;
+
+        case Direction::UpLeft:
+            return BulletManHitEnum::Hit_Back_Left;
+
+        case Direction::Right:
+        case Direction::DownRight:
+        case Direction::Down:
+            return BulletManHitEnum::Hit_Right;
+
+        case Direction::Left:
+        case Direction::DownLeft:
+            return BulletManHitEnum::Hit_Left;
+        }
 
         return BulletManHitEnum::Hit_Left; // else  return left
     }
@@ -64,33 +89,29 @@ namespace ETG
         case Direction::Right:
             return BulletManDeathEnum::Death_Right_Side;
 
-        case Direction::FrontHandRight:
+        case Direction::DownRight:
             return BulletManDeathEnum::Death_Right_Front;
 
-        case Direction::FrontHandLeft:
+        case Direction::Down:
+            return BulletManDeathEnum::Death_Front_North;
+
+        case Direction::DownLeft:
             return BulletManDeathEnum::Death_Left_Front;
 
         case Direction::Left:
             return BulletManDeathEnum::Death_Left_Side;
 
-        case Direction::BackDiagonalLeft:
+        case Direction::UpLeft:
             return BulletManDeathEnum::Death_Left_Back;
 
-        case Direction::BackHandLeft:
-            return BulletManDeathEnum::Death_Left_Back;
-
-        case Direction::BackHandRight:
-            return BulletManDeathEnum::Death_Right_Back;
-
-        case Direction::BackDiagonalRight:
-            return BulletManDeathEnum::Death_Right_Back;
-
-        case Direction::Front_For_Dash:
-            return BulletManDeathEnum::Death_Front_North;
-
-        default:
-            // Added default case for safety
+        case Direction::Up:
             return BulletManDeathEnum::Death_Back_South;
+
+        case Direction::UpRight:
+            return BulletManDeathEnum::Death_Right_Back;
         }
+
+        // Added default case for safety
+        return BulletManDeathEnum::Death_Back_South;
     }
 }

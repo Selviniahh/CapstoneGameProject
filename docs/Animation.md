@@ -32,8 +32,8 @@ The animation system uses a state-driven approach to manage hero animations. Key
 #### Key Methods:
 | Method | Description |  
 |--------|-------------|  
-| **`GetRunEnum()`** | Maps `Direction` to the correct `RunEnum` animation (e.g., `Direction::BackHandRight` → `Run_Back`). |  
-| **`GetIdleDirectionEnum()`** | Maps `Direction` to the correct `IdleEnum` animation. |  
+| **`HeroDirections::GetRunEnum()`** | Maps `Direction` to the correct `RunEnum` animation (e.g., `Direction::Up` → `Run_Back`). |  
+| **`HeroDirections::GetIdleEnum()`** | Maps `Direction` to the correct `IdleEnum` animation. |  
 | **`SetHandTexLoc()`** | Positions the hand sprite relative to the hero’s body. |  
 
 ---
@@ -52,14 +52,27 @@ enum class HeroStateEnum {
 ```  
 
 ### **2. `Direction`**
-Defines the hero’s facing direction (used for flipping and hand positioning):
+Eight-way facing in screen space (0° is right, the angle grows clockwise because +y points down). Each value owns
+the 45° arc centred on itself, and `DirectionUtils::GetDirectionFromAngle` is the only thing that assigns one:
 ```cpp  
 enum class Direction {  
-    Right, Left, FrontHandRight, FrontHandLeft,  
-    BackHandRight, BackHandLeft,  
-    BackDiagonalRight, BackDiagonalLeft  
+    Right,      //   0  
+    DownRight,  //  45  
+    Down,       //  90  
+    DownLeft,   // 135  
+    Left,       // 180  
+    UpLeft,     // 225  
+    Up,         // 270  
+    UpRight     // 315  
 };  
 ```  
+These used to be named `FrontHandRight`, `BackDiagonalLeft` and so on — four Left/Right pairs, because
+`IsFacingRight` decided the flip by substring-matching the enum's *name*. Eight arcs centred on the compass
+points only form three mirror pairs (straight down and straight up are their own mirror image), so four pairs
+could not be placed symmetrically and the left half of the compass ended up rotated 45° against the right half:
+pointing the mouse straight left drew the back-diagonal sprite while pointing it straight right drew the side
+one. The names carry neither the sprite nor the flip now — `HeroDirections` and `BulletManDirections` state both
+out loud, mirror-symmetrically.
 
 ### **3. Animation Keys**
 Each `HeroStateEnum` maps to a subset of animations via `AnimationKey` enums:
@@ -83,5 +96,5 @@ ___
     - Hand position: `{-8.f, 5.f}`.
 
 - **Edge Cases**:
-    - `BackDiagonalRight` uses `{-8.f, 5.f}` to align hands with asymmetrical sprites.
-    - `BackDiagonalLeft` uses `{8.f, 5.f}` for the same reason.
+    - `Down` and `Up` are their own mirror image, so no flip is "correct" for them. `ETG::IsFacingRight` picks one
+      each and says so; changing either is free, as long as both animation components keep agreeing with it.

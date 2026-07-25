@@ -20,7 +20,6 @@ namespace ETG
     InputComponent::InputComponent()
     {
         IsGameObjectUISpecified = true;
-        DirectionUtils::PopulateDirectionRanges(DirectionMap);
         // SetObjectNameToSelfClassName();
     }
 
@@ -45,11 +44,9 @@ namespace ETG
 
     void InputComponent::UpdateDirection(Hero& hero) const
     {
-        // Convert mouse angle to [0..360). Hero-relative angle is game logic, so it's computed
-        // here from the engine's world mouse position instead of inside InputManager.
-        const ETG::Vector2f mouseDiff = InputManager::WorldMousePos - hero.GetPosition();
-        float angle = Math::RadiansToDegrees(std::atan2(mouseDiff.y, mouseDiff.x));
-        if (angle < 0.f) angle += 360.f;
+        // Hero-relative mouse angle in [0..360) is game logic, so it's computed here from the engine's world mouse
+        // position instead of inside InputManager. The enemies measure their angle with the same helper
+        const float angle = DirectionUtils::GetAngleToTarget(InputManager::WorldMousePos, hero.GetPosition());
 
         // Store on the Hero (used for gun rotation)
         hero.MouseAngle = angle;
@@ -59,9 +56,9 @@ namespace ETG
         {
             hero.CurrentDirection = HeroDirections::GetDashFacing();
         }
-        else //NOTE: If it's not Dash, set Hero's input based on Mouse Angle. 
+        else //NOTE: If it's not Dash, set Hero's input based on Mouse Angle.
         {
-            hero.CurrentDirection = DirectionUtils::GetDirectionFromAngle(DirectionMap, angle);
+            hero.CurrentDirection = DirectionUtils::GetDirectionFromAngle(angle);
         }
     }
 
@@ -101,33 +98,43 @@ namespace ETG
         ComponentBase::PopulateSpecificWidgets();
         IsGameObjectUISpecified = true;
 
-        //Modify Direction map as table 
-        if (ImGui::TreeNode("DirectionMap"))
+        //Modify Direction ranges as table.
+        //
+        //NOTE: This edits DirectionUtils::GetRanges(), the one table the whole game reads. It used to edit a copy
+        //owned by this component, while the enemies faced their target through a second, hand-written copy of the
+        //same numbers inside DirectionUtils - so tuning the hero here silently left them behind.
+        //The arcs are half open, [min, max), which is why a value can be typed on a boundary without landing in two
+        //arcs at once the way it used to
+        if (ImGui::TreeNode("Direction Ranges"))
         {
+            if (ImGui::Button("Reset to default")) DirectionUtils::ResetRangesToDefault();
+
+            auto& ranges = DirectionUtils::GetRanges();
+
             if (ImGui::BeginTable("split2", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
             {
-                //       |unmodified  key|           old           new         value
-                std::map<std::pair<int, int>, std::pair<std::pair<int, int>, Direction>> keysToUpdate;
+                //       |unmodified  key|           old               new             value
+                std::map<std::pair<float, float>, std::pair<std::pair<float, float>, Direction>> keysToUpdate;
 
                 //First default two strings to indicate the categories
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
-                ImGui::Text("Range");
+                ImGui::Text("Range [min, max)");
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Direction");
 
-                for (const auto& [key, value] : DirectionMap)
+                for (const auto& [key, value] : ranges)
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
 
                     //Make a copy of the current key that we can modify
-                    std::pair<int, int> editedKey = key;
+                    std::pair<float, float> editedKey = key;
                     bool changed = false;
 
-                    ImGui::PushID(key.first);
-                    ImGui::PushID(key.second);
+                    ImGui::PushID(static_cast<int>(key.first * 10.f));
+                    ImGui::PushID(static_cast<int>(key.second * 10.f));
 
                     // Set a fixed width for both input fields
                     const float availWidth = ImGui::GetContentRegionAvail().x;
@@ -136,48 +143,42 @@ namespace ETG
 
                     // First input field
                     ImGui::SetNextItemWidth(inputWidth);
-                    const bool valueChanged = ImGui::InputInt("##Key", &editedKey.first, 0, 0);
+                    const bool valueChanged = ImGui::InputFloat("##Key", &editedKey.first, 0.f, 0.f, "%.1f");
                     const bool lostFocusAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
 
                     //If range is not between 0,360, revert
-                    if (!Math::IsInRange(editedKey.first, 0, 360))
-                    {
-                        editedKey.first = std::max(0, std::min(360, editedKey.first));
-                    }
+                    editedKey.first = std::max(0.f, std::min(360.f, editedKey.first));
 
                     // Second input field
                     ImGui::SameLine();
                     ImGui::SetNextItemWidth(inputWidth);
-                    const bool valueChanged2 = ImGui::InputInt("##Key2", &editedKey.second, 0, 0);
+                    const bool valueChanged2 = ImGui::InputFloat("##Key2", &editedKey.second, 0.f, 0.f, "%.1f");
                     const bool lostFocusAfterEdit2 = ImGui::IsItemDeactivatedAfterEdit();
 
                     //If range is not between 0,360, revert
-                    if (!Math::IsInRange(editedKey.second, 0, 360))
-                    {
-                        editedKey.second = std::max(0, std::min(360, editedKey.second));
-                    }
+                    editedKey.second = std::max(0.f, std::min(360.f, editedKey.second));
 
                     if ((valueChanged && lostFocusAfterEdit) || (valueChanged2 && lostFocusAfterEdit2))
                         changed = true;
 
                     if (changed)
-                        keysToUpdate[key] = std::pair<std::pair<int, int>, Direction>{editedKey, value};
+                        keysToUpdate[key] = std::pair<std::pair<float, float>, Direction>{editedKey, value};
 
                     ImGui::TableNextColumn();
-                    ImGui::Text(EnumToString(value));
+                    ImGui::Text("%s", EnumToString(value));
 
                     ImGui::PopID();
                     ImGui::PopID();
                 }
 
-                //If there are any change, remove from DirectionMap and add it back again 
+                //If there are any change, remove from the table and add it back again
                 for (const auto& [oldKey, newKeyAndValue] : keysToUpdate)
                 {
                     //remove old entry
-                    DirectionMap.erase(oldKey);
+                    ranges.erase(oldKey);
 
                     //Add new entry
-                    DirectionMap[newKeyAndValue.first] = newKeyAndValue.second;
+                    ranges[newKeyAndValue.first] = newKeyAndValue.second;
                 }
             }
             ImGui::EndTable();

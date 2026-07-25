@@ -19,6 +19,9 @@ namespace ETG
     //  |  '- Hit                   revokes CanTakeDamage and CanFlipAnims
     //  '- Dead                     terminal, declares no outgoing transitions
     //     '- Die
+    
+    //Final HeroStateMachine sınıfından başka bir sınıfın türetilmesini engeller.
+                                                                //Once animasyon karakter, kurallar 
     class HeroStateMachine final : public HierarchicalStateMachine<HeroStateEnum, Hero, HeroCapability>
     {
     public:

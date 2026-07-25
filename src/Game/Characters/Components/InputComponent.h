@@ -22,7 +22,9 @@ namespace ETG
         void PopulateSpecificWidgets() override;
 
     private:
-        std::unordered_map<std::pair<int, int>, Direction, PairHash> DirectionMap{};
+        //NOTE: The angle -> Direction table used to be a member here, a copy of the one DirectionUtils already had
+        //hard-wired into GetDirectionToTarget for the enemies. It lives in DirectionUtils now and this component
+        //only reads it, so the hero and the enemies can no longer face the same angle differently
         void UpdateDirection(Hero& hero) const;
         void HandleGunSwitch(Hero& hero) const;
         mutable bool gunSwitchHandled = false; //Do it once

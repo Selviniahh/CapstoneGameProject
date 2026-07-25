@@ -58,9 +58,6 @@ namespace ETG
         [[nodiscard]] const Animation* GetAnimation() const override {return GetCurrentAnimation();};
         [[nodiscard]] const Animation* GetCurrentAnimation() const;
 
-        //I know this function is bad. I will think of something
-        static bool IsFacingRight(const Direction& currentDirection);
-
         template <typename... TObjects>
         void FlipSprites(const Direction& currentDirection, FlipAxis axis, TObjects&... objects);
 
@@ -180,19 +177,15 @@ namespace ETG
     }
 
     template <typename StateEnum>
-    bool BaseAnimComp<StateEnum>::IsFacingRight(const Direction& currentDirection)
-    {
-        return std::string{EnumToString(currentDirection)}.contains("Right") || std::string{EnumToString(currentDirection)}.contains("right");
-    }
-
-    template <typename StateEnum>
     template <typename... TObjects>
     void BaseAnimComp<StateEnum>::FlipSprites(const Direction& currentDirection, FlipAxis axis, TObjects&... objects)
     {
         if (!AnimManagerDict.contains(CurrentState))
             throw std::runtime_error("CurrentState not found in the AnimManagerDict");
 
-        bool facingRight = IsFacingRight(currentDirection);
+        //NOTE: ETG::IsFacingRight, next to the Direction enum itself. It used to be a static on this class that
+        //substring-matched the enum's *name* for "Right", which is what forced Direction to spell out a side
+        bool facingRight = ETG::IsFacingRight(currentDirection);
 
         bool flipX = (axis == FlipAxis::X) || axis == FlipAxis::Both;
         bool flipY = (axis == FlipAxis::Y) || axis == FlipAxis::Both;

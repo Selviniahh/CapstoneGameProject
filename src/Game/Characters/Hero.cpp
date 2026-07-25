@@ -129,7 +129,7 @@ void ETG::Hero::UpdateAnimations()
 
 void ETG::Hero::UpdateHand() const
 {
-    const ETG::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(CurrentDirection) ? ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-7.f, 5.f};
+    const ETG::Vector2f HandOffsetForHero = ETG::IsFacingRight(CurrentDirection) ? ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-7.f, 5.f};
 
     //Facing is already baked into the ternary above, so feed only the scale magnitude into the rotation:
     //FlipSpritesX flips the hero by setting Scale.x = -1, and passing that in would mirror the offset a second time.

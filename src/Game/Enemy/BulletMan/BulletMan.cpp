@@ -77,7 +77,7 @@ void ETG::BulletMan::UpdateAnimations()
 void ETG::BulletMan::UpdateHandAndGunPositions() const
 {
     //Set hand properties
-    const ETG::Vector2f HandOffsetForHero = AnimationComp->IsFacingRight(EnemyDir) ? 
+    const ETG::Vector2f HandOffsetForHero = ETG::IsFacingRight(EnemyDir) ? 
         ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-8.f, 5.f};
     Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
     Hand->Update();

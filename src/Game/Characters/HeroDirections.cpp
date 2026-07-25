@@ -5,21 +5,56 @@ namespace ETG
 {
     Direction HeroDirections::LastDashDirection{};
 
+    //NOTE: Both of these are mirror symmetric now: whatever Right gets, Left gets flipped, and the same for the two
+    //diagonal pairs. They used to pair Right with DownLeft and Left with the back-diagonal sprite, so pointing the
+    //mouse straight left drew the hero's back while pointing it straight right drew his side.
+    //Down and Up are their own mirror image, so they simply pick the nearest sprite: the front one for Down, and the
+    //dedicated back one for Up
     HeroIdleEnum HeroDirections::GetIdleEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight || currDir == Direction::BackHandLeft) return HeroIdleEnum::Idle_Back;
-        if (currDir == Direction::BackDiagonalRight || currDir == Direction::BackDiagonalLeft) return HeroIdleEnum::Idle_BackWard;
-        if (currDir == Direction::Right || currDir == Direction::Left) return HeroIdleEnum::Idle_Right;
-        if (currDir == Direction::FrontHandRight || currDir == Direction::FrontHandLeft) return HeroIdleEnum::Idle_Front;
+        switch (currDir)
+        {
+        case Direction::Right:
+        case Direction::Left:
+            return HeroIdleEnum::Idle_Right;
+
+        case Direction::DownRight:
+        case Direction::Down:
+        case Direction::DownLeft:
+            return HeroIdleEnum::Idle_Front;
+
+        case Direction::UpRight:
+        case Direction::UpLeft:
+            return HeroIdleEnum::Idle_BackWard;
+
+        case Direction::Up:
+            return HeroIdleEnum::Idle_Back;
+        }
+
         return HeroIdleEnum::Idle_Back; // Default case
     }
 
     HeroRunEnum HeroDirections::GetRunEnum(const Direction currDir)
     {
-        if (currDir == Direction::BackHandRight || currDir == Direction::BackHandLeft) return HeroRunEnum::Run_Back;
-        if (currDir == Direction::BackDiagonalRight || currDir == Direction::BackDiagonalLeft) return HeroRunEnum::Run_BackWard;
-        if (currDir == Direction::Right || currDir == Direction::Left) return HeroRunEnum::Run_Forward;
-        if (currDir == Direction::FrontHandRight || currDir == Direction::FrontHandLeft) return HeroRunEnum::Run_Front;
+        switch (currDir)
+        {
+        case Direction::Right:
+        case Direction::Left:
+            return HeroRunEnum::Run_Forward;
+
+        case Direction::DownRight:
+        case Direction::Down:
+        case Direction::DownLeft:
+            return HeroRunEnum::Run_Front;
+
+        case Direction::UpRight:
+        case Direction::UpLeft:
+            return HeroRunEnum::Run_BackWard;
+
+        case Direction::Up:
+            return HeroRunEnum::Run_Back;
+        }
+
         return HeroRunEnum::Run_Forward; // Default case
     }
 
@@ -28,24 +63,24 @@ namespace ETG
     {
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
         {
-            LastDashDirection = Direction::BackDiagonalRight;
+            LastDashDirection = Direction::UpRight;
             return HeroDashEnum::Dash_BackWard;
         }
 
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
         {
-            LastDashDirection = Direction::BackDiagonalLeft;
+            LastDashDirection = Direction::UpLeft;
             return HeroDashEnum::Dash_BackWard;
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
         {
-            LastDashDirection = Direction::FrontHandLeft;
+            LastDashDirection = Direction::DownLeft;
 
             return HeroDashEnum::Dash_Right;
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
         {
-            LastDashDirection = Direction::FrontHandRight;
+            LastDashDirection = Direction::DownRight;
             return HeroDashEnum::Dash_Right;
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::A))
@@ -60,32 +95,34 @@ namespace ETG
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::W))
         {
-            LastDashDirection = Direction::BackHandRight;
+            LastDashDirection = Direction::Up;
             return HeroDashEnum::Dash_Back;
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
         {
-            LastDashDirection = Direction::Front_For_Dash;
+            LastDashDirection = Direction::Down;
             return HeroDashEnum::Dash_Front;
         }
         return HeroDashEnum::Unknown;
     }
 
+    //NOTE: The keys and the compass finally agree. W used to record BackHandRight and S a Direction::Front_For_Dash
+    //that existed for no other reason, because the old names meant "straight up" here and "up and to the right"
+    //when the same value came from the mouse. One enum, two readings
     ETG::Vector2f HeroDirections::GetDashVector() //Normalized vectors will be 0.707113562
     {
         switch (LastDashDirection)
         {
-        case Direction::Left: return {-1.0f, 0.0f};
         case Direction::Right: return {1.0f, 0.0f};
-        case Direction::BackHandRight: return {0.0f, -1.0f};
-        case Direction::BackHandLeft: return {0.0f, -1.0f};
-        case Direction::FrontHandRight: return Math::Normalize(ETG::Vector2f{1.0f, 1.0f});
-        case Direction::FrontHandLeft: return Math::Normalize(ETG::Vector2f{-1.0f, 1.0f}); //-0.7071 + 0.7
-        case Direction::BackDiagonalRight: return Math::Normalize(ETG::Vector2f{1.0f, -1.0f});; //0.7 -0.7
-        case Direction::BackDiagonalLeft: return Math::Normalize(ETG::Vector2f{-1.0, -1.0f}); //-0.7 -0.7
-        case Direction::Front_For_Dash: return {0, 1};
-        default:
-            return {0.0f, 0.0f};
+        case Direction::Left: return {-1.0f, 0.0f};
+        case Direction::Up: return {0.0f, -1.0f};
+        case Direction::Down: return {0.0f, 1.0f};
+        case Direction::DownRight: return Math::Normalize(ETG::Vector2f{1.0f, 1.0f});
+        case Direction::DownLeft: return Math::Normalize(ETG::Vector2f{-1.0f, 1.0f}); //-0.7071 + 0.7
+        case Direction::UpRight: return Math::Normalize(ETG::Vector2f{1.0f, -1.0f}); //0.7 -0.7
+        case Direction::UpLeft: return Math::Normalize(ETG::Vector2f{-1.0f, -1.0f}); //-0.7 -0.7
         }
+
+        return {0.0f, 0.0f};
     }
 }
