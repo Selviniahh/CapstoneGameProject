@@ -1,24 +1,59 @@
 #pragma once
 #include "../../Engine/Core/StateMachine/HierarchicalStateMachine.h"
-#include "../Managers/Enum/HeroCapability.h"
+#include "HeroCapability.h"
 #include "HeroStates.h"
 
 namespace ETG
 {
     class Hero;
-
-    //The hero's state tree. Every transition the hero can make is declared in Build(), in one readable block,
-    //instead of being spread across SetState() calls in the move component, the anim component and a health listener.
-    //
-    //  HeroRoot
-    //  |- Alive                    grants CanTakeDamage
-    //  |  |- Locomotion            grants CanMove | CanShoot | CanSwitchGuns | CanUseActiveItems | CanFlipAnims
-    //  |  |  |- Idle   (default)
-    //  |  |  '- Run
-    //  |  |- Dash                  grants CanFlipAnims, revokes CanTakeDamage
-    //  |  '- Hit                   revokes CanTakeDamage and CanFlipAnims
-    //  '- Dead                     terminal, declares no outgoing transitions
-    //     '- Die
+   
+    // HeroRoot                                      composite
+    // │  Grants: -
+    // │  Revokes: -
+    // │
+    // ├── Alive                                     composite
+    // │   │  Grants: CanTakeDamage
+    // │   │  Revokes: -
+    // │   │
+    // │   ├── Locomotion                            composite
+    // │   │   │  Grants:
+    // │   │   │    CanMove
+    // │   │   │    CanShoot
+    // │   │   │    CanSwitchGuns
+    // │   │   │    CanUseActiveItems
+    // │   │   │    CanFlipAnims
+    // │   │   │  Revokes: -
+    // │   │   │
+    // │   │   ├── Idle                              leaf
+    // │   │   │      Grants: -
+    // │   │   │      Revokes: -
+    // │   │   │      Effective: All
+    // │   │   │
+    // │   │   └── Run                               leaf
+    // │   │          Grants: -
+    // │   │          Revokes: -
+    // │   │          Effective: All
+    // │   │
+    // │   ├── Dash                                  leaf
+    // │   │      Grants: CanFlipAnims
+    // │   │      Revokes: CanTakeDamage
+    // │   │      Effective: CanFlipAnims
+    // │   │
+    // │   └── Hit                                   leaf
+    // │          Grants: -
+    // │          Revokes:
+    // │            CanTakeDamage
+    // │            CanFlipAnims
+    // │          Effective: None
+    // │
+    // └── Dead                                      composite
+    //     │  Grants: -
+    //     │  Revokes: All
+    //     │
+    //     └── Die                                   leaf
+    //            Grants: -
+    //            Revokes: -
+    //            Effective: None
     
     //Final HeroStateMachine sınıfından başka bir sınıfın türetilmesini engeller.
                                                                 //Once animasyon karakter, kurallar 
@@ -32,7 +67,7 @@ namespace ETG
         //Kept so callers can ask about a whole subtree instead of enumerating leaves
         Node* RootNode{};
         Node* AliveNode{};
-        Node* LocomotionNode{};
+        Node* NormalMovement{};
         Node* IdleNode{};
         Node* RunNode{};
         Node* DashNode{};
@@ -41,6 +76,6 @@ namespace ETG
         Node* DieNode{};
 
         [[nodiscard]] bool IsAlive() const { return IsInNode(AliveNode); }
-        [[nodiscard]] bool IsOnFoot() const { return IsInNode(LocomotionNode); }
+        [[nodiscard]] bool IsOnFoot() const { return IsInNode(NormalMovement); }
     };
 }

@@ -13,7 +13,8 @@ namespace ETG
 
         RootNode = CreateNode("HeroRoot");
         AliveNode = CreateNode("Alive");
-        LocomotionNode = CreateNode("Locomotion");
+        NormalMovement = CreateNode("Locomotion");
+        
         IdleNode = CreateLeaf("Idle", HeroStateEnum::Idle);
         RunNode = CreateLeaf("Run", HeroStateEnum::Run);
         DashNode = CreateLeaf("Dash", HeroStateEnum::Dash);
@@ -25,18 +26,22 @@ namespace ETG
         //The first child attached is the default one, so entering Alive lands in Locomotion/Idle
         RootNode->AddChild(AliveNode);
         RootNode->AddChild(DeadNode);
-        AliveNode->AddChild(LocomotionNode);
+        AliveNode->AddChild(NormalMovement);
         AliveNode->AddChild(DashNode);
         AliveNode->AddChild(HitNode);
-        LocomotionNode->AddChild(IdleNode);
-        LocomotionNode->AddChild(RunNode);
+        NormalMovement->AddChild(IdleNode);
+        NormalMovement->AddChild(RunNode);
         DeadNode->AddChild(DieNode);
         SetRoot(RootNode);
 
         //<---------- Capabilities ---------->
+        //3 farkli kural var: 
+        //Capabilities → Karakter ne yapabilir?
+        // Transitions  → Ne zaman başka state'e geçer?
+        // Actions      → State aktifken ne yapılır?
         //Declared once, on the node that owns the rule. Idle and Run declare nothing: they inherit from Locomotion
         AliveNode->Grants = Cap::CanTakeDamage;
-        LocomotionNode->Grants = Cap::CanMove | Cap::CanShoot | Cap::CanSwitchGuns | Cap::CanUseActiveItems | Cap::CanFlipAnims;
+        NormalMovement->Grants = Cap::CanMove | Cap::CanShoot | Cap::CanSwitchGuns | Cap::CanUseActiveItems | Cap::CanFlipAnims;
         DashNode->Grants = Cap::CanFlipAnims;
         DashNode->Revokes = Cap::CanTakeDamage;
         HitNode->Revokes = Cap::CanTakeDamage | Cap::CanFlipAnims;
@@ -46,6 +51,7 @@ namespace ETG
         DeadNode->Revokes = Cap::All;
 
         //<---------- Transitions ---------->
+        // Ne zaman başka state'e geçer?
         //NOTE: Transitions are evaluated root -> leaf, and within a node in declaration order. That ordering IS the
         //priority. Death beats being hit, being hit beats dashing, and all three beat walking around, without a
         //single `if (state != Die && state != Hit)` anywhere in the codebase
@@ -68,12 +74,12 @@ namespace ETG
 
         //NOTE: TimeInState() is 0 for the whole entry frame, which stops these from firing before the animation
         //component has had its chance to restart the animation they are waiting on
-        HitNode->AddTransition(LocomotionNode, [this](const Hero& hero)
+        HitNode->AddTransition(NormalMovement, [this](const Hero& hero)
         {
             return TimeInState() > 0.f && hero.AnimationComp->AnimManagerDict[HeroStateEnum::Hit].IsAnimationFinished();
         }, "Hit -> Locomotion");
 
-        DashNode->AddTransition(LocomotionNode, [this](const Hero& hero)
+        DashNode->AddTransition(NormalMovement, [this](const Hero& hero)
         {
             if (TimeInState() < hero.MoveComp->MinDashDuration) return false;
             return hero.AnimationComp->AnimManagerDict[HeroStateEnum::Dash].IsAnimationFinished();
@@ -109,7 +115,7 @@ namespace ETG
             hero.MoveComp->StartDashCooldown();
         };
 
-        LocomotionNode->OnTick = [](Hero& hero, float)
+        NormalMovement->OnTick = [](Hero& hero, float)
         {
             hero.MoveComp->UpdateMovement();
         };

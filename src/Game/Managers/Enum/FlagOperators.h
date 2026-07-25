@@ -59,3 +59,4 @@ namespace ETG
         return static_cast<std::underlying_type_t<T>>(flags & check) != 0;
     }
 }
+    

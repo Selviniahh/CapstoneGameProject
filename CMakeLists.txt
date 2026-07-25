@@ -138,7 +138,7 @@ set(MANAGERS_SOURCES
         src/Engine/Managers/TypeRegistry.h
         src/Game/Managers/Enum/StateFlags.h
         src/Game/Managers/Enum/FlagOperators.h
-        src/Game/Managers/Enum/HeroCapability.h
+        src/Game/Characters/HeroCapability.h
 )
 
 set(LEVELS_SOURCES

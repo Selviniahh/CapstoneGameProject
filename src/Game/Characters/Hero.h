@@ -7,7 +7,7 @@
 #include "../../Engine/Core/Direction.h"
 #include "../../Engine/Core/Factory.h"
 #include "../Guns/Base/GunBase.h"
-#include "../Managers/Enum/HeroCapability.h"
+#include "HeroCapability.h"
 #include "HeroStateMachine.h"
 
 namespace ETG
