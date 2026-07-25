@@ -1,15 +1,19 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include "../Engine/Platform/Platform.h"
-#include "../Game/Managers/Enum/StateEnums.h"
+#include "../Engine/Core/Direction.h"
 
-//NOTE: For now this class hosts basic enum operations for both hero and enemy. Later on I will decide if it's worth to separate this class
+//What is left here is only what every character shares: turning an angle into a Direction, and the range map that
+//does it. Anything that maps a Direction onto a *particular* character's animation keys now lives next to that
+//character (Game/Characters/HeroDirections.h, Game/Enemy/BulletMan/BulletManDirections.h).
+//
+//NOTE: This class used to hold all of those at once, which is why it included StateEnums.h - and since almost
+//everything includes this header, every character's enums were in every translation unit. Its .cpp also included
+//Hero.h, so a utility header dragged the player in behind it
 namespace ETG
 {
-    enum class Direction;
-    class Hero;
-
     struct PairHash
     {
         template <class T1, class T2>
@@ -24,33 +28,18 @@ namespace ETG
     class DirectionUtils
     {
     public:
-        //Pair contains direction range. Value provides the corresponding Direction for the given pair range.  
+        //Pair contains direction range. Value provides the corresponding Direction for the given pair range.
         using DirectionMap = std::unordered_map<std::pair<int, int>, Direction, PairHash>&;
-        
+
         // Populates the map with default angle→direction ranges
         static void PopulateDirectionRanges(DirectionMap mapToFill);
 
         //DirectionMap's key pair represents minimum and maximum degree range. The value is the corresponding Direction for degree range.
-        //In Short, take the map and calculated angle, and return the Found Direction from angle. 
-        static Direction GetHeroDirectionFromAngle(const std::unordered_map<std::pair<int, int>, Direction, PairHash>& DirectionMap, float angle);
-        static BulletManShootingEnum GetBulletManShootingEnum(Direction currDir);
-        static BulletManHitEnum GetBulletManHitEnum(Direction currDir);
-        static BulletManDeathEnum GetBulletManDeathEnum(Direction currDir);
+        //In Short, take the map and calculated angle, and return the Found Direction from angle.
+        static Direction GetDirectionFromAngle(const std::unordered_map<std::pair<int, int>, Direction, PairHash>& DirectionMap, float angle);
 
-        static Direction LastDashDirection;
-        static const Direction& GetDirectionFromDash() {return LastDashDirection;} //This will run instead of above GetHeroDirectionFromAngle if state is Dash
-
-        //Hero enum related 
-        static HeroIdleEnum GetHeroIdleDirectionEnum(Direction currDir);
-        static HeroRunEnum GetHeroRunEnum(Direction currDir);
-        static HeroDashEnum GetDashDirectionEnum();
-        static ETG::Vector2f GetDashDirectionVector();
-
-        //Enemy BulletMan related 
-        static Direction GetDirectionToHero(const Hero* Hero, ETG::Vector2f SelfPosition);
-
-        static BulletManIdleEnum GetBulletManIdleEnum(Direction currDir);
-        static BulletManRunEnum GetBulletManRunEnum(Direction currDir);
+        //Which way `selfPosition` has to face to look at `targetPosition`. Used by the enemies to face the hero,
+        //but it knows nothing about the hero - it takes two points
+        static Direction GetDirectionToTarget(const ETG::Vector2f& targetPosition, const ETG::Vector2f& selfPosition);
     };
-    
 }

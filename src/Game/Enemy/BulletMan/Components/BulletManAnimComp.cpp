@@ -1,6 +1,6 @@
 #include "BulletManAnimComp.h"
 #include "../BulletMan.h"
-#include "../../../../Utils/DirectionUtils.h"
+#include "../BulletManDirections.h"
 
 ETG::BulletManAnimComp::BulletManAnimComp()
 {
@@ -22,7 +22,7 @@ void ETG::BulletManAnimComp::Initialize()
         if (BulletMan)
         {
             CurrentState = BulletMan->GetState();
-            CurrentAnimStateKey = DirectionUtils::GetBulletManIdleEnum(BulletMan->EnemyDir);
+            CurrentAnimStateKey = BulletManDirections::GetIdleEnum(BulletMan->EnemyDir);
         }
     }
 }
@@ -93,23 +93,23 @@ void ETG::BulletManAnimComp::Update()
     switch (BulletMan->GetState())
     {
     case EnemyStateEnum::Idle:
-        newKey = DirectionUtils::GetBulletManIdleEnum(BulletMan->EnemyDir);
+        newKey = BulletManDirections::GetIdleEnum(BulletMan->EnemyDir);
         break;
 
     case EnemyStateEnum::Run:
-        newKey = DirectionUtils::GetBulletManRunEnum(BulletMan->EnemyDir);
+        newKey = BulletManDirections::GetRunEnum(BulletMan->EnemyDir);
         break;
 
     case EnemyStateEnum::Shooting:
-        newKey = DirectionUtils::GetBulletManShootingEnum(BulletMan->EnemyDir);
+        newKey = BulletManDirections::GetShootingEnum(BulletMan->EnemyDir);
         break;
 
     case EnemyStateEnum::Hit:
-        newKey = DirectionUtils::GetBulletManHitEnum(BulletMan->EnemyDir);
+        newKey = BulletManDirections::GetHitEnum(BulletMan->EnemyDir);
         break;
 
     case EnemyStateEnum::Die:
-        newKey = DirectionUtils::GetBulletManDeathEnum(BulletMan->EnemyDir);
+        newKey = BulletManDirections::GetDeathEnum(BulletMan->EnemyDir);
         break;
 
     default:

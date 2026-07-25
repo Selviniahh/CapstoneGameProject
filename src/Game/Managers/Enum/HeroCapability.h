@@ -12,14 +12,14 @@ namespace ETG
     //every descendant, and a single child can revoke it. So only the positive side is needed here.
     enum class HeroCapability : std::uint32_t
     {
-        None = 0,
-        CanMove = 1 << 0,
-        CanShoot = 1 << 1,
-        CanSwitchGuns = 1 << 2,
-        CanUseActiveItems = 1 << 3,
-        CanFlipAnims = 1 << 4,
-        CanTakeDamage = 1 << 5,
+        None = 0,                    // 000000 = 0
+        CanMove = 1 << 0,            // 000001 = 1
+        CanShoot = 1 << 1,           // 000010 = 2
+        CanSwitchGuns = 1 << 2,      // 000100 = 4
+        CanUseActiveItems = 1 << 3,  // 001000 = 8
+        CanFlipAnims = 1 << 4,       // 010000 = 16
+        CanTakeDamage = 1 << 5,      // 100000 = 32
 
-        All = CanMove | CanShoot | CanSwitchGuns | CanUseActiveItems | CanFlipAnims | CanTakeDamage
+        All = CanMove | CanShoot | CanSwitchGuns | CanUseActiveItems | CanFlipAnims | CanTakeDamage // 111111 = 63
     };
 }

@@ -5,7 +5,7 @@
 #include "InputComponent.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Characters/Hero.h"
-#include "../../../Utils/DirectionUtils.h"
+#include "../HeroDirections.h"
 
 namespace ETG
 {
@@ -72,8 +72,8 @@ namespace ETG
     //animations instead of another case label. The Direction -> sub-enum helpers are unchanged, just wired up here
     void HeroAnimComp::SetKeyResolvers()
     {
-        SetKeyResolver(HeroStateEnum::Idle, [this] { return AnimationKey{DirectionUtils::GetHeroIdleDirectionEnum(HeroPtr->CurrentDirection)}; });
-        SetKeyResolver(HeroStateEnum::Run, [this] { return AnimationKey{DirectionUtils::GetHeroRunEnum(HeroPtr->CurrentDirection)}; });
+        SetKeyResolver(HeroStateEnum::Idle, [this] { return AnimationKey{HeroDirections::GetIdleEnum(HeroPtr->CurrentDirection)}; });
+        SetKeyResolver(HeroStateEnum::Run, [this] { return AnimationKey{HeroDirections::GetRunEnum(HeroPtr->CurrentDirection)}; });
         SetKeyResolver(HeroStateEnum::Dash, [this] { return AnimationKey{HeroPtr->CurrentDashDirection}; });
         SetKeyResolver(HeroStateEnum::Hit, [] { return AnimationKey{HeroHit::JustHit}; });
         SetKeyResolver(HeroStateEnum::Die, [] { return AnimationKey{HeroDeath::Dead}; });

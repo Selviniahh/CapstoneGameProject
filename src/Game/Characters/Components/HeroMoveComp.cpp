@@ -4,7 +4,7 @@
 #include "../../../Engine/Managers/InputManager.h"
 #include "../../../Utils/Math.h"
 #include "../Hero.h"  // For Hero
-#include "../../../Utils/DirectionUtils.h"
+#include "../HeroDirections.h"
 
 namespace ETG
 {
@@ -29,7 +29,7 @@ namespace ETG
 
     void HeroMoveComp::BeginDash()
     {
-        DashDirection = DirectionUtils::GetDashDirectionVector();
+        DashDirection = HeroDirections::GetDashVector();
     }
 
     float HeroMoveComp::GetDashDuration() const

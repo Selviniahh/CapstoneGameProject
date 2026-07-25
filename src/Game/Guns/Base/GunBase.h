@@ -9,7 +9,7 @@
 #include "../../../Engine/Animation/Animation.h"
 #include "../../../Engine/Core/GameObjectBase.h"
 #include "../../../Engine/Core/Components/ArrowComp.h"
-#include "../../Managers/Enum/StateEnums.h"
+#include "../GunStates.h"
 #include "../../../Engine/Core/Components/BaseAnimComp.h"
 #include "../../../Engine/Core/Events/EventDelegate.h"
 #include "../VFX/MuzzleFlash.h"

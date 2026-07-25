@@ -13,7 +13,6 @@
 //NOTE: An animation meant to manage animations, NOT TO MODIFY OBJECT ORIENTATION PROPERTIES 
 namespace ETG
 {
-    enum class HeroStateEnum;
 
     template <typename StateEnum>
     class BaseAnimComp : public ComponentBase, public IAnimationComponent

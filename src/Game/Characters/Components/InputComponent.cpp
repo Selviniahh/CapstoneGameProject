@@ -8,6 +8,7 @@
 #include "../../../Engine/Editor/Engine.h"
 #include "../../../Engine/Managers/InputManager.h"
 #include "../../../Utils/DirectionUtils.h"
+#include "../HeroDirections.h"
 #include "../../../Utils/Math.h"
 #include "../../../Utils/StrManipulateUtil.h"
 
@@ -56,11 +57,11 @@ namespace ETG
         //NOTE: If it's Dash Set Hero's Direction based on the Keyboard Key
         if (hero.GetState() == HeroStateEnum::Dash)
         {
-            hero.CurrentDirection = DirectionUtils::GetDirectionFromDash();
+            hero.CurrentDirection = HeroDirections::GetDashFacing();
         }
         else //NOTE: If it's not Dash, set Hero's input based on Mouse Angle. 
         {
-            hero.CurrentDirection = DirectionUtils::GetHeroDirectionFromAngle(DirectionMap, angle);
+            hero.CurrentDirection = DirectionUtils::GetDirectionFromAngle(DirectionMap, angle);
         }
     }
 
@@ -71,7 +72,7 @@ namespace ETG
         if (!ETG::Mouse::isButtonPressed(ETG::Mouse::Right)) return;
 
         // If you put breakpoint this line, direction enum will always be unknown so put breakpoint below this line to capture dash direction
-        hero.RequestDash(DirectionUtils::GetDashDirectionEnum());
+        hero.RequestDash(HeroDirections::GetDashEnum());
     }
 
     void InputComponent::HandleGunSwitch(Hero& hero) const

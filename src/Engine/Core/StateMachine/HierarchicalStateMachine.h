@@ -26,6 +26,8 @@ namespace ETG
     {
     public:
         using Node = StateNode<StateEnum, OwnerT, CapabilityT>;
+        
+        //CapabilityT enum ismi verir, bize e enumun'da type'i gerekiyor std::uint32_t
         using CapabilityBits = std::underlying_type_t<CapabilityT>;
 
         //If a tick ever needs more than this many transitions to settle, the tree has a cycle
@@ -61,7 +63,8 @@ namespace ETG
 
             ActivePath.clear();
             ActivePath.push_back(Root);
-            if (Root->OnEnter) Root->OnEnter(owner);
+            if (Root->OnEnter) 
+                Root->OnEnter(owner);
             DescendToLeaf(owner);
 
             TimeInCurrentState = 0.f;
@@ -87,7 +90,8 @@ namespace ETG
             for (int i = 0; i < MaxTransitionsPerTick; ++i)
             {
                 const TransitionMatch match = FindTransitionMatch(owner, settleWithin);
-                if (!match.Target) break;
+                if (!match.Target)
+                    break;
 
                 TransitionTo(owner, match.Target);
                 settleWithin = match.Target;
@@ -164,11 +168,33 @@ namespace ETG
                 if (settleWithin && !IsDescendantOrSelf(node, settleWithin)) continue;
 
                 for (const auto& transition : node->Transitions)
-                    if (transition.Target && transition.Condition && transition.Condition(owner))
-                        return TransitionMatch{node, transition.Target};
+                {
+                    if (!transition.Target || !transition.Condition) continue;
+
+                    //A transition that lands where we already are is not a decision, so it is never offered as one.
+                    //This matters because a transition declared on a parent keeps being evaluated while a *child* is
+                    //active: `Alive -> Dash` is still checked on every frame the hero spends inside Dash, and input
+                    //re-files its dash request for as long as the button is held down. Taking it would re-enter the
+                    //leaf without running a single OnExit or OnEnter - both walks stop at the common ancestor, which
+                    //here is the leaf itself - while still resetting TimeInState. The hero would then sit in a dash
+                    //that restarts every frame: never moving, because the bell curve is forever sampled at t=0, and
+                    //never ending, because the exit guard waits on a timer that never gets to grow
+                    if (ResolveEntryLeaf(transition.Target) == ActivePath.back()) continue;
+
+                    if (transition.Condition(owner)) return TransitionMatch{node, transition.Target};
+                }
             }
 
             return {};
+        }
+
+        //Where entering `node` would actually put us. A composite is not a state, so entering one means descending
+        //its default children until a leaf is reached. Re-entering a composite from a non-default child therefore
+        //still counts as a change: `Locomotion` while in `Run` resolves to `Idle`, which is somewhere else
+        static const Node* ResolveEntryLeaf(const Node* node)
+        {
+            while (node && !node->IsLeaf()) node = node->DefaultChild;
+            return node;
         }
 
         static bool IsDescendantOrSelf(const Node* node, const Node* ancestor)

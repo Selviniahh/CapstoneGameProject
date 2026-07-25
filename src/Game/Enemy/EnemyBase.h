@@ -3,6 +3,7 @@
 #include "../../Engine/Core/GameObjectBase.h"
 #include "../../Engine/Core/Events/EventDelegate.h"
 #include "../Managers/Enum/StateFlags.h"
+#include "EnemyStates.h"
 #include "Components/EnemyMoveCompBase.h"
 
 namespace ETG
@@ -29,7 +30,7 @@ namespace ETG
         virtual void HandleHitForce(const ProjectileBase* projectile);
 
         [[nodiscard]] inline bool CanMove() const { return !HasAnyFlag(StateFlags, EnemyStateFlag::PreventMovement); }
-        [[nodiscard]] inline bool CanShoot() const { return !HasAnyFlag(StateFlags, EnemyStateFlag::PreventShooting) && Hero->GetState() != HeroStateEnum::Die; }
+        [[nodiscard]] inline bool CanShoot() const { return !HasAnyFlag(StateFlags, EnemyStateFlag::PreventShooting) && Hero->IsAlive(); }
         [[nodiscard]] inline bool CanFlipAnims() const { return !HasAnyFlag(StateFlags, EnemyStateFlag::PreventAnimFlip); }
 
         // Force handling helpers that delegate to MoveComp

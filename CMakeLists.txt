@@ -152,6 +152,9 @@ set(ANIMATION_SOURCES
 
 set(CHARACTERS_SOURCES
         src/Game/Characters/Hero.cpp
+        src/Game/Characters/HeroStates.h
+        src/Game/Characters/HeroDirections.cpp
+        src/Game/Characters/HeroDirections.h
         src/Game/Characters/HeroStateMachine.cpp
         src/Game/Characters/HeroStateMachine.h
         src/Game/Characters/Components/HeroAnimComp.cpp
@@ -162,6 +165,7 @@ set(CHARACTERS_SOURCES
 )
 
 set(GUNS_SOURCES
+        src/Game/Guns/GunStates.h
         src/Game/Guns/Base/GunBase.cpp
         src/Game/Guns/Base/GunBase.h
         src/Game/Guns/RogueSpecial/RogueSpecial.cpp
@@ -183,6 +187,10 @@ set(PROJECTILE_SOURCES
 
 set(ENEMY_SOURCES
         src/Game/Enemy/EnemyBase.cpp
+        src/Game/Enemy/EnemyStates.h
+        src/Game/Enemy/BulletMan/BulletManStates.h
+        src/Game/Enemy/BulletMan/BulletManDirections.cpp
+        src/Game/Enemy/BulletMan/BulletManDirections.h
         src/Game/Enemy/EnemyBase.h
         src/Game/Enemy/BulletMan/BulletMan.cpp
         src/Game/Enemy/BulletMan/BulletMan.h

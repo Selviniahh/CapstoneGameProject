@@ -44,7 +44,7 @@ namespace ETG
         const float distanceToHero = GetDistanceToHero();
 
         // Update enemy's direction
-        OwnerEnemy->EnemyDir = DirectionUtils::GetDirectionToHero(Hero, OwnerEnemy->GetPosition());
+        OwnerEnemy->EnemyDir = DirectionUtils::GetDirectionToTarget(Hero->GetPosition(), OwnerEnemy->GetPosition());
 
         // Don't change state if currently shooting
         if (OwnerEnemy->GetState() == EnemyStateEnum::Shooting)

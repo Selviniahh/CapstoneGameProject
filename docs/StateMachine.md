@@ -1,5 +1,7 @@
 # Hierarchical State Machine
 
+*Türkçesi: [StateMachine.tr.md](StateMachine.tr.md)*
+
 How the hero's states work after the refactor, why it was done this way, and what to do when you want the
 enemies on the same system.
 
@@ -62,6 +64,8 @@ Files:
 | `Game/Characters/HeroStateMachine.h/.cpp` | The hero's tree. Every transition the hero can make is in `Build()` |
 | `Game/Managers/Enum/HeroCapability.h` | The permission bits, replacing `HeroStateFlags` |
 | `Game/Managers/Enum/FlagOperators.h` | Constrained bitwise helpers shared by the flag enums |
+| `Game/Characters/HeroStates.h` | The hero's enums: `HeroStateEnum` plus its animation keys. Only the hero includes it |
+| `Game/Characters/HeroDirections.h/.cpp` | Facing → the hero's animation keys, and the dash keys |
 
 **The enums stayed.** Leaf nodes carry a `HeroStateEnum`, so `AnimManagerDict`, the `AnimationKey` variant and
 the boost::describe editor UI are all untouched. Switching to polymorphic state classes would have meant
@@ -93,13 +97,35 @@ outside `Locomotion`, so it never gets `CanMove`; it grants `CanFlipAnims` back 
 Nothing outside the machine assigns a state. Input and listeners file a one-shot intent:
 
 ```cpp
-hero.RequestDash(DirectionUtils::GetDashDirectionEnum());  // InputComponent
+hero.RequestDash(HeroDirections::GetDashEnum());            // InputComponent
 hero.RequestHit(knockbackDir, forceMagnitude);             // the damage listener
 ```
 
 A guard reads the flag, and the target node's `OnEnter` consumes it. `InputComponent` no longer needs to know
 whether the hero is already dashing, dead or mid-hit — the machine either has a legal transition right now or
 it doesn't.
+
+**A request lives for exactly one tick.** `Hero::ExpireRequests()` runs immediately after `Tick()` and drops
+whatever nobody acted on. Input re-files `RequestDash` on every frame the button is held, so holding it still
+chains dashes as it always did — the cooldown is what paces them. What expiry prevents is a request that had no
+legal transition when it was filed (already dashing, cooldown not up) sitting around and spending itself half a
+second later, long after the player let go.
+
+### A transition has to change something
+
+A transition whose target resolves to the state we are already in is never taken. Composites are not states, so
+"resolves to" means descending default children until a leaf: re-entering `Locomotion` while in `Run` lands on
+`Idle` and is therefore a real change, while `Alive → Dash` while already inside `Dash` is not.
+
+This is not a micro-optimisation, it is what makes rule 1 safe. A transition declared on a parent keeps being
+evaluated while a *child* is active — that is the entire point of putting `Alive → Dash` on `Alive` — so it is
+also evaluated on every frame the hero spends inside `Dash`, against a request input keeps re-filing. Taking it
+runs no `OnExit` and no `OnEnter` at all (both walks stop at the lowest common ancestor, which for a self
+transition is the leaf itself) but still resets `TimeInState()`. The hero ended up in a dash that restarted every
+frame: it never moved, because `MakeDashMovement` samples the bell curve at `t = 0` and `sin(0)` is zero, and it
+never ended, because `Dash → Locomotion` waits on a timer that never got to grow. The old code had the same rule,
+written as `if (IsDashing) return;` at the top of `HeroAnimComp::StartDash` — moving the decision into the machine
+is what dropped it.
 
 ### One decision per tick
 
@@ -204,7 +230,7 @@ Note the enemy is **not** the hero: `EnemyStateFlag::CanFlipAnims` includes `Sta
    keep it if you want the force system to stay quiet.
 
 7. **Replace `BulletManAnimComp::Update`'s switch** with `SetKeyResolver` registrations, exactly as
-   `HeroAnimComp::SetKeyResolvers` does. The `DirectionUtils::GetBulletMan*Enum` helpers are unchanged, they
+   `HeroAnimComp::SetKeyResolvers` does. The `BulletManDirections::Get*Enum` helpers are unchanged, they
    just get wired up instead of being called from case labels.
 
 8. **Guards receive `const EnemyBase&`.** For anything BulletMan-specific, use `owner.As<BulletMan>()` inside
@@ -234,8 +260,8 @@ Note the enemy is **not** the hero: `EnemyStateFlag::CanFlipAnims` includes `Sta
   composite node.
 - **Prefer shape over checks.** "X cannot happen while Y" is usually a statement that X's transition should live
   somewhere Y is not on the active path.
-- **One-shot requests must be consumed in `OnEnter`.** A flag that stays set will re-fire its transition on
-  every tick.
+- **One-shot requests must be consumed in `OnEnter`, and expired after the tick.** A flag that stays set will
+  re-fire its transition later, on a tick nobody was thinking about when it was filed.
 - **A guard must not mutate.** It takes `const OwnerT&` for that reason. Side effects belong in
   `OnEnter`/`OnTick`/`OnExit`.
 - **Watch the frame order.** Guards run before `UpdateAnimations()`, so anything asking an animation a question
@@ -250,5 +276,6 @@ Note the enemy is **not** the hero: `EnemyStateFlag::CanFlipAnims` includes `Sta
   assigns `Gun->CurrentGunState`, which is the same layering violation the hero just got rid of.
 - `Hero::MouseAngle`, `CurrentDirection` and `IsShooting` are `static`. They work because there is one hero, but
   they are global mutable state and the machine's guards read them.
-- `AnimationKey` in `AnimationManager.h` is a `std::variant` with a hardcoded list of alternatives, so every new
-  direction enum has to be added to that central file.
+- `AnimationKey` is type-erased now, so a new direction enum no longer has to be added to a central list. What
+  is left is that it carries a `std::string Name` in every key, and that string takes part in both `operator==`
+  and the hash — every animation lookup hashes a string.

@@ -180,6 +180,7 @@ void ETG::Hero::Update()
     //behaviour belonging to it, and only then do the animations render whatever state we ended up in
     UpdateComponents();
     StateMachine->Tick(*this, Time::FrameTick);
+    ExpireRequests();
     UpdateAnimations();
 
     //NOTE: Reload Text: Will run only if reload needed
@@ -214,6 +215,16 @@ void ETG::Hero::RequestDash(const HeroDashEnum direction)
 
     CurrentDashDirection = direction;
     DashRequested = true;
+}
+
+//A request is worth exactly one tick. Input re-files RequestDash on every frame the right mouse button is held, so
+//a request the machine found no legal transition for - the hero is already dashing, or the cooldown has not run out
+//yet - must not survive to fire itself later, long after the player let go. Holding the button still chains dashes,
+//because input keeps filing a fresh request; it is only the stale ones that are dropped
+void ETG::Hero::ExpireRequests()
+{
+    DashRequested = false;
+    HitRequested = false;
 }
 
 void ETG::Hero::RequestHit(const ETG::Vector2f& knockbackDir, const float forceMagnitude)

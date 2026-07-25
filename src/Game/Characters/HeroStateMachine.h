@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Engine/Core/StateMachine/HierarchicalStateMachine.h"
 #include "../Managers/Enum/HeroCapability.h"
-#include "../Managers/Enum/StateEnums.h"
+#include "HeroStates.h"
 
 namespace ETG
 {

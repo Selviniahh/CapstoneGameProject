@@ -4,7 +4,8 @@
 namespace ETG
 {
     //8-way facing direction used by the engine's animation components (BaseAnimComp flip logic).
-    //Lives on the engine side; game state enums (StateEnums.h) re-export it for convenience.
+    //Lives on the engine side. Game code that needs it includes this header directly; it used to arrive by accident
+    //through StateEnums.h, which every character shared.
     enum class Direction
     {
         Right,
