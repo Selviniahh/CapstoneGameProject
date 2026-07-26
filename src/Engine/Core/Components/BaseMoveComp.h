@@ -2,6 +2,7 @@
 #include "../../Platform/Platform.h"
 #include "../ComponentBase.h"
 #include "../Events/EventDelegate.h"
+#include "../Stats/StatModifier.h"
 
 namespace ETG
 {
@@ -13,7 +14,9 @@ namespace ETG
 
     public:
         // Parameters:
-        float MaxSpeed; // Maximum speed (magnitude)
+        //NOTE: MaxSpeed is a Stat, not a float, because items modify it. Assigning a number to it still works and
+        //still means "this is the base speed" - see BulletMan's setup - while items go through AddModifier
+        StatModifier MaxSpeed; // Maximum speed (magnitude)
         float Acceleration; // Acceleration rate when input is present
         float Deceleration; // Deceleration rate when no input
 

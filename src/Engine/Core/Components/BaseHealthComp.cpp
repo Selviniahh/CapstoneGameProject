@@ -39,6 +39,11 @@ namespace ETG
         ComponentBase::Update();
         DamageFeedbackTimer->Update();
         InvulnerabilityTimer->Update();
+
+        //MaxHealth can drop underneath CurrentHealth while the game is running - a curse item is removed, a modifier
+        //expires - and a CurrentHealth above it would read as more than 100% on every health bar. Clamping down is
+        //safe; growing MaxHealth deliberately does NOT heal, so a heart container gives capacity, not free health
+        if (CurrentHealth > MaxHealth) CurrentHealth = MaxHealth;
     }
 
     bool BaseHealthComp::IsShowingDamageFeedback() const
@@ -87,7 +92,7 @@ namespace ETG
             return false;
 
         // Apply healing
-        CurrentHealth = std::min(MaxHealth, CurrentHealth + amount);
+        CurrentHealth = std::min(MaxHealth.Get(), CurrentHealth + amount);
 
         // Broadcast heal event
         OnHealed.Broadcast(amount, healInstigator);

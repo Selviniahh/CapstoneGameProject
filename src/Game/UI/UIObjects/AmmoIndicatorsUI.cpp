@@ -52,7 +52,7 @@ namespace ETG
         if (!currentGun || !currentGun->ProjTexture || !bottomBar) throw std::runtime_error("There's no current gun");
 
         // Get magazine info from gun
-        const int magazineSize = currentGun->MagazineSize;
+        const int magazineSize = currentGun->MagazineSize.GetInt();
         const int currMagAmmoSize = currentGun->MagazineAmmo;
 
         if (magazineSize <= 0) return;

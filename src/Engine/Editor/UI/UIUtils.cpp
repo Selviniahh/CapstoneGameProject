@@ -3,6 +3,50 @@
 #include "../../Animation/Animation.h"
 #include "../../../Utils/StrManipulateUtil.h"
 
+//A stat with nothing attached is still just a number, so it is drawn as one - the editor only gets noisier for the
+//stats an item is actually touching. When it is being modified, the header carries the final value so the effect is
+//readable without expanding, and every modifier names the source that owns it
+void UIUtils::DisplayStat(const char* label, ETG::StatModifier& stat)
+{
+    const auto& modifiers = stat.GetModifiers();
+    float base = stat.GetBase();
+
+    if (modifiers.empty())
+    {
+        BeginProperty(label);
+        if (ImGui::InputFloat("##base", &base)) stat.SetBase(base);
+        EndProperty();
+        return;
+    }
+
+    //### keeps the tree's identity stable while the displayed value changes every frame
+    const std::string header = std::string(label) + ": " + std::to_string(stat.Get()) + "###" + label;
+
+    if (ImGui::TreeNode(header.c_str()))
+    {
+        BeginProperty("Base");
+        if (ImGui::InputFloat("##base", &base)) stat.SetBase(base);
+        EndProperty();
+
+        for (const auto& modifier : modifiers)
+        {
+            const std::string amount = modifier.Op == ETG::StatOp::Percent
+                                           ? (modifier.Value >= 0.f ? "+" : "") + std::to_string(modifier.Value * 100.f) + " %"
+                                           : (modifier.Value >= 0.f ? "+" : "") + std::to_string(modifier.Value);
+
+            BeginProperty(modifier.Source.c_str());
+            ImGui::Text("%s", amount.c_str());
+            EndProperty();
+        }
+
+        BeginProperty("Final");
+        ImGui::Text("%.3f", stat.Get());
+        EndProperty();
+
+        ImGui::TreePop();
+    }
+}
+
 void UIUtils::DisplayIntRectangle(ETG::IntRect& rect)
 {
     BeginProperty("Size");
@@ -288,7 +332,12 @@ void UIUtils::EndProperty()
     ImGui::Columns(1);
     ImGui::PopID();
 
-    // Reduce spacing between properties
+    // Reduce spacing between properties through ImGui's layout system. Leaving a
+    // SetCursorPosY() as the last operation in a window is rejected by newer
+    // ImGui versions because it used to extend the parent bounds implicitly.
+    const ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                        ImVec2(itemSpacing.x, std::max(0.0f, itemSpacing.y - 2.0f)));
     ImGui::Spacing();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 2); // Slightly reduce space between items
+    ImGui::PopStyleVar();
 }

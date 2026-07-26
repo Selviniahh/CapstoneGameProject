@@ -96,6 +96,8 @@ set(CORE_SOURCES
         src/Engine/Core/Events/EventDelegate.h
         src/Engine/Core/StateMachine/StateNode.h
         src/Engine/Core/StateMachine/HierarchicalStateMachine.h
+        src/Engine/Core/Stats/StatModifier.cpp
+        src/Engine/Core/Stats/StatModifier.h
 )
 
 set(ENGINE_SOURCES
@@ -206,6 +208,7 @@ set(ITEMS_SOURCES
         src/Game/Items/Active/DoubleShoot.cpp
         src/Game/Items/Active/DoubleShoot.h
         src/Game/Items/Passive/PassiveItemBase.h
+        src/Game/Items/Passive/PassiveItemBase.cpp
         src/Game/Items/Passive/PlatinumBullets.cpp
         src/Game/Items/Passive/PlatinumBullets.h
 )

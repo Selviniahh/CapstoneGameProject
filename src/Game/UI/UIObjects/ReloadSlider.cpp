@@ -86,7 +86,9 @@ void ETG::ReloadSlider::StartAnimation()
 
         const ETG::Vector2f LeftMidPos = ETG::Vector2f{TopLeft.x / 2, TopLeft.y / 2} + ETG::Vector2f{BottomLeft.x / 2, BottomLeft.y / 2};
         const ETG::Vector2f RightMidPos = ETG::Vector2f{TopRight.x / 2, TopRight.y / 2} + ETG::Vector2f{BottomRight.x / 2, BottomRight.y / 2};
-        SliderValProps.Position.x = Math::IntervalLerp(LeftMidPos.x, RightMidPos.x, Gun->ReloadTime, reloadTimer);
+        //NOTE: .Get() rather than letting the Stat convert, because IntervalLerp deduces one type across all three
+        //of its value parameters and a Stat next to two floats gives it nothing to deduce
+        SliderValProps.Position.x = Math::IntervalLerp(LeftMidPos.x, RightMidPos.x, Gun->ReloadTime.Get(), reloadTimer);
         reloadTimer += Time::FrameTick;
 
         // 1. Primary method: Position-based check with tolerance
@@ -116,8 +118,8 @@ void ETG::ReloadSlider::FinishAnimation()
 {
         // Animation complete - set gun state
         Gun->IsReloading = false;
-        Gun->MaxAmmo -= Gun->MagazineSize - Gun->MagazineAmmo;
-        Gun->MagazineAmmo = Gun->MagazineSize;
+        Gun->MaxAmmo -= Gun->MagazineSize.GetInt() - Gun->MagazineAmmo;
+        Gun->MagazineAmmo = Gun->MagazineSize.GetInt();
         Gun->CurrentGunState = GunStateEnum::Idle;
 
         // Reset our state

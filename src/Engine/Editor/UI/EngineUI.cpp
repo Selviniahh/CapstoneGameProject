@@ -160,6 +160,12 @@ void ETG::ShowImGuiWidget<float>(const char* label, float& value)
 }
 
 template <>
+void ETG::ShowImGuiWidget<ETG::StatModifier>(const char* label, ETG::StatModifier& value)
+{
+    UIUtils::DisplayStat(label, value);
+}
+
+template <>
 void ETG::ShowImGuiWidget<int>(const char* label, int& value)
 {
     BeginProperty(label);

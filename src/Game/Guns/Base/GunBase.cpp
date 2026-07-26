@@ -28,27 +28,17 @@ namespace ETG
                      const float damage,
                      const float force,
                      const float spread)
-        : BaseFireRate(fireRate), BaseShotSpeed(shotSpeed),
-          BaseRange(range), BaseReloadTime(reloadTime), BaseDamage(damage),
-          BaseForce(force), BaseSpread(spread),
-          BaseMaxAmmo(maxAmmo), BaseMagazineSize(magazineSize), Timer(timerForVelocity)
+        //NOTE: a number assigned to a Stat sets its base, so these are the gun's unmodified values. The block that
+        //used to copy every BaseX into its X down in the body is gone with the twins themselves
+        : FireRate(fireRate), ShotSpeed(shotSpeed), Range(range), ReloadTime(reloadTime),
+          Damage(damage), Force(force), Spread(spread),
+          MagazineSize(magazineSize), MaxAmmo(maxAmmo), Timer(timerForVelocity)
     {
         // Initialize common position and textures
         this->Position = Position;
         this->Depth = depth;
-        this->MagazineAmmo = MagazineSize;
 
-        //Initially base and current states are same
-        FireRate = BaseFireRate;
-        ShotSpeed = BaseShotSpeed;
-        Range = BaseRange;
-        ReloadTime = BaseReloadTime;
-        Damage = BaseDamage;
-        Force = BaseForce;
-        Spread = BaseSpread;
-        MaxAmmo = BaseMaxAmmo;
-        MagazineSize = BaseMagazineSize;
-        MagazineAmmo = MagazineSize; //Magazine needs to start with Magazine Ammo
+        MagazineAmmo = MagazineSize.GetInt(); //Magazine needs to start with Magazine Ammo
 
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ProjTexture) ProjTexture = std::make_shared<ETG::Texture>();
@@ -58,6 +48,12 @@ namespace ETG
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 
         GunBase::Initialize();
+    }
+
+    void GunBase::RemoveAllModifiersFrom(const std::string& source)
+    {
+        for (StatModifier* stat : {&FireRate, &ShotSpeed, &Range, &ReloadTime, &Damage, &Force, &Spread, &MagazineSize})
+            stat->RemoveModifiersFrom(source);
     }
 
     GunBase::~GunBase()
@@ -249,7 +245,7 @@ namespace ETG
     void GunBase::Reload()
     {
         //IF already reloading or magazine is full do not invoke again
-        if (IsReloading || MagazineAmmo == MagazineSize) return;
+        if (IsReloading || MagazineAmmo == MagazineSize.GetInt()) return;
         
         CurrentGunState = GunStateEnum::Reload; //update animation
         RestartCurrentAnimStateAnimation();

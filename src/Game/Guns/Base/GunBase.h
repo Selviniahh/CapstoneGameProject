@@ -15,6 +15,7 @@
 #include "../VFX/MuzzleFlash.h"
 #include "../../Modifiers/ModifierManager.h"
 #include "../../../Utils/Interface/IGunModifier.h"
+#include "../../../Engine/Core/Stats/StatModifier.h"
 
 namespace ETG
 {
@@ -46,6 +47,10 @@ namespace ETG
         //NOTE: EnqueueProjectiles will add projectiles to the queue, this function will fire them in tick.
         void UpdateProjectiles(); //If projectile needs to be removed, remove and update
 
+        //Detaches everything `source` attached to any of this gun's stats. An item does not have to remember which
+        //stats it touched, which is what makes "drop the item" the exact inverse of "pick the item up"
+        void RemoveAllModifiersFrom(const std::string& source);
+
         virtual void Reload();
         void SetShootSound(const std::string& soundPath);
         void SetReloadSound(const std::string& soundPath);
@@ -68,30 +73,27 @@ namespace ETG
 
         bool IsReloading{};
 
-        //Base stat values (never modified, used as reference)
-        float BaseFireRate;
-        float BaseShotSpeed;;
-        float BaseRange;
-        float BaseReloadTime; //Time to reload
-        float BaseDamage;
-        float BaseForce;
-        float BaseSpread;
+        //Gun stats. Each one carries its own base value and whatever modifiers items have put on it.
+        //
+        //NOTE: There used to be two fields per stat - `BaseFireRate` alongside `FireRate` and so on - kept in sync by
+        //hand in the constructor. The twin existed because an item that assigned to FireRate destroyed the only copy
+        //of the unmodified number, so it needed somewhere to read it back from; that is also why PlatinumBullets
+        //recomputed the whole stat from its base on every single Update. A Stat holds both halves, and an item never
+        //assigns to it at all - it attaches a modifier under its own name and detaches it by that same name
+        StatModifier FireRate; //Time between shots (seconds)
+        StatModifier ShotSpeed; //How fast bullets travel
+        StatModifier Range; //How far bullets travel
+        StatModifier ReloadTime; //Time to reload
+        StatModifier Damage; //Damage per bullet
+        StatModifier Force; //Knockback applied to enemies
+        StatModifier Spread; //Bullet spread angle in degrees (0 = perfect accuracy)
 
-        int BaseMaxAmmo{}; //Total ammo capacity 
-        int BaseMagazineSize{}; //Bullets per magazine
+        StatModifier MagazineSize; //Bullets per magazine
 
-        //Current effective stats (modified by items/ perks)
-        float FireRate; //Time between shots (seconds)
-        float ShotSpeed; //How fast bullets travel
-        float Range; //How far bullets travel
-        float ReloadTime; //Time to reload
-        float Damage; //Damage per bullet
-        float Force; //Knockback applied to enemies
-        float Spread; //Bullet spread angle in degrees (0 = perfect accuracy)
-
-        //Ammo stats
-        int MaxAmmo{}; //Total ammo capacity 
-        int MagazineSize{}; //Total bullets per magazine
+        //NOTE: these two are counters, not stats, so they stay plain ints. MagazineAmmo is obviously one. MaxAmmo
+        //reads like a capacity but ReloadSlider spends it (`MaxAmmo -= ...`), so it is really the reserve pool - the
+        //name is lying and an item modifying it would be modifying the player's remaining bullets, not their capacity
+        int MaxAmmo{};
         int MagazineAmmo{}; //Current magazine ammo count (this will be subtracted and reset)
 
         std::shared_ptr<ETG::Texture> ProjTexture;

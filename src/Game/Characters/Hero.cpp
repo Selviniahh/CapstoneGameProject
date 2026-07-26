@@ -118,6 +118,7 @@ void ETG::Hero::UpdateComponents()
     InputComp->Update(*this);
     MoveComp->Update();
     HealthComp->Update();
+    
 }
 
 void ETG::Hero::UpdateAnimations()
@@ -266,6 +267,12 @@ void ETG::Hero::EquipGun(GunBase* newGun)
     currentGunIndex = EquippedGuns.size() - 1;
     ReloadText->LinkToGun(CurrentGun);
     UpdateGunVisibility();
+
+    //NOTE: A passive item can only reach the guns that exist when it is picked up, so the guns picked up afterwards
+    //have to come and collect their perks. Without this, the order the player finds things in decides whether their
+    //items work - which is exactly the bug the old code had, except it lost the perk on every weapon switch too
+    for (PassiveItemBase* item : EquippedPassiveItems)
+        if (item) item->ApplyGunPerk(*newGun);
 }
 
 void ETG::Hero::SwitchGun(const int& index)

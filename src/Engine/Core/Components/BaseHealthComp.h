@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Core/ComponentBase.h"
 #include "../../Core/Events/EventDelegate.h"
+#include "../Stats/StatModifier.h"
 
 namespace ETG
 {
@@ -37,10 +38,14 @@ namespace ETG
         EventDelegate<float, GameObjectBase*> OnHealed;
         EventDelegate<GameObjectBase*> OnDeath;
 
+        //CurrentHealth is a running total, not a stat: nothing modifies it by a percentage, damage and healing move it
+        //directly. MaxHealth is the stat - that is what a heart container adds to
         float CurrentHealth;
-        float MaxHealth;
-        bool InvulnerabilityEnabled = false; //For now only hero will use this 
-        float InvulnerabilityDuration = 0.75f; //For now only hero will use this 
+        StatModifier MaxHealth;
+
+        bool InvulnerabilityEnabled = false; //For now only hero will use this
+        float InvulnerabilityDuration = 0.75f; //For now only hero will use this. NOTE: not a Stat - it is read once,
+        //when Initialize builds the timer, so a modifier applied later would not reach the timer anyway
 
         // Visual feedback duration for damage
         float DamagedVisualFeedbackDuration = 0.2f;

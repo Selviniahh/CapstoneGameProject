@@ -53,6 +53,12 @@ namespace ETG
     template <>
     void ShowImGuiWidget<float>(const char* label, float& value);
 
+    //Stat. NOTE: needed even though a Stat converts to float - the widget is picked by the member's declared type,
+    //not by what it can convert to, so without this a described Stat would fall through to the "did you forget a
+    //specialization" branch
+    template <>
+    void ShowImGuiWidget<StatModifier>(const char* label, StatModifier& value);
+
     //Animation
     template <>
     void ShowImGuiWidget<Animation>(const char* label, Animation& value);

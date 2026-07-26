@@ -12,6 +12,7 @@
 ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("Items/Passive/platinum_bullets_001.png"))
 {
     ItemDescription = "Increase the fire rate %20";
+    ModifierSource = "PlatinumBullets"; //Every modifier this item attaches is filed - and removed - under this name
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 15.f;
     CollisionComp->SetCollisionEnabled(true);
@@ -31,7 +32,9 @@ void ETG::PlatinumBullets::Initialize()
         {
             Owner = dynamic_cast<GameObjectBase*>(heroObj); //In UI move from scene to Hero
             if (!IsVisible) return;
-            Perk(heroObj);
+
+            IsPickedUp = true;
+            ApplyToAllGuns();
 
             //Play a random pickup sound when collision occurs
             std::uniform_int_distribution<int> dist(0, Sounds.size() - 1);
@@ -50,9 +53,12 @@ void ETG::PlatinumBullets::Update()
     PassiveItemBase::Update();
     CollisionComp->Update();
 
-    //Check if the FireRateIncreasePerc has changed (with only through UI)
-    if (FireRateIncreasePerc != PreviousFireRatePerc)
-        if (Hero) Perk(Hero);
+    //Check if the FireRateIncreasePerc has changed (with only through UI).
+    //NOTE: gated on IsPickedUp. Without it, dragging the percentage in the editor buffs a gun the player has not
+    //earned the item for yet - which the old code also did, except it only reached the one gun in hand
+    if (IsPickedUp && FireRateIncreasePerc != PreviousFireRatePerc)
+        ApplyToAllGuns();
+
     PreviousFireRatePerc = FireRateIncreasePerc;
 }
 
@@ -62,9 +68,17 @@ void ETG::PlatinumBullets::Draw()
     CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
-void ETG::PlatinumBullets::Perk(const class Hero* hero) const
+void ETG::PlatinumBullets::ApplyGunPerk(GunBase& gun)
 {
-    //Modify the FireRate based on the FireRateIncreasePerc
-    auto* currGun = hero->GetCurrentHoldingGun(); 
-    currGun->FireRate = currGun->BaseFireRate - Math::CalculatePercentageOfValue(currGun->BaseFireRate,FireRateIncreasePerc);
+    //FireRate is the delay between shots, so raising the rate by 20% means cutting the delay by 20%.
+    //Re-attaching is safe: the modifier is keyed on ModifierSource, so this overwrites rather than compounds
+    gun.FireRate.AddModifier(ModifierSource, StatOp::Percent, -FireRateIncreasePerc / 100.f);
+}
+
+void ETG::PlatinumBullets::ApplyToAllGuns()
+{
+    if (!Hero) return;
+
+    for (GunBase* gun : Hero->EquippedGuns)
+        if (gun) ApplyGunPerk(*gun);
 }

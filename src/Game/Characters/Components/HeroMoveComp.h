@@ -36,9 +36,10 @@ namespace ETG
 
         Hero* HeroPtr = nullptr;
 
-        //Dash
-        float DashAmount = 300;
-        float DashCooldown = 0.5; //After dash is over, the cooldown to be able to dash again
+        //Dash. Both are Stats because items modify them ("dash goes further", "dash recharges faster"); MinDashDuration
+        //stays a plain float because it is an animation-safety floor, not something an item has any business touching
+        StatModifier DashAmount = 300.f;
+        StatModifier DashCooldown = 0.5f; //After dash is over, the cooldown to be able to dash again
 
         //NOTE: if any dash animation has fewer frames (i.e Dash/Right), that dash would complete sooner. For this
         //reason the Dash state refuses to end before this much time has passed

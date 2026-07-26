@@ -8,12 +8,14 @@ class AnimationManager;
 #include <variant>
 #include "../../Animation/Animation.h"
 #include "../../Animation/AnimationManager.h"
+#include "../../Core/Stats/StatModifier.h"
 
 #include "../../Platform/Platform.h"
 
 namespace UIUtils
 {
     void DisplayIntRectangle(ETG::IntRect& rect);
+    void DisplayStat(const char* label, ETG::StatModifier& stat);
     void DisplayAnimation(const char* label, Animation& value);
     void DisplayTexture(const std::shared_ptr<ETG::Texture>& value);
     void DisplayAnimationKey(const AnimationKey& key);
