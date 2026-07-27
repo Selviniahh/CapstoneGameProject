@@ -1,6 +1,5 @@
 #include "Magnum.h"
 #include "../../../Engine/Core/Factory.h"
-#include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Characters/Hero.h"
 #include "../../Enemy/EnemyBase.h"

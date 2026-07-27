@@ -2,8 +2,10 @@
 #include "ActiveItemBase.h"
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
+#include "Engine/Core/Factory.h"
+#include "Engine/Core/Components/CollisionComponent.h"
 
-ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& ConsumeSound, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
+ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath)
 {
     //Load the texture
     Texture = AssetManager::LoadTexture(resourcePath);
@@ -33,15 +35,33 @@ ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::
 
     ActivateSound.setBuffer(ActivateSoundBuffer);
     ReadySound.setBuffer(ReadySoundBuffer);
+    
+    CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
+    CollisionComp->CollisionRadius = 15.f;
+    CollisionComp->SetCollisionEnabled(true);
+    Origin = Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
+    
+    TotalCooldownTime = DefaultCooldownTime;
+    TotalConsumeTime = DefaultActiveTime;
+    
 }
 
 void ETG::ActiveItemBase::RequestUsage()
 {
+    if (ActiveItemState != ActiveItemState::Ready) return;
+
+    ActivateSound.play();
+    ActiveItemState = ActiveItemState::Consuming;
+    ConsumeTimer = 0;
+    IsEffectActive = true;
+    
 }
 
 void ETG::ActiveItemBase::Update()
 {
     GameObjectBase::Update();
+    CollisionComp->Update();
+    
 
     //Just increment the corresponding timer normally first
     if (ActiveItemState == ActiveItemState::Consuming) ConsumeTimer += Time::FrameTick;

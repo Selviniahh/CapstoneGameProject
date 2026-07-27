@@ -11,7 +11,6 @@
 #include "../../UI/UIObjects/ReloadSlider.h"
 #include "../../../Utils/Math.h"
 #include "../../Items/Passive/PlatinumBullets.h"
-#include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 namespace ETG
@@ -185,19 +184,20 @@ namespace ETG
             //Reset firing timer
             Timer = 0;
 
-            //NOTE: DO NOT MISS HERE!!!!!!! Apply modifiers if present. Later on when all of these modifiers will get complex, a new class that will only handle modifiers should be created. 
-            int shotCount = 1;
-            float EffectiveSpread = Spread; //Because Spread needs to be reverted back, when modifier overs, in place temp local variable required 
-            if (const auto& multiMod = modifierManager.GetModifier<MultiShotModifier>())
-            {
-                shotCount = multiMod->GetShotCount();
-                EffectiveSpread = multiMod->GetSpread();
-            }
+            //The gun states what a plain shot looks like and lets the modifiers rewrite it. Kept in a local rather
+            //than written back onto the gun, so nothing has to be restored when a timed effect runs out.
+            //NOTE: no concrete modifier is named here on purpose. A new one that changes the shape of the shot is
+            //written on its own and picked up by this loop without this function being touched again
+            ShotParams shot{.ShotCount = 1, .Spread = Spread};
+            for (const auto& [type, modifier] : modifierManager)
+                modifier->ModifyShot(shot);
 
-            //Consume ammo only once per shot group regardless of MultiShotModifier
+            LastShot = shot;
+
+            //Consume ammo only once per shot group, however many bullets the modifiers asked for
             MagazineAmmo--;
 
-            EnqueueProjectiles(shotCount, EffectiveSpread);
+            EnqueueProjectiles(shot.ShotCount, shot.Spread);
         }
 
         //Handle ammo depletion

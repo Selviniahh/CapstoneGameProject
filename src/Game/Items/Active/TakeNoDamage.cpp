@@ -9,19 +9,17 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../Characters/Hero.h"
-#include "../../Modifiers/Hero/InvulnerabilityModifier.h"
+#include "../../Guns/Base/GunBase.h"
+#include "../../Projectile/ProjectileBase.h"
 
 
-ETG::TakeNoDamage::TakeNoDamage() : ActiveItemBase(AssetManager::Resolve("Items/Active/stuffed_star_001.png"),
-                                                   AssetManager::Resolve("Sounds/Consume.ogg"),
-                                                   DEFAULT_COOLDOWN, DEFAULT_ACTIVE_TIME)
+ETG::TakeNoDamage::TakeNoDamage() : ActiveItemBase(AssetManager::Resolve("Items/Active/stuffed_star_001.png"))
 {
     ItemDescription = "Take no damage for 8 seconds and send enemy bullets back";
-    CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
-    CollisionComp->CollisionRadius = 15.f;
-    CollisionComp->SetCollisionEnabled(true);
     Position = {150, -70};
-    Origin = Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
+    
+    TotalCooldownTime = 15.0f;
+    TotalConsumeTime = 10.0f;
 
     TakeNoDamage::Initialize();
 }
@@ -46,28 +44,21 @@ void ETG::TakeNoDamage::Initialize()
 
 void ETG::TakeNoDamage::RequestUsage()
 {
-    if (ActiveItemState != ActiveItemState::Ready) return;
-
-    ActivateSound.play();
-    ActiveItemState = ActiveItemState::Consuming;
-    ConsumeTimer = 0;
-
-    //The modifier is pure data: it says "no damage, and bounce the shots". Hero reads it back when a projectile
-    //actually reaches it, which is the only moment a projectile exists to be turned around
-    Hero::Get()->HeroModifierManager.AddModifier(std::make_shared<InvulnerabilityModifier>(DeflectProjectiles));
-    IsEffectActive = true;
+    ActiveItemBase::RequestUsage();
+    //Hands itself to the hero. From here until the effect runs out, every hit the hero takes comes back to
+    //OnIncomingDamage below
+    Hero::Get()->HeroModifierManager.AddModifier(this);
 }
 
 void ETG::TakeNoDamage::Update()
 {
     ActiveItemBase::Update();
-    CollisionComp->Update();
 
     //Watching the state LEAVE Consuming rather than testing for Cooldown: the removal has to happen exactly once,
     //and the item stays in Cooldown for the whole 30 seconds afterwards
     if (IsEffectActive && ActiveItemState != ActiveItemState::Consuming)
     {
-        Hero::Get()->HeroModifierManager.RemoveModifier<InvulnerabilityModifier>();
+        Hero::Get()->HeroModifierManager.RemoveModifier<TakeNoDamage>();
         IsEffectActive = false;
     }
 }
@@ -77,4 +68,26 @@ void ETG::TakeNoDamage::Draw()
     ActiveItemBase::Draw();
     CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
- 
+
+//Every hit that reaches the hero while this item is active ends up here, and none of them get through
+bool ETG::TakeNoDamage::ReflectProjectile(Hero& hero, ProjectileBase* const projectile)
+{
+    //Contact damage from walking into an enemy: there is nothing to send back, just eat the hit
+    if (!projectile) return true;
+
+    if (DeflectProjectiles)
+    {
+        projectile->ProjVelocity = -projectile->ProjVelocity;
+        projectile->SetRotation(projectile->GetRotation() + 180.f); //sprite has to turn with it
+
+        //NOTE: EnemyBase decides friend-or-foe from projectile->Owner->Owner (EnemyBase.cpp). Reversing only the
+        //velocity would send back a bullet that every enemy still recognises as its own and ignores
+        projectile->Owner = hero.GetCurrentHoldingGun();
+    }
+    else
+    {
+        projectile->MarkForDestroy();
+    }
+
+    return true;
+}

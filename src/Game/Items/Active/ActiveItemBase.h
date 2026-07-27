@@ -12,11 +12,13 @@ namespace ETG
     enum class ActiveItemState;
 
     class ComponentBase;
+    class CollisionComponent;
+
 
     class ActiveItemBase : public GameObjectBase
     {
     public:
-        explicit ActiveItemBase(const std::string& resourcePath, const std::string& ConsumeSound, const float& cooldownTime, const float& activeTime);
+        ActiveItemBase(const std::string& resourcePath);
 
     public:
         float TotalCooldownTime;
@@ -26,6 +28,9 @@ namespace ETG
         bool IsEffectActive{};
         ActiveItemState ActiveItemState{};
 
+        //Every Active item must have a collision component otherwise how would it get picked up 
+        std::unique_ptr<CollisionComponent> CollisionComp;
+        
         ETG::SoundBuffer ActivateSoundBuffer;
         ETG::Sound ActivateSound;
 
@@ -47,6 +52,10 @@ namespace ETG
         std::mt19937 rng{std::random_device{}()};
 
         BOOST_DESCRIBE_CLASS(ActiveItemBase, (GameObjectBase), (TotalCooldownTime, TotalConsumeTime, ConsumeTimer, CoolDownTimer, ActiveItemState), (ItemDescription), ())
+        
+    private:
+        float DefaultCooldownTime = 15.0f;
+        float DefaultActiveTime = 10.0f;
     };
 
     enum class ActiveItemState

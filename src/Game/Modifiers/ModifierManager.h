@@ -1,6 +1,5 @@
 #pragma once
 #include <concepts>
-#include <memory>
 #include <typeindex>
 #include <unordered_map>
 
@@ -12,13 +11,16 @@ namespace ETG
     class ModifierManager
     {
     public:
-        //Identity of a modifier is its concrete type, NOT its name. GetModifierName is only for UI/debug so two modifiers sharing a name can no longer silently erase each other
-        //Adding the same concrete type twice replaces the old one, which is what refreshing a timed effect should do
-        void AddModifier(const std::shared_ptr<ModType>& modifier)
+        //NON-OWNING. A modifier is the item that granted it, and the item already lives in the world object list,
+        //so the manager only borrows it. Whatever registers itself here is responsible for calling RemoveModifier
+        //before it stops existing
+        void AddModifier(ModType* modifier)
         {
             modifiers[std::type_index(typeid(*modifier))] = modifier;
         }
 
+        //Identity of a modifier is its concrete type, so nothing has to be named or registered by hand.
+        //Adding the same concrete type twice replaces the old one, which is what refreshing a timed effect should do
         template <typename T>
             requires std::derived_from<T, ModType>
         void RemoveModifier()
@@ -26,13 +28,13 @@ namespace ETG
             modifiers.erase(std::type_index(typeid(T)));
         }
 
-        //O(1) lookup instead of walking the whole list with dynamic_pointer_cast. Only matches the exact concrete type that was added
+        //O(1) lookup. Only matches the exact concrete type that was added
         template <typename T>
             requires std::derived_from<T, ModType>
-        [[nodiscard]] std::shared_ptr<T> GetModifier() const
+        [[nodiscard]] T* GetModifier() const
         {
             const auto it = modifiers.find(std::type_index(typeid(T)));
-            return it == modifiers.end() ? nullptr : std::static_pointer_cast<T>(it->second);
+            return it == modifiers.end() ? nullptr : static_cast<T*>(it->second);
         }
 
         template <typename T>
@@ -41,6 +43,13 @@ namespace ETG
         {
             return modifiers.contains(std::type_index(typeid(T)));
         }
+
+        //Plain range-for support, so a caller that wants to give every modifier a turn just writes the loop:
+        //    for (const auto& [type, modifier] : manager)
+        //This is the counterpart to GetModifier - ask by type when you want one specific effect, loop when you
+        //want whoever is listening. Order is the map's, so no modifier may depend on running before another
+        [[nodiscard]] auto begin() const { return modifiers.begin(); }
+        [[nodiscard]] auto end() const { return modifiers.end(); }
 
         void ClearAllModifiers()
         {
@@ -53,6 +62,6 @@ namespace ETG
         }
 
     private:
-        std::unordered_map<std::type_index, std::shared_ptr<ModType>> modifiers;
+        std::unordered_map<std::type_index, ModType*> modifiers;
     };
 }

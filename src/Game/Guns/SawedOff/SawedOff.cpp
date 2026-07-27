@@ -1,6 +1,5 @@
 #include <filesystem>
 #include "../../../Engine/Core/Factory.h"
-#include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Characters/Hero.h"
 #include "SawedOff.h"

@@ -5,7 +5,7 @@
 #include "../ComponentBase.h"
 #include "../Direction.h"
 #include "../../Animation/AnimationManager.h"
-#include "../../../Utils/Interface/IAnimationComponent.h"
+#include "../../Animation/IAnimationComponent.h"
 #include "../../Editor/UI/UIUtils.h"
 #include "../../../Utils/StrManipulateUtil.h"
 

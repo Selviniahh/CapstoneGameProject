@@ -5,7 +5,7 @@
 #include <boost/describe.hpp>
 #include "GameClass.h"
 #include "TypeID.h"
-#include "../../Utils/Interface/IAnimationComponent.h"
+#include "../Animation/IAnimationComponent.h"
 
 namespace ETG
 {

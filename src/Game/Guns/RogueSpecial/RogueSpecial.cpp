@@ -1,7 +1,6 @@
 #include "RogueSpecial.h"
 #include <filesystem>
 #include "../../../Engine/Core/Factory.h"
-#include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
 ETG::RogueSpecial::RogueSpecial(const ETG::Vector2f& Position) : GunBase(Position,
@@ -43,9 +42,9 @@ void ETG::RogueSpecial::Update()
 {
     GunBase::Update();
 
-    if (modifierManager.GetModifier<MultiShotModifier>())
+    if (LastShot.ShotCount > 1)
     {
-        // When multishot is active, make flash animation match bullet frequency
+        // When firing a burst, make flash animation match bullet frequency
         MuzzleFlash->Animation.FrameInterval = ShotDelay / 2;
     }
     else

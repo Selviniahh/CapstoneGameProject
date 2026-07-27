@@ -10,8 +10,7 @@
 #include "HeroCapability.h"
 #include "HeroStateMachine.h"
 #include "../Modifiers/ModifierManager.h"
-#include "../Modifiers/Hero/InvulnerabilityModifier.h"
-#include "../../Utils/Interface/IHeroModifier.h"
+#include "../Modifiers/Hero/IHeroModifier.h"
 
 namespace ETG
 {
@@ -39,7 +38,7 @@ namespace ETG
         void UpdateHand() const;
         void UpdateGuns() const;
         void HandleShooting() const;
-        void HandleActiveItem() const;
+        void UseActiveItem() const;
 
         void Update() override;
         void Initialize() override;
@@ -47,7 +46,9 @@ namespace ETG
         void PopulateSpecificWidgets() override;
         [[nodiscard]] GunBase* GetCurrentHoldingGun() const;
         
-        void DeflectProjectile(ProjectileBase& projectile);
+        //Returns true if a modifier claimed the hit, in which case the caller must not apply any damage.
+        //`projectile` is null for contact damage
+        bool ConsumeIncomingDamage(ProjectileBase* projectile);
 
     public:
         static float MouseAngle;
@@ -65,6 +66,7 @@ namespace ETG
         std::unique_ptr<CollisionComponent> CollisionComp;
         std::unique_ptr<BaseHealthComp> HealthComp;
 
+        //NOTE: Active item usage
         ActiveItemBase* CurrActiveItem{};
         ModifierManager<IHeroModifier> HeroModifierManager;
 
@@ -100,7 +102,6 @@ namespace ETG
         [[nodiscard]] inline bool CanFlipAnims() const { return StateMachine->HasCapability(HeroCapability::CanFlipAnims); }
         [[nodiscard]] inline bool CanUseActiveItems() const { return StateMachine->HasCapability(HeroCapability::CanUseActiveItems); }
         [[nodiscard]] inline bool CanTakeDamage() const { return StateMachine->HasCapability(HeroCapability::CanTakeDamage); }
-        [[nodiscard]] bool IsInvulnerable() const { return HeroModifierManager.HasModifier<InvulnerabilityModifier>(); }
 
         //<---------- State requests ---------->
         //One-shot intents. The machine decides whether and when they become a state change, and clears them on entry

@@ -1,41 +1,35 @@
 #pragma once
 #include "ActiveItemBase.h"
+#include "../../Modifiers/Hero/IHeroModifier.h"
 
 namespace ETG
 {
     class Hero;
     class CollisionComponent;
-    
-    class TakeNoDamage : public ActiveItemBase
+
+    //The item IS the hero modifier: while it is being consumed it registers itself with the hero and answers the
+    //damage hook itself, so what the item does and what the effect does live in one file
+    class TakeNoDamage : public ActiveItemBase, public IHeroModifier
     {
     public:
         TakeNoDamage();
         ~TakeNoDamage() override = default;
         void RequestUsage() override;
-        
+
         void Initialize() override;
         void Update() override;
         void Draw() override;
 
-        std::unique_ptr<CollisionComponent> CollisionComp;
+        //<---------- IHeroModifier ---------->
+        bool ReflectProjectile(Hero& hero, ProjectileBase* projectile) override;
 
-        static constexpr float DEFAULT_COOLDOWN = 30.f;
-        static constexpr float DEFAULT_ACTIVE_TIME = 8.f;
 
-        //What the granted InvulnerabilityModifier is built with. The item only states the policy; turning a bullet
-        //around is Hero's job, since the hero is the one holding the projectile when it arrives
+        //Whether blocked shots are sent back at whoever fired them, or simply deleted
         bool DeflectProjectiles = true;
 
-        //The base flips Consuming -> Cooldown on its own, so the item has to remember it still owes the hero a
-        //RemoveModifier. Without this, Update would re-run the removal on every frame of the cooldown
-        bool IsEffectActive{};
-
+        
         BOOST_DESCRIBE_CLASS(TakeNoDamage, (ActiveItemBase),(TotalCooldownTime, TotalConsumeTime, ConsumeTimer,CoolDownTimer, ActiveItemState, DeflectProjectiles, IsEffectActive),
                              (ItemDescription),
                              ())
     };
 }
-
-
-
-

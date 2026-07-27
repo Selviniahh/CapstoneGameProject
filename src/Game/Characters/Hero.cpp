@@ -62,27 +62,21 @@ void ETG::Hero::Initialize()
 {
     GameObjectBase::Initialize();
 
-    //NOTE: damage taken at here. The listener only reports what happened; entering the Hit state and applying the
-    //knockback is the machine's job, so the two can no longer drift apart
-    HealthComp->OnDamageTaken.AddListener([this](const float damage, const float forceMagnitude, const GameObjectBase* instigator)
-    {
-        RequestHit(Math::Normalize(Position - instigator->GetPosition()), forceMagnitude);
-    });
 
-    //NOTE: No death listener is needed any more. The Alive -> Dead transition watches HealthComp->IsDead() itself
+    //NOTE: Hero got hit by something
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
-        //If the collision is with enemy, apply force to our hero and damage
+        //NOTE: If collided with the enemy
         if (eventData.Other->IsA<EnemyBase>())
         {
-            if (IsInvulnerable()) return;
-            
-            const auto enemyObj = static_cast<EnemyBase*>(eventData.Other); //all safe so ignore (sometimes) useless clang-tidy 
+            //No projectile to hand over: this is body contact, so a modifier can only swallow it
+            if (ConsumeIncomingDamage(nullptr)) return;
+
+            const auto enemyObj = eventData.Other->As<EnemyBase>();
             HealthComp->ApplyDamage(0.5, EnemyCollideKnockBackMag, enemyObj);
         }
 
-        //If the collision is with enemy projectile, damage our hero and destroy the enemy projectile
-        //eventData.Other->Owner = Projectile's gun. I didn't write that cuz dynamic_cast.md is expensive
+        //NOTE: If collided with a projectile
         if (eventData.Other->IsA<ProjectileBase>())
         {
             auto* projectile = eventData.Other->As<ProjectileBase>();
@@ -90,19 +84,11 @@ void ETG::Hero::Initialize()
             if (projectile && projectile->Owner && projectile->Owner->Owner &&
                 projectile->Owner->Owner->IsA<EnemyBase>())
             {
-                if (const auto invuln = HeroModifierManager.GetModifier<InvulnerabilityModifier>())
-                {
-                    if (invuln->ShouldDeflectProjectiles())
-                    {
-                        DeflectProjectile(*projectile);
-                    }
-                    else
-                    {
-                        projectile->MarkForDestroy();
-                    }
-                    return;
-                }
-                
+                //NOTE: whatever the modifiers want to do with the shot - eat it, bounce it back - they do here and
+                //this stays one line. Hero deliberately knows no concrete modifier: adding the next effect means
+                //writing that modifier, not editing this listener again
+                if (ConsumeIncomingDamage(projectile)) return;
+
                 const auto enemy = static_cast<EnemyBase*>(projectile->Owner->Owner);
                 if (!CanTakeDamage()) return;
 
@@ -111,6 +97,7 @@ void ETG::Hero::Initialize()
             }
         }
 
+        //NOTE: pick up the current active item
         if (eventData.Other->IsA<ActiveItemBase>())
         {
             auto* activeItem = eventData.Other->As<ActiveItemBase>();
@@ -118,6 +105,12 @@ void ETG::Hero::Initialize()
         }
     });
 
+    //NOTE: damage taken at here by HealthComp
+    HealthComp->OnDamageTaken.AddListener([this](const float damage, const float forceMagnitude, const GameObjectBase* instigator)
+    {
+        RequestHit(Math::Normalize(Position - instigator->GetPosition()), forceMagnitude);
+    });
+    
     CollisionComp->OnCollisionExit.AddListener([this](const CollisionEventData& eventData)
     {
         //No exit required for now
@@ -166,7 +159,6 @@ void ETG::Hero::UpdateGuns() const
     CurrentGun->IsVisible = CanMove();
 
     //Update  all equipped guns (for their projectiles only)
-    //NOTE: if (IsAttachedObjectNeeded()) //Calling this will act like stopping the time for projectiles. If I had some time, I'd implement stop time active item
     for (const auto guns : EquippedGuns)
         guns->Update();
 }
@@ -179,7 +171,8 @@ void ETG::Hero::HandleShooting() const
     }
 }
 
-void ETG::Hero::HandleActiveItem() const
+//NOTE: use the active item
+void ETG::Hero::UseActiveItem() const
 {
     if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Space) && CurrActiveItem && CanUseActiveItems())
     {
@@ -202,7 +195,7 @@ void ETG::Hero::Update()
     ReloadText->Update();
 
     HandleShooting();
-    HandleActiveItem();
+    UseActiveItem();
     UpdateHand();
     UpdateGuns();
 }
@@ -274,14 +267,15 @@ ETG::GunBase* ETG::Hero::GetCurrentHoldingGun() const
     return CurrentGun;
 }
 
-void ETG::Hero::DeflectProjectile(ProjectileBase& projectile)
+//Offers the hit to every attached modifier and stops at the first one that claims it
+bool ETG::Hero::ConsumeIncomingDamage(ProjectileBase* projectile)
 {
-    projectile.ProjVelocity = -projectile.ProjVelocity;
-    projectile.SetRotation(projectile.GetRotation() + 180.f);
-    
-    //NOTE: EnemyBase decides friend-or-foe from projectile->Owner->Owner. Reversing only the velocity would send
-    //a bullet back that every enemy still recognises as its own and ignores
-    projectile.Owner = GetCurrentHoldingGun();
+    //Ask each attached modifier in turn; the first one that claims the hit ends it
+    for (const auto& [type, modifier] : HeroModifierManager)
+        if (modifier->ReflectProjectile(*this, projectile)) 
+            return true;
+
+    return false;
 }
 
 void ETG::Hero::EquipGun(GunBase* newGun)

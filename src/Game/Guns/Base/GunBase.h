@@ -14,7 +14,7 @@
 #include "../../../Engine/Core/Events/EventDelegate.h"
 #include "../VFX/MuzzleFlash.h"
 #include "../../Modifiers/ModifierManager.h"
-#include "../../../Utils/Interface/IGunModifier.h"
+#include "../../Modifiers/Gun/IGunModifier.h"
 #include "../../../Engine/Core/Stats/StatModifier.h"
 
 namespace ETG
@@ -57,8 +57,12 @@ namespace ETG
         void FireBullet(float projectileAngle); //Fire an individual bullet
         [[nodiscard]] bool IsMagazineEmpty() const { return MagazineAmmo == 0; }; //Check if the magazine is empty
 
-        //NOTE: only modifier we have so far. I didn't deem necessary to define this as smart pointer 
         ModifierManager<IGunModifier> modifierManager;
+
+        //The shape the last shot ended up with, after the modifiers had their say. Lets a gun react to what it
+        //actually fired - a burst needs a faster muzzle flash - without naming the modifier that caused it, so a
+        //second modifier producing bursts is handled for free
+        ShotParams LastShot{};
 
         std::vector<QueuedBullet> bulletQueue; //Queue of bullets waiting to be fired
 

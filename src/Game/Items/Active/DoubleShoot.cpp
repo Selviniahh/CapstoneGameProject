@@ -4,21 +4,16 @@
 #include "../../Characters/Hero.h"
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
-#include "../../Modifiers/Gun/MultiShotModifier.h"
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
-ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Active/Potion_of_Gun_Friendship.png"),
-AssetManager::Resolve("Sounds/Consume.ogg"),
-    DEFAULT_COOLDOWN, DEFAULT_ACTIVE_TIME)
+ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Active/Potion_of_Gun_Friendship.png"))
 {
     ItemDescription = "Double shoot the item and set Spread 0";
-    CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
-    CollisionComp->CollisionRadius = 15.f;
-    CollisionComp->SetCollisionEnabled(true);
     Position = {100, -70};
-
-    Origin = ETG::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
+    
+    TotalCooldownTime = 15.0f;
+    TotalConsumeTime = 10.0f;
 
     DoubleShoot::Initialize();
 }
@@ -28,7 +23,12 @@ void ETG::DoubleShoot::Initialize()
     ActiveItemBase::Initialize();
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
-        //If collided object is hero:  
+        //If collided object is hero:
+        //TODO: I want to create a character base class. Hero and EnemyBase will inherit from this base class 
+        //TODO: And then ActiveItemBase will add all this Collision Add Listener into it's Base initializer
+        //TODO: In base Character class, it'll have EquippedActiveItems both Hero player character and any enemy character
+        //TODO: like boss or random Bulletman can come up and equip the item and use it right away 
+        //TODO: so in ActiveItemBase, I'll base this listener and this if block will check if it's Character only not hero
         if (auto* heroObj = eventData.Other->As<Hero>())
         {
             Owner = heroObj; //In UI move from scene to Hero
@@ -42,26 +42,21 @@ void ETG::DoubleShoot::Initialize()
     });
 }
 
+//TODO: This also must be used from enemies as well so it can also go right into the base ActiveItemBase
 void ETG::DoubleShoot::Update()
 {
     ActiveItemBase::Update();
     CollisionComp->Update();
 
-    // Handle deactivation.
-    // NOTE: During cooldown this will continusely run. Since the array is not big, in every tick during cooldown stage, trying to find an element in vector is not a problem but will be sooner or later
-    //NOTE: So I should define WasConsumingLastTick in ActiveItemState set that and use in this if block so that this if block will only run once  
-    if (ActiveItemState == ActiveItemState::Cooldown)
+    //Watching the state LEAVE Consuming rather than testing for Cooldown: the removal has to happen exactly once,
+    //and the item stays in Cooldown long after the effect ended
+    if (AffectedGun && ActiveItemState != ActiveItemState::Consuming)
     {
-        // Remove the modifier when effect ends
-        const auto hero = Hero::Get();
-        const auto gun = hero->GetCurrentHoldingGun();
-        if (gun->modifierManager.HasModifier<MultiShotModifier>())
-        {
-            gun->modifierManager.RemoveModifier<MultiShotModifier>();
-        }
+        AffectedGun->modifierManager.RemoveModifier<DoubleShoot>();
+        AffectedGun = nullptr;
     }
 }
-    
+
 void ETG::DoubleShoot::Draw()
 {
     ActiveItemBase::Draw();
@@ -71,22 +66,24 @@ void ETG::DoubleShoot::Draw()
 void ETG::DoubleShoot::RequestUsage()
 {
     // Only allow usage if the cooldown is complete
-    if (ActiveItemState == ActiveItemState::Ready)
-    {
-        ActivateSound.play();
+    if (ActiveItemState != ActiveItemState::Ready) return;
 
-        // Reset state
-        ActiveItemState = ActiveItemState::Consuming;
-        ConsumeTimer = 0;
+    ActivateSound.play();
 
-        // Apply the double-shoot effect
-        const auto hero = Hero::Get();
-        ApplyPerk(hero);
-    }
+    // Reset state
+    ActiveItemState = ActiveItemState::Consuming;
+    ConsumeTimer = 0;
+
+    //Hands itself to the gun. From here until the effect runs out, every shot that gun fires comes back to
+    //ModifyShot below. Remembering the gun matters: the hero may switch weapons mid-effect, and the modifier has
+    //to come off the gun it was put on rather than whatever is in hand when the timer runs out
+    AffectedGun = Hero::Get()->GetCurrentHoldingGun();
+    AffectedGun->modifierManager.AddModifier(this);
 }
 
-void ETG::DoubleShoot::ApplyPerk(const Hero* hero)
+//Every shot the affected gun fires while this item is active passes through here
+void ETG::DoubleShoot::ModifyShot(ShotParams& shot)
 {
-    //Create the modifier and push back the array inside modifierManager
-    hero->GetCurrentHoldingGun()->modifierManager.AddModifier(std::make_shared<MultiShotModifier>(ShootCount,SpreadAmount));
+    shot.ShotCount = ShootCount;
+    shot.Spread = SpreadAmount;
 }

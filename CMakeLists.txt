@@ -150,6 +150,7 @@ set(LEVELS_SOURCES
 
 set(ANIMATION_SOURCES
         src/Engine/Animation/Animation.cpp
+        src/Engine/Animation/IAnimationComponent.h
 )
 
 set(CHARACTERS_SOURCES
@@ -217,8 +218,8 @@ set(ITEMS_SOURCES
 
 set(MODIFIERS_SOURCES
         src/Game/Modifiers/ModifierManager.h
-        src/Game/Modifiers/Gun/MultiShotModifier.h
-        src/Game/Modifiers/Hero/InvulnerabilityModifier.h
+        src/Game/Modifiers/Gun/IGunModifier.h
+        src/Game/Modifiers/Hero/IHeroModifier.h
 )
 
 set(UTILS_SOURCES
@@ -227,9 +228,6 @@ set(UTILS_SOURCES
         src/Utils/Math.h
         src/Utils/TextureUtils.h
         src/Utils/StrManipulateUtil.h
-        src/Utils/Interface/IAnimationComponent.h
-        src/Utils/Interface/IGunModifier.h
-        src/Utils/Interface/IHeroModifier.h
 )
 
 # Create a master library for all SDL-dependent code.
@@ -247,6 +245,7 @@ add_library(etgcore
         ${ENEMY_SOURCES}
         ${PROJECTILE_SOURCES}
         ${ITEMS_SOURCES}
+        ${MODIFIERS_SOURCES}
 )
 
 # The codebase uses members that shadow their own type names (e.g. `Engine* Engine;`),
@@ -275,8 +274,10 @@ add_library(utils ${UTILS_SOURCES})
 target_include_directories(utils PUBLIC src)
 target_link_libraries(utils PUBLIC Boost::type_index Boost::describe SDL3::SDL3 imgui etg_compile_flags)
 
+# NOTE: the modifier sources are compiled into etgcore, not listed here. A modifier that carries behaviour needs a
+# .cpp, and an INTERFACE target would compile that .cpp a second time into every consumer. What is left of this
+# target is the include path
 add_library(modifiers INTERFACE)
-target_sources(modifiers INTERFACE ${MODIFIERS_SOURCES})
 target_include_directories(modifiers INTERFACE src)
 
 add_executable(ETG main.cpp)

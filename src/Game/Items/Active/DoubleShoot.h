@@ -1,12 +1,15 @@
 #pragma once
 #include "ActiveItemBase.h"
+#include "../../Modifiers/Gun/IGunModifier.h"
 
 namespace ETG
 {
     class Hero;
-    class CollisionComponent;
+    class GunBase;
 
-    class DoubleShoot : public ActiveItemBase
+    //The item IS the gun modifier: while it is being consumed it registers itself with the gun the hero is
+    //holding and shapes every shot itself, so what the item does and what the effect does live in one file
+    class DoubleShoot : public ActiveItemBase, public IGunModifier
     {
     public:
         DoubleShoot();
@@ -16,16 +19,16 @@ namespace ETG
         void Initialize() override;
         void Update() override;
         void Draw() override;
-        void ApplyPerk(const Hero* hero);
 
-        std::unique_ptr<CollisionComponent> CollisionComp;
-
-        static constexpr float DEFAULT_COOLDOWN = 15.0f;
-        static constexpr float DEFAULT_ACTIVE_TIME = 10.0f;
+        //<---------- IGunModifier ---------->
+        void ModifyShot(ShotParams& shot) override;
 
         int ShootCount = 2;
         float SpreadAmount = 1.0f;
 
+        //Which gun the effect was handed to. The hero may switch weapons mid-effect, and the modifier has to come
+        //off the gun it was put on rather than whatever is in hand when the timer runs out
+        GunBase* AffectedGun{};
 
         BOOST_DESCRIBE_CLASS(DoubleShoot, (ActiveItemBase),(TotalCooldownTime, TotalConsumeTime, ConsumeTimer,CoolDownTimer, ActiveItemState, ShootCount, SpreadAmount),
                              (ItemDescription),
