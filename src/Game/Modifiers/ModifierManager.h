@@ -1,48 +1,45 @@
 #pragma once
-#include <string>
+#include <concepts>
 #include <memory>
-#include <vector>
-#include <algorithm>
+#include <typeindex>
+#include <unordered_map>
 
 namespace ETG
 {
-    //Modtype can only be 
-    template<typename ModType>
+    //ModType is the marker interface of a modifier family (IGunModifier, IHeroModifier...). It has to be polymorphic since identity is taken from typeid
+    template <typename ModType>
+        requires std::is_polymorphic_v<ModType>
     class ModifierManager
     {
     public:
-        //Add a modifier to the gun
+        //Identity of a modifier is its concrete type, NOT its name. GetModifierName is only for UI/debug so two modifiers sharing a name can no longer silently erase each other
+        //Adding the same concrete type twice replaces the old one, which is what refreshing a timed effect should do
         void AddModifier(const std::shared_ptr<ModType>& modifier)
         {
-            //Remove any existing modifier of same type
-            //Probably I will remove all the modifiers when adding one, bcs only 1 Modifier can exist only and none of modifier can exist at the same time 
-            RemoveModifier(modifier->GetModifierName());
-            modifiers.push_back(modifier);
+            modifiers[std::type_index(typeid(*modifier))] = modifier;
         }
 
-        //Remove a modifier by name
-        void RemoveModifier(const std::string& modifierName)
+        template <typename T>
+            requires std::derived_from<T, ModType>
+        void RemoveModifier()
         {
-            //Better and cooler way to remove from an array instead of traditional for loop. In traditional loop, when I need to remove multiple elements, it crashes bcs I'm rearranging the array
-            //So I had to cache first the elements needs to be removed in loop, after the loop ends, then I'd remove the elements with using the cache. But this erase-remove idiom completely fixed everything
-            modifiers.erase(
-                std::ranges::remove_if(modifiers,
-                                       [&](const std::shared_ptr<ModType>& mod)
-                                       {
-                                           return mod->GetModifierName() == modifierName;
-                                       }).begin(), modifiers.end());
+            modifiers.erase(std::type_index(typeid(T)));
         }
 
-        //Get a specific type of modifier with same T 
-        template <typename ModName>
-        std::shared_ptr<ModName> GetModifier() const
+        //O(1) lookup instead of walking the whole list with dynamic_pointer_cast. Only matches the exact concrete type that was added
+        template <typename T>
+            requires std::derived_from<T, ModType>
+        [[nodiscard]] std::shared_ptr<T> GetModifier() const
         {
-            for (const auto& mod : modifiers)
-            {
-                if (auto casted = std::dynamic_pointer_cast<ModName>(mod)) //attempts to cast each mod to a shared_ptr<T>
-                    return casted;
-            }
-            return nullptr;
+            const auto it = modifiers.find(std::type_index(typeid(T)));
+            return it == modifiers.end() ? nullptr : std::static_pointer_cast<T>(it->second);
+        }
+
+        template <typename T>
+            requires std::derived_from<T, ModType>
+        [[nodiscard]] bool HasModifier() const
+        {
+            return modifiers.contains(std::type_index(typeid(T)));
         }
 
         void ClearAllModifiers()
@@ -50,22 +47,12 @@ namespace ETG
             modifiers.clear();
         }
 
-        //Check if a specific modifier exists
-        [[nodiscard]] bool HasModifier(const std::string& modifierName) const
-        {
-            return std::ranges::any_of(modifiers, [&](const auto& mod)
-            {
-                return mod->GetModifierName() == modifierName;
-            });
-        }
-
-        //Get number of active modifiers
         [[nodiscard]] size_t GetModifierCount() const
         {
             return modifiers.size();
         }
 
     private:
-        std::vector<std::shared_ptr<ModType>> modifiers;
+        std::unordered_map<std::type_index, std::shared_ptr<ModType>> modifiers;
     };
 }

@@ -55,9 +55,9 @@ void ETG::DoubleShoot::Update()
         // Remove the modifier when effect ends
         const auto hero = Hero::Get();
         const auto gun = hero->GetCurrentHoldingGun();
-        if (gun->modifierManager.HasModifier("MultiShot"))
+        if (gun->modifierManager.HasModifier<MultiShotModifier>())
         {
-            gun->modifierManager.RemoveModifier("MultiShot");
+            gun->modifierManager.RemoveModifier<MultiShotModifier>();
         }
     }
 }

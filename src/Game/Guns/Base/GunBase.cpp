@@ -52,6 +52,16 @@ namespace ETG
 
     void GunBase::RemoveAllModifiersFrom(const std::string& source)
     {
+ //        Döngünün her adımında stat, sıradaki nesnenin adresini alıyor. Mantıksal olarak şuna eşdeğer:
+ //        FireRate.RemoveModifiersFrom(source);
+ //        ShotSpeed.RemoveModifiersFrom(source);
+ //        Range.RemoveModifiersFrom(source);
+ //        ReloadTime.RemoveModifiersFrom(source);
+ //        Damage.RemoveModifiersFrom(source);
+ //        Force.RemoveModifiersFrom(source);
+ //        Spread.RemoveModifiersFrom(source);
+ //        MagazineSize.RemoveModifiersFrom(source);
+        
         for (StatModifier* stat : {&FireRate, &ShotSpeed, &Range, &ReloadTime, &Damage, &Force, &Spread, &MagazineSize})
             stat->RemoveModifiersFrom(source);
     }
