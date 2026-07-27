@@ -29,9 +29,9 @@ void ETG::DoubleShoot::Initialize()
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //If collided object is hero:  
-        if (auto* heroObj = dynamic_cast<Hero*>(eventData.Other))
+        if (auto* heroObj = eventData.Other->As<Hero>())
         {
-            Owner = dynamic_cast<GameObjectBase*>(heroObj); //In UI move from scene to Hero
+            Owner = heroObj; //In UI move from scene to Hero
             if (!IsVisible) return;
 
             PlayRandomPickupSound();

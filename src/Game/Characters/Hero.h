@@ -9,6 +9,9 @@
 #include "../Guns/Base/GunBase.h"
 #include "HeroCapability.h"
 #include "HeroStateMachine.h"
+#include "../Modifiers/ModifierManager.h"
+#include "../Modifiers/Hero/InvulnerabilityModifier.h"
+#include "../../Utils/Interface/IHeroModifier.h"
 
 namespace ETG
 {
@@ -43,6 +46,8 @@ namespace ETG
         void Draw() override;
         void PopulateSpecificWidgets() override;
         [[nodiscard]] GunBase* GetCurrentHoldingGun() const;
+        
+        void DeflectProjectile(ProjectileBase& projectile);
 
     public:
         static float MouseAngle;
@@ -61,6 +66,8 @@ namespace ETG
         std::unique_ptr<BaseHealthComp> HealthComp;
 
         ActiveItemBase* CurrActiveItem{};
+        ModifierManager<IHeroModifier> HeroModifierManager;
+
 
         //Items the hero has picked up (non-owning; the items live in the world object list).
         //Items register themselves here on pickup, UI reads these to draw the equipped item slots.
@@ -93,6 +100,7 @@ namespace ETG
         [[nodiscard]] inline bool CanFlipAnims() const { return StateMachine->HasCapability(HeroCapability::CanFlipAnims); }
         [[nodiscard]] inline bool CanUseActiveItems() const { return StateMachine->HasCapability(HeroCapability::CanUseActiveItems); }
         [[nodiscard]] inline bool CanTakeDamage() const { return StateMachine->HasCapability(HeroCapability::CanTakeDamage); }
+        [[nodiscard]] bool IsInvulnerable() const { return HeroModifierManager.HasModifier<InvulnerabilityModifier>(); }
 
         //<---------- State requests ---------->
         //One-shot intents. The machine decides whether and when they become a state change, and clears them on entry

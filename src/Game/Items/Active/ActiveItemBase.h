@@ -16,13 +16,14 @@ namespace ETG
     class ActiveItemBase : public GameObjectBase
     {
     public:
-        explicit ActiveItemBase(const std::string& resourcePath, const std::string& activateResPath, const float& cooldownTime, const float& activeTime);
+        explicit ActiveItemBase(const std::string& resourcePath, const std::string& ConsumeSound, const float& cooldownTime, const float& activeTime);
 
     public:
         float TotalCooldownTime;
         float TotalConsumeTime;
         float ConsumeTimer; //Will be increased when the item is consuming
         float CoolDownTimer; //Will be increased when the item is in cooldown
+        bool IsEffectActive{};
         ActiveItemState ActiveItemState{};
 
         ETG::SoundBuffer ActivateSoundBuffer;

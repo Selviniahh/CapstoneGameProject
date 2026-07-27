@@ -3,13 +3,14 @@
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
-ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& activateResPath, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
+ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath, const std::string& ConsumeSound, const float& cooldownTime, const float& activeTime) : TotalCooldownTime(cooldownTime), TotalConsumeTime(activeTime)
 {
     //Load the texture
     Texture = AssetManager::LoadTexture(resourcePath);
 
     Origin = ETG::Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
 
+    //TODO: These buffers are stupid, based on given ConsumeSound, play it 
     // Load sound effects
     if (!PickupSoundBuffers[0].loadFromFile(AssetManager::Resolve("Sounds/Pickup1.ogg")))
         std::cerr << "Failed to load Pickup1.ogg sound" << std::endl;

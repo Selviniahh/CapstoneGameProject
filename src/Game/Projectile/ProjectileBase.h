@@ -17,7 +17,8 @@ namespace ETG
         void Update() override;
         void Draw() override;
 
-        ETG::Vector2f ProjVelocity;
+        //TODO: idk why this is considered as const
+        mutable ETG::Vector2f ProjVelocity;
         float Range;
         float Damage;
         float Force; //knockback amount

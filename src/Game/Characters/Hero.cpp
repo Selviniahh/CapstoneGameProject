@@ -70,12 +70,13 @@ void ETG::Hero::Initialize()
     });
 
     //NOTE: No death listener is needed any more. The Alive -> Dead transition watches HealthComp->IsDead() itself
-
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //If the collision is with enemy, apply force to our hero and damage
         if (eventData.Other->IsA<EnemyBase>())
         {
+            if (IsInvulnerable()) return;
+            
             const auto enemyObj = static_cast<EnemyBase*>(eventData.Other); //all safe so ignore (sometimes) useless clang-tidy 
             HealthComp->ApplyDamage(0.5, EnemyCollideKnockBackMag, enemyObj);
         }
@@ -89,6 +90,19 @@ void ETG::Hero::Initialize()
             if (projectile && projectile->Owner && projectile->Owner->Owner &&
                 projectile->Owner->Owner->IsA<EnemyBase>())
             {
+                if (const auto invuln = HeroModifierManager.GetModifier<InvulnerabilityModifier>())
+                {
+                    if (invuln->ShouldDeflectProjectiles())
+                    {
+                        DeflectProjectile(*projectile);
+                    }
+                    else
+                    {
+                        projectile->MarkForDestroy();
+                    }
+                    return;
+                }
+                
                 const auto enemy = static_cast<EnemyBase*>(projectile->Owner->Owner);
                 if (!CanTakeDamage()) return;
 
@@ -258,6 +272,16 @@ void ETG::Hero::PopulateSpecificWidgets()
 ETG::GunBase* ETG::Hero::GetCurrentHoldingGun() const
 {
     return CurrentGun;
+}
+
+void ETG::Hero::DeflectProjectile(ProjectileBase& projectile)
+{
+    projectile.ProjVelocity = -projectile.ProjVelocity;
+    projectile.SetRotation(projectile.GetRotation() + 180.f);
+    
+    //NOTE: EnemyBase decides friend-or-foe from projectile->Owner->Owner. Reversing only the velocity would send
+    //a bullet back that every enemy still recognises as its own and ignores
+    projectile.Owner = GetCurrentHoldingGun();
 }
 
 void ETG::Hero::EquipGun(GunBase* newGun)

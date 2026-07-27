@@ -211,11 +211,14 @@ set(ITEMS_SOURCES
         src/Game/Items/Passive/PassiveItemBase.cpp
         src/Game/Items/Passive/PlatinumBullets.cpp
         src/Game/Items/Passive/PlatinumBullets.h
+        src/Game/Items/Active/TakeNoDamage.cpp
+        src/Game/Items/Active/TakeNoDamage.h
 )
 
 set(MODIFIERS_SOURCES
         src/Game/Modifiers/ModifierManager.h
         src/Game/Modifiers/Gun/MultiShotModifier.h
+        src/Game/Modifiers/Hero/InvulnerabilityModifier.h
 )
 
 set(UTILS_SOURCES
@@ -226,6 +229,7 @@ set(UTILS_SOURCES
         src/Utils/StrManipulateUtil.h
         src/Utils/Interface/IAnimationComponent.h
         src/Utils/Interface/IGunModifier.h
+        src/Utils/Interface/IHeroModifier.h
 )
 
 # Create a master library for all SDL-dependent code.

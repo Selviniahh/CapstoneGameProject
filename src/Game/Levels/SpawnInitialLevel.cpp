@@ -7,6 +7,7 @@
 #include "../Guns/Magnum/Magnum.h"
 #include "../Enemy/BulletMan/BulletMan.h"
 #include "../Items/Active/DoubleShoot.h"
+#include "../Items/Active/TakeNoDamage.h"
 #include "../Items/Passive/PlatinumBullets.h"
 
 void ETG::SpawnInitialLevel::Spawn(GameManager& game)
@@ -18,6 +19,7 @@ void ETG::SpawnInitialLevel::Spawn(GameManager& game)
     game.SpawnGameObject<BulletMan>(Vector2f{50, 50});
     game.SpawnGameObject<PlatinumBullets>();
     game.SpawnGameObject<DoubleShoot>();
+    game.SpawnGameObject<TakeNoDamage>();
 
     //Game-specific editor widgets on the Scene panel (the engine's Scene only exposes the hook)
     Scene::Get()->PopulateGameWidgets = [&game]
