@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "../Managers/Enum/FlagOperators.h"
+#include "../../Managers/Enum/FlagOperators.h"
 
 namespace ETG
 {

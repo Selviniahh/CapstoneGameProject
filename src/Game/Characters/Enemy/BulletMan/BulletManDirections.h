@@ -1,6 +1,6 @@
 #pragma once
 #include "BulletManStates.h"
-#include "../../../Engine/Core/Direction.h"
+#include "../../../../Engine/Core/Direction.h"
 
 namespace ETG
 {

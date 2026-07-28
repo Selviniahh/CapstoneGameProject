@@ -1,10 +1,10 @@
-#include "../../../Engine/Managers/Time.h"
+#include "../../../../Engine/Managers/Time.h"
 #include "HeroAnimComp.h"
 
 #include "HeroMoveComp.h"
 #include "InputComponent.h"
-#include "../../Guns/Base/GunBase.h"
-#include "../../Characters/Hero.h"
+#include "../../../Guns/Base/GunBase.h"
+#include "../Hero.h"
 #include "../HeroDirections.h"
 
 namespace ETG
@@ -72,8 +72,8 @@ namespace ETG
     //animations instead of another case label. The Direction -> sub-enum helpers are unchanged, just wired up here
     void HeroAnimComp::SetKeyResolvers()
     {
-        SetKeyResolver(HeroStateEnum::Idle, [this] { return AnimationKey{HeroDirections::GetIdleEnum(HeroPtr->CurrentDirection)}; });
-        SetKeyResolver(HeroStateEnum::Run, [this] { return AnimationKey{HeroDirections::GetRunEnum(HeroPtr->CurrentDirection)}; });
+        SetKeyResolver(HeroStateEnum::Idle, [this] { return AnimationKey{HeroDirections::GetIdleEnum(HeroPtr->CurrentDir)}; });
+        SetKeyResolver(HeroStateEnum::Run, [this] { return AnimationKey{HeroDirections::GetRunEnum(HeroPtr->CurrentDir)}; });
         SetKeyResolver(HeroStateEnum::Dash, [this] { return AnimationKey{HeroPtr->CurrentDashDirection}; });
         SetKeyResolver(HeroStateEnum::Hit, [] { return AnimationKey{HeroHit::JustHit}; });
         SetKeyResolver(HeroStateEnum::Die, [] { return AnimationKey{HeroDeath::Dead}; });

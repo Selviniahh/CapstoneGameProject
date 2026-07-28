@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../Engine/Core/GameObjectBase.h"
+#include "../../../../Engine/Core/GameObjectBase.h"
 
 namespace ETG
 {

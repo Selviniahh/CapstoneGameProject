@@ -2,7 +2,7 @@
 #include <filesystem>
 #include "../../../Engine/Core/Factory.h"
 #include "../../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Characters/Hero.h"
+#include "../../Characters/Hero/Hero.h"
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 

@@ -1,18 +1,19 @@
-#include "../../../Engine/Managers/Time.h"
+#include "../../../../Engine/Managers/Time.h"
 #include "BulletMan.h"
 #include <filesystem>
-#include "../../../Engine/Platform/Platform.h"
-#include "../../../Engine/Core/Factory.h"
-#include "../../../Engine/Managers/SpriteBatch.h"
-#include "../../../Utils/Math.h"
+#include "../../../../Engine/Platform/Platform.h"
+#include "../../../../Engine/Core/Factory.h"
+#include "../../../../Engine/Managers/SpriteBatch.h"
+#include "../../../../Utils/Math.h"
 #include "Components/BulletManAnimComp.h"
-#include "../../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Characters/Hand/Hand.h"
-#include "../../Guns/Base/GunBase.h"
-#include "../../Guns/Magnum/Magnum.h"
-#include "../../../Engine/Core/Components/BaseHealthComp.h"
-#include "../../../Engine/Managers/RenderContext.h"
-#include "../../../Engine/Managers/AssetManager.h"
+#include "../../../../Engine/Core/Components/CollisionComponent.h"
+#include "../../Hero/Hand/Hand.h"
+#include "../../../Guns/Base/GunBase.h"
+#include "../../../Guns/Magnum/Magnum.h"
+#include "../../../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../../../Engine/Managers/RenderContext.h"
+#include "../../../../Engine/Managers/AssetManager.h"
+#include "../../../../Utils/DirectionUtils.h"
 
 namespace ETG
 {
@@ -23,7 +24,7 @@ ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
 {
     this->Position = position;
     Depth = 4;
-    
+
     BulletMan::Initialize();
 
     Hand = ETG::CreateGameObjectAttached<class Hand>(this);
@@ -38,6 +39,10 @@ ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
     //Reassign instead of loading in place: ProjTexture is shared through the texture cache, loading
     //into it would overwrite the hero's Magnum projectile texture too.
     Gun->ProjTexture = AssetManager::LoadTexture("Projectiles/Enemy/8x8_enemy_projectile_001.png");
+
+    //Hands the weapon to Character's inventory, which is what makes CurrentGun / GetCurrentHoldingGun work for an
+    //enemy the same way they do for the hero - so an active item picked up by this enemy finds a gun to modify
+    EquipGun(Gun.get());
 }
 
 ETG::BulletMan::~BulletMan() = default;
@@ -45,55 +50,47 @@ ETG::BulletMan::~BulletMan() = default;
 void ETG::BulletMan::Initialize()
 {
     EnemyBase::Initialize();
-    
-    MoveComp->DetectionRadius = 200.0f;
-    MoveComp->StopDistance = 150.0f;
-    MoveComp->MovementSpeed = 40.0f;
-    MoveComp->MaxSpeed = 100.0f;
-    MoveComp->Acceleration = 10.0f;
-    MoveComp->Deceleration = 5000.0f;
+
+    EnemyMoveCompBase* moveComp = GetMoveComp();
+    moveComp->DetectionRadius = 200.0f;
+    moveComp->StopDistance = 150.0f;
+    moveComp->MovementSpeed = 40.0f;
+    moveComp->MaxSpeed = 100.0f;
+    moveComp->Acceleration = 10.0f;
+    moveComp->Deceleration = 5000.0f;
 }
 
 void ETG::BulletMan::Update()
 {
     EnemyBase::Update();
-    CollisionComp->Update();
 
     UpdateAnimations();
-    UpdateHandAndGunPositions();
+
+    //Same three steps the hero runs, in the same order: place the hand, aim from where the hand ended up, then move
+    //the gun onto it
+    UpdateHand();
+    UpdateAim();
+    UpdateGuns();
+
     UpdateShooting();
-    UpdateVisibility();
+    UpdateHandAndGunVisibility();
 }
 
 void ETG::BulletMan::UpdateAnimations()
 {
     // Update animation Flip sprites based on direction
-    if (CanFlipAnims()) AnimationComp->FlipSpritesX(EnemyDir, *this);
-    if (CanFlipAnims()) AnimationComp->FlipSpritesY<GunBase>(EnemyDir, *Gun);
-    
+    if (CanFlipAnims()) AnimationComp->FlipSpritesX(CurrentDir, *this);
+    if (CanFlipAnims() && CurrentGun) AnimationComp->FlipSpritesY<GunBase>(CurrentDir, *CurrentGun);
+
     AnimationComp->Update();
 }
 
-void ETG::BulletMan::UpdateHandAndGunPositions() const
+//The enemy's counterpart of the hero's mouse angle: it aims at whatever it is hunting
+void ETG::BulletMan::UpdateAim()
 {
-    //Set hand properties
-    const ETG::Vector2f HandOffsetForHero = ETG::IsFacingRight(EnemyDir) ? 
-        ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-8.f, 5.f};
-    Hand->SetPosition(Position + Hand->HandOffset + HandOffsetForHero);
-    Hand->Update();
+    if (!Hand || !Hero) return;
 
-    if (Hand && Gun)
-    {
-        // Position the gun relative to the hand.
-        const ETG::Vector2f handPos = Hand->GetPosition();
-        Gun->SetPosition(handPos + Hand->GunOffset);
-
-        // Aim the gun toward the hero.
-        const float angle = Math::AngleBetween(handPos, Hero->GetPosition());
-        Gun->Rotation = angle;
-    }
-    
-    Gun->Update();
+    AimAngle = Math::AngleBetween(Hand->GetPosition(), Hero->GetPosition());
 }
 
 void ETG::BulletMan::UpdateShooting()
@@ -116,15 +113,9 @@ void ETG::BulletMan::UpdateShooting()
     {
         SetState(EnemyStateEnum::Idle);
     }
-    
+
     // BulletMan-specific shooting logic needs to be called after checking state transitions
     BulletManShoot();
-}
-
-void ETG::BulletMan::UpdateVisibility() const
-{
-    Gun->IsVisible = CanFlipAnims();
-    Hand->IsVisible = CanFlipAnims();
 }
 
 void ETG::BulletMan::BulletManShoot()
@@ -160,6 +151,9 @@ void ETG::BulletMan::Draw()
     SpriteBatch::Draw(GetDrawProperties());
     if (CollisionComp) CollisionComp->Visualize(*RenderContext::Window);
 
-    Gun->Draw();
+    //Draw every equipped gun (the holstered ones only draw their projectiles), same as the hero
+    for (GunBase* gun : EquippedGuns)
+        if (gun) gun->Draw();
+
     Hand->Draw();
 }

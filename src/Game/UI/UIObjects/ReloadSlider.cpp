@@ -1,7 +1,7 @@
 #include "../../../Engine/Managers/Time.h"
 #include "ReloadSlider.h"
 #include "../../Guns/Base/GunBase.h"
-#include "../../Characters/Hero.h"
+#include "../../Characters/Hero/Hero.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"

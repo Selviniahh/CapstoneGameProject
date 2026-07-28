@@ -1,7 +1,7 @@
 #pragma once
 #include "../Hero.h"
-#include "../../../Engine/Core/Components/BaseMoveComp.h"
-#include "../../../Engine/Core/Events/EventDelegate.h"
+#include "../../../../Engine/Core/Components/BaseMoveComp.h"
+#include "../../../../Engine/Core/Events/EventDelegate.h"
 
 namespace ETG
 {

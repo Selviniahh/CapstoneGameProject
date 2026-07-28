@@ -8,7 +8,8 @@
 #include "../../../Engine/Core/Components/CollisionComponent.h"
 #include "../../../Engine/Core/Factory.h"
 #include "../../../Engine/Managers/RenderContext.h"
-#include "../../Characters/Hero.h"
+#include "../../Characters/Character.h"
+#include "../../Characters/Hero/Hero.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../Projectile/ProjectileBase.h"
 
@@ -29,25 +30,36 @@ void ETG::TakeNoDamage::Initialize()
     ActiveItemBase::Initialize();
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
-        if (auto* heroObj = eventData.Other->As<Hero>())
-       {
-             Owner = heroObj; //In UI move from scene to Hero
-             if (!IsVisible) return;
+        //Picked up by any character, same as every other active item
+        if (auto* character = eventData.Other->As<Character>())
+        {
+            Owner = character; //In UI move from scene to whoever picked it up
+            if (!IsVisible) return;
 
-             PlayRandomPickupSound();
+            PlayRandomPickupSound();
 
-             //Add self to the hero's equipped active items
-             heroObj->EquippedActiveItems.push_back(this);
-       }
+            character->PickUpActiveItem(this);
+        }
     });
+}
+
+//Whoever is carrying this. Null when an enemy carries it: the damage-modifier machinery
+//(ModifierManager<IHeroModifier>) still lives on Hero, so this is the one effect an enemy cannot run yet
+ETG::Hero* ETG::TakeNoDamage::GetHolder() const
+{
+    return Owner ? Owner->As<Hero>() : nullptr;
 }
 
 void ETG::TakeNoDamage::RequestUsage()
 {
+    Hero* const holder = GetHolder();
+    if (!holder) return;
+
     ActiveItemBase::RequestUsage();
-    //Hands itself to the hero. From here until the effect runs out, every hit the hero takes comes back to
-    //OnIncomingDamage below
-    Hero::Get()->HeroModifierManager.AddModifier(this);
+
+    //Hands itself to the holder. From here until the effect runs out, every hit they take comes back to
+    //ReflectProjectile below
+    holder->HeroModifierManager.AddModifier(this);
 }
 
 void ETG::TakeNoDamage::Update()
@@ -58,7 +70,9 @@ void ETG::TakeNoDamage::Update()
     //and the item stays in Cooldown for the whole 30 seconds afterwards
     if (IsEffectActive && ActiveItemState != ActiveItemState::Consuming)
     {
-        Hero::Get()->HeroModifierManager.RemoveModifier<TakeNoDamage>();
+        if (Hero* const holder = GetHolder())
+            holder->HeroModifierManager.RemoveModifier<TakeNoDamage>();
+
         IsEffectActive = false;
     }
 }
@@ -70,6 +84,8 @@ void ETG::TakeNoDamage::Draw()
 }
 
 //Every hit that reaches the hero while this item is active ends up here, and none of them get through
+//TODO: Reflect random 120-240 derece arasi reflect etsin
+//TODO: Velocity hizini %10-30 arasi da rastgele hizlandir
 bool ETG::TakeNoDamage::ReflectProjectile(Hero& hero, ProjectileBase* const projectile)
 {
     //Contact damage from walking into an enemy: there is nothing to send back, just eat the hit

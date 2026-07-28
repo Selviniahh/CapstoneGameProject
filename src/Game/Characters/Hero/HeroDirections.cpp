@@ -1,5 +1,5 @@
 #include "HeroDirections.h"
-#include "../../Utils/Math.h"
+#include "../../../Utils/Math.h"
 
 namespace ETG
 {

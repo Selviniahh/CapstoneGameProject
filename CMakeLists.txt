@@ -140,7 +140,7 @@ set(MANAGERS_SOURCES
         src/Engine/Managers/TypeRegistry.h
         src/Game/Managers/Enum/StateFlags.h
         src/Game/Managers/Enum/FlagOperators.h
-        src/Game/Characters/HeroCapability.h
+        src/Game/Characters/Hero/HeroCapability.h
 )
 
 set(LEVELS_SOURCES
@@ -154,17 +154,19 @@ set(ANIMATION_SOURCES
 )
 
 set(CHARACTERS_SOURCES
-        src/Game/Characters/Hero.cpp
-        src/Game/Characters/HeroStates.h
-        src/Game/Characters/HeroDirections.cpp
-        src/Game/Characters/HeroDirections.h
-        src/Game/Characters/HeroStateMachine.cpp
-        src/Game/Characters/HeroStateMachine.h
-        src/Game/Characters/Components/HeroAnimComp.cpp
-        src/Game/Characters/Components/InputComponent.cpp
-        src/Game/Characters/Components/HeroMoveComp.cpp
-        src/Game/Characters/Hand/Hand.cpp
-        src/Game/Characters/Hand/Hand.h
+        src/Game/Characters/Hero/Hero.cpp
+        src/Game/Characters/Hero/HeroStates.h
+        src/Game/Characters/Hero/HeroDirections.cpp
+        src/Game/Characters/Hero/HeroDirections.h
+        src/Game/Characters/Hero/HeroStateMachine.cpp
+        src/Game/Characters/Hero/HeroStateMachine.h
+        src/Game/Characters/Hero/Components/HeroAnimComp.cpp
+        src/Game/Characters/Hero/Components/InputComponent.cpp
+        src/Game/Characters/Hero/Components/HeroMoveComp.cpp
+        src/Game/Characters/Hero/Hand/Hand.cpp
+        src/Game/Characters/Hero/Hand/Hand.h
+        src/Game/Characters/Character.cpp
+        src/Game/Characters/Character.h
 )
 
 set(GUNS_SOURCES
@@ -189,18 +191,18 @@ set(PROJECTILE_SOURCES
 )
 
 set(ENEMY_SOURCES
-        src/Game/Enemy/EnemyBase.cpp
-        src/Game/Enemy/EnemyStates.h
-        src/Game/Enemy/BulletMan/BulletManStates.h
-        src/Game/Enemy/BulletMan/BulletManDirections.cpp
-        src/Game/Enemy/BulletMan/BulletManDirections.h
-        src/Game/Enemy/EnemyBase.h
-        src/Game/Enemy/BulletMan/BulletMan.cpp
-        src/Game/Enemy/BulletMan/BulletMan.h
-        src/Game/Enemy/BulletMan/Components/BulletManAnimComp.cpp
-        src/Game/Enemy/BulletMan/Components/BulletManAnimComp.h
-        src/Game/Enemy/Components/EnemyMoveCompBase.cpp
-        src/Game/Enemy/Components/EnemyMoveCompBase.h
+        src/Game/Characters/Enemy/EnemyBase.cpp
+        src/Game/Characters/Enemy/EnemyStates.h
+        src/Game/Characters/Enemy/BulletMan/BulletManStates.h
+        src/Game/Characters/Enemy/BulletMan/BulletManDirections.cpp
+        src/Game/Characters/Enemy/BulletMan/BulletManDirections.h
+        src/Game/Characters/Enemy/EnemyBase.h
+        src/Game/Characters/Enemy/BulletMan/BulletMan.cpp
+        src/Game/Characters/Enemy/BulletMan/BulletMan.h
+        src/Game/Characters/Enemy/BulletMan/Components/BulletManAnimComp.cpp
+        src/Game/Characters/Enemy/BulletMan/Components/BulletManAnimComp.h
+        src/Game/Characters/Enemy/Components/EnemyMoveCompBase.cpp
+        src/Game/Characters/Enemy/Components/EnemyMoveCompBase.h
 )
 
 set(ITEMS_SOURCES

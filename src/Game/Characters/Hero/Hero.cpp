@@ -1,31 +1,30 @@
 #include "Hero.h"
 #include <filesystem>
 #include <imgui.h>
-#include "../../Engine/Editor/UI/UIUtils.h"
-#include "../../Engine/Managers/Time.h"
-#include "../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../../Engine/Editor/UI/UIUtils.h"
+#include "../../../Engine/Managers/Time.h"
+#include "../../../Engine/Core/Components/CollisionComponent.h"
+#include "../../../Engine/Core/Components/BaseHealthComp.h"
 #include "../Enemy/EnemyBase.h"
-#include "../../Engine/Managers/RenderContext.h"
-#include "../Items/Active/ActiveItemBase.h"
-#include "../Items/Passive/PassiveItemBase.h"
-#include "../../Engine/Managers/SpriteBatch.h"
-#include "../Guns/RogueSpecial/RogueSpecial.h"
-#include "../Projectile/ProjectileBase.h"
-#include "../UI/UIObjects/ReloadText.h"
+#include "../../../Engine/Managers/RenderContext.h"
+#include "../../Items/Active/ActiveItemBase.h"
+#include "../../Items/Passive/PassiveItemBase.h"
+#include "../../../Engine/Managers/SpriteBatch.h"
+#include "../../Guns/RogueSpecial/RogueSpecial.h"
+#include "../../Projectile/ProjectileBase.h"
+#include "../../UI/UIObjects/ReloadText.h"
 #include "Components/HeroAnimComp.h"
 #include "Components/HeroMoveComp.h"
 #include "Components/InputComponent.h"
 #include "Hand/Hand.h"
 
-float ETG::Hero::MouseAngle = 0;
-ETG::Direction ETG::Hero::CurrentDirection{};
-bool ETG::Hero::IsShooting{};
-
 ETG::Hero::Hero(const ETG::Vector2f Position)
 {
     this->Position = Position;
     Depth = -1;
+
+    //The hero's art puts the left hand one pixel further in than the shared default
+    HandOffsetLeft = {-7.f, 5.f};
 
     //NOTE: Built before the components because they ask the hero for its state while constructing (HeroAnimComp
     //does, in its constructor). Building and entering the tree touches no component, so this ordering is safe
@@ -50,10 +49,8 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     CollisionComp->CollisionRadius = 1.f;
     CollisionComp->SetCollisionEnabled(true);
 
-    //Set default gun to equipped guns
-    EquippedGuns.push_back(RogueSpecial.get());
-    CurrentGun = EquippedGuns[0]; //Hero's default gun is RogueSpecial
-    ReloadText->LinkToGun(CurrentGun);
+    //Hero's default gun is RogueSpecial. EquipGun files it in the inventory and points the reload UI at it
+    EquipGun(RogueSpecial.get());
 
     Hero::Initialize();
 }
@@ -97,12 +94,8 @@ void ETG::Hero::Initialize()
             }
         }
 
-        //NOTE: pick up the current active item
-        if (eventData.Other->IsA<ActiveItemBase>())
-        {
-            auto* activeItem = eventData.Other->As<ActiveItemBase>();
-            CurrActiveItem = activeItem;
-        }
+        //NOTE: picking an item up is the item's own listener now (Character::PickUpActiveItem), so that an enemy
+        //walking over the same item picks it up by the identical path
     });
 
     //NOTE: damage taken at here by HealthComp
@@ -110,7 +103,7 @@ void ETG::Hero::Initialize()
     {
         RequestHit(Math::Normalize(Position - instigator->GetPosition()), forceMagnitude);
     });
-    
+
     CollisionComp->OnCollisionExit.AddListener([this](const CollisionEventData& eventData)
     {
         //No exit required for now
@@ -119,65 +112,39 @@ void ETG::Hero::Initialize()
 
 ETG::Hero::~Hero() = default;
 
+ETG::HeroMoveComp* ETG::Hero::GetMoveComp() const
+{
+    return GetMoveCompAs<HeroMoveComp>();
+}
+
 void ETG::Hero::UpdateComponents()
 {
     CollisionComp->Update();
     InputComp->Update(*this);
     MoveComp->Update();
     HealthComp->Update();
-    
 }
 
 void ETG::Hero::UpdateAnimations()
 {
-    if (CanFlipAnims()) AnimationComp->FlipSpritesY<GunBase>(CurrentDirection, *CurrentGun);
-    if (CanFlipAnims()) AnimationComp->FlipSpritesX(CurrentDirection, *this);
+    if (CanFlipAnims() && CurrentGun) AnimationComp->FlipSpritesY<GunBase>(CurrentDir, *CurrentGun);
+    if (CanFlipAnims()) AnimationComp->FlipSpritesX(CurrentDir, *this);
     AnimationComp->Update();
-}
-
-void ETG::Hero::UpdateHand() const
-{
-    const ETG::Vector2f HandOffsetForHero = ETG::IsFacingRight(CurrentDirection) ? ETG::Vector2f{8.f, 5.f} : ETG::Vector2f{-7.f, 5.f};
-
-    //Facing is already baked into the ternary above, so feed only the scale magnitude into the rotation:
-    //FlipSpritesX flips the hero by setting Scale.x = -1, and passing that in would mirror the offset a second time.
-    const ETG::Vector2f ScaleMagnitude{std::abs(Scale.x), std::abs(Scale.y)};
-    Hand->SetPosition(Position + Math::RotateVector(Rotation, ScaleMagnitude, Hand->HandOffset + HandOffsetForHero));
-    Hand->SetRotation(Rotation); //Hand sprite turns with the hero body
-    Hand->Update();
-
-    //If dashing or hit anim playing do not draw gun and hand
-    Hand->IsVisible = CanMove();
-}
-
-void ETG::Hero::UpdateGuns() const
-{
-    CurrentGun->SetPosition(Hand->GetPosition() + Hand->GunOffset);
-    CurrentGun->Rotation = MouseAngle;
-
-    //If dashing or hit anim playing do not draw gun and hand
-    CurrentGun->IsVisible = CanMove();
-
-    //Update  all equipped guns (for their projectiles only)
-    for (const auto guns : EquippedGuns)
-        guns->Update();
 }
 
 void ETG::Hero::HandleShooting() const
 {
-    if (IsShooting && CurrentGun->MagazineAmmo != 0 && !CurrentGun->IsReloading && CanShoot())
+    if (IsShooting && CurrentGun && CurrentGun->MagazineAmmo != 0 && !CurrentGun->IsReloading && CanShoot())
     {
         CurrentGun->PrepareShooting();
     }
 }
 
-//NOTE: use the active item
-void ETG::Hero::UseActiveItem() const
+//NOTE: the key binding is the only hero-specific part; whether the item may fire at all is Character's call
+void ETG::Hero::HandleActiveItemInput() const
 {
-    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Space) && CurrActiveItem && CanUseActiveItems())
-    {
-        CurrActiveItem->RequestUsage();
-    }
+    if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::Space))
+        UseActiveItem();
 }
 
 void ETG::Hero::Update()
@@ -195,9 +162,10 @@ void ETG::Hero::Update()
     ReloadText->Update();
 
     HandleShooting();
-    UseActiveItem();
+    HandleActiveItemInput();
     UpdateHand();
     UpdateGuns();
+    UpdateHandAndGunVisibility();
 }
 
 void ETG::Hero::Draw()
@@ -205,21 +173,34 @@ void ETG::Hero::Draw()
     if (!IsVisible) return;
     GameObjectBase::Draw();
     SpriteBatch::Draw(GetDrawProperties());
-    CurrentGun->Draw();
     ReloadText->Draw();
     Hand->Draw();
 
-    //Draw all equipped guns (for their projectiles only)
+    //Draw all equipped guns (the holstered ones only draw their projectiles)
     for (const auto guns : EquippedGuns)
         guns->Draw();
 
     if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
+//The reload UI belongs to the player, so it follows the gun from here rather than from the inventory code
+void ETG::Hero::OnGunChanged(GunBase* gun)
+{
+    if (!ReloadText || !gun) return;
+
+    ReloadText->LinkToGun(gun);
+    ReloadText->SetNeedsReload(gun->IsMagazineEmpty());
+}
+
 //----------------------------State Functionalities ----------------------------
 void ETG::Hero::RequestDash(const HeroDashEnum direction)
 {
     if (direction == HeroDashEnum::Unknown) return;
+
+    //NOTE: CurrentDashDirection is not only the direction being asked for, it is also what HeroAnimComp resolves
+    //the dash animation from. Overwriting it mid-dash therefore swaps the animation under a dash that has already
+    //committed to a direction, so a request filed while dashing is refused here rather than only at the transition
+    if (GetState() == HeroStateEnum::Dash) return;
 
     CurrentDashDirection = direction;
     DashRequested = true;
@@ -261,67 +242,13 @@ void ETG::Hero::PopulateSpecificWidgets()
     UIUtils::EndProperty();
 }
 
-//----------------------------Gun Switch Functionalities ----------------------------
-ETG::GunBase* ETG::Hero::GetCurrentHoldingGun() const
-{
-    return CurrentGun;
-}
-
 //Offers the hit to every attached modifier and stops at the first one that claims it
 bool ETG::Hero::ConsumeIncomingDamage(ProjectileBase* projectile)
 {
     //Ask each attached modifier in turn; the first one that claims the hit ends it
     for (const auto& [type, modifier] : HeroModifierManager)
-        if (modifier->ReflectProjectile(*this, projectile)) 
+        if (modifier->ReflectProjectile(*this, projectile))
             return true;
 
     return false;
-}
-
-void ETG::Hero::EquipGun(GunBase* newGun)
-{
-    EquippedGuns.push_back(newGun);
-    CurrentGun = newGun; // Set the new gun as the current one by default
-    currentGunIndex = EquippedGuns.size() - 1;
-    ReloadText->LinkToGun(CurrentGun);
-    UpdateGunVisibility();
-
-    //NOTE: A passive item can only reach the guns that exist when it is picked up, so the guns picked up afterwards
-    //have to come and collect their perks. Without this, the order the player finds things in decides whether their
-    //items work - which is exactly the bug the old code had, except it lost the perk on every weapon switch too
-    for (PassiveItemBase* item : EquippedPassiveItems)
-        if (item) item->ApplyGunPerk(*newGun);
-}
-
-void ETG::Hero::SwitchGun(const int& index)
-{
-    // First check if we have any guns at all
-    if (EquippedGuns.empty()) return;
-
-    // Move index backwards -1 or +1 with wraparound
-    // No need for additional bounds check - the modulo operation guarantees the index is valid if the vector is not empty
-    currentGunIndex = (currentGunIndex + index + EquippedGuns.size()) % EquippedGuns.size();
-    CurrentGun = EquippedGuns[currentGunIndex];
-    ReloadText->LinkToGun(CurrentGun);
-    ReloadText->SetNeedsReload(CurrentGun->IsMagazineEmpty());
-    UpdateGunVisibility();
-}
-
-void ETG::Hero::SwitchToPreviousGun()
-{
-    SwitchGun(-1);
-}
-
-//Gun switching
-void ETG::Hero::SwitchToNextGun()
-{
-    SwitchGun(1);
-}
-
-void ETG::Hero::UpdateGunVisibility() const
-{
-    for (GunBase* gun : EquippedGuns)
-    {
-        gun->IsVisible = (gun == CurrentGun);
-    }
 }

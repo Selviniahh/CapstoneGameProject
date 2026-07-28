@@ -19,6 +19,13 @@ namespace ETG
         PreventShooting = StateDie | StateHit,
         PreventAnimFlip = StateDie,
 
+        //NOTE: the three below arrived with Character. An enemy now carries the same gun inventory and item bag the
+        //hero does, so it has to be able to answer the same three questions - and a corpse must not fire the active
+        //item it was carrying
+        PreventTakingDamage = StateDie,
+        PreventGunSwitch = StateDie | StateHit,
+        PreventItemUse = StateDie | StateHit,
+
         CanMove = StateIdle | StateRun | StateShooting,
         CanShoot = StateIdle | StateRun | StateShooting,
         CanFlipAnims = StateIdle | StateRun | StateShooting | StateHit

@@ -23,6 +23,9 @@ namespace ETG
         //<---------- IHeroModifier ---------->
         bool ReflectProjectile(Hero& hero, ProjectileBase* projectile) override;
 
+        //Who is carrying this item, when that is someone the damage hook can be attached to
+        [[nodiscard]] Hero* GetHolder() const;
+
 
         //Whether blocked shots are sent back at whoever fired them, or simply deleted
         bool DeflectProjectiles = true;

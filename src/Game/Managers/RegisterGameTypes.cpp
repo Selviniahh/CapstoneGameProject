@@ -6,11 +6,13 @@
 #include "../../Engine/Core/Components/ArrowComp.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../UI/UserInterface.h"
-#include "../Characters/Hero.h"
-#include "../Characters/Components/InputComponent.h"
-#include "../Characters/Components/HeroMoveComp.h"
-#include "../Characters/Components/HeroAnimComp.h"
-#include "../Characters/Hand/Hand.h"
+#include "../Characters/Character.h"
+#include "../Characters/Hero/Hero.h"
+#include "../Characters/Enemy/EnemyBase.h"
+#include "../Characters/Hero/Components/InputComponent.h"
+#include "../Characters/Hero/Components/HeroMoveComp.h"
+#include "../Characters/Hero/Components/HeroAnimComp.h"
+#include "../Characters/Hero/Hand/Hand.h"
 #include "../Guns/Base/GunBase.h"
 #include "../Guns/RogueSpecial/RogueSpecial.h"
 #include "../Guns/VFX/MuzzleFlash.h"
@@ -24,8 +26,8 @@
 #include "../UI/UIObjects/ReloadSlider.h"
 #include "../Items/Active/DoubleShoot.h"
 #include "../Items/Passive/PlatinumBullets.h"
-#include "../Enemy/BulletMan/BulletMan.h"
-#include "../Enemy/BulletMan/Components/BulletManAnimComp.h"
+#include "../Characters/Enemy/BulletMan/BulletMan.h"
+#include "../Characters/Enemy/BulletMan/Components/BulletManAnimComp.h"
 #include "Game/Items/Active/TakeNoDamage.h"
 
 void ETG::RegisterGameTypes()
@@ -36,8 +38,12 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(ComponentBase, GameObjectBase);
     TypeRegistry::RegisterType<Scene>();
     REGISTER_BASE_CLASS(Scene, GameObjectBase);
+    TypeRegistry::RegisterType<Character>();
+    REGISTER_BASE_CLASS(Character, GameObjectBase);
     TypeRegistry::RegisterType<Hero>();
-    REGISTER_BASE_CLASS(Hero, GameObjectBase);
+    REGISTER_BASE_CLASS(Hero, Character);
+    TypeRegistry::RegisterType<EnemyBase>();
+    REGISTER_BASE_CLASS(EnemyBase, Character);
     TypeRegistry::RegisterType<UserInterface>();
     REGISTER_BASE_CLASS(UserInterface, GameObjectBase);
     TypeRegistry::RegisterType<InputComponent>();

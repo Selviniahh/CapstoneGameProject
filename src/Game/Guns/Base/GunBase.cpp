@@ -3,7 +3,7 @@
 #include "GunBase.h"
 #include <random>
 
-#include "../../Characters/Hero.h"
+#include "../../Characters/Hero/Hero.h"
 #include "../../Projectile/ProjectileBase.h"
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/SpriteBatch.h"

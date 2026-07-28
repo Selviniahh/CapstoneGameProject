@@ -24,6 +24,8 @@ namespace ETG
     //separate static), set on construction, reachable from anywhere as T::GetSelf().
     //NOTE: A static member directly in a shared base wouldn't work: it would be one variable shared by
     //every derived class, overwritten by whichever object was constructed last.
+    
+    //NOTE: Provides getter for every single object
     template <typename T>
     class SingleInstance
     {

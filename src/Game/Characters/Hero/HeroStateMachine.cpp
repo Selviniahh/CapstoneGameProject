@@ -2,8 +2,8 @@
 #include "Hero.h"
 #include "Components/HeroAnimComp.h"
 #include "Components/HeroMoveComp.h"
-#include "../../Engine/Core/Components/BaseHealthComp.h"
-#include "../../Engine/Managers/InputManager.h"
+#include "../../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../../Engine/Managers/InputManager.h"
 
 namespace ETG
 {
@@ -67,9 +67,16 @@ namespace ETG
             return hero.HitRequested;
         }, "Alive -> Hit");
 
-        AliveNode->AddTransition(DashNode, [](const Hero& hero)
+        AliveNode->AddTransition(DashNode, [this](const Hero& hero)
         {
-            return hero.DashRequested && hero.MoveComp && hero.MoveComp->IsDashAvailable();
+            //NOTE: this transition hangs off Alive so it fires from Idle, Run and Hit alike - which also meant it
+            //fired from Dash itself. Input re-files DashRequested on every frame the button is held, and the
+            //cooldown does not start until Dash *exits*, so IsDashAvailable() was still true mid-dash: holding the
+            //button re-entered Dash every frame and restarted the dash before the first one had finished.
+            //Chaining still works, it just has to wait for the current dash to end
+            if (IsInNode(DashNode)) return false;
+
+            return hero.DashRequested && hero.GetMoveComp() && hero.GetMoveComp()->IsDashAvailable();
         }, "Alive -> Dash");
 
         //NOTE: TimeInState() is 0 for the whole entry frame, which stops these from firing before the animation
@@ -81,7 +88,7 @@ namespace ETG
 
         DashNode->AddTransition(NormalMovement, [this](const Hero& hero)
         {
-            if (TimeInState() < hero.MoveComp->MinDashDuration) return false;
+            if (TimeInState() < hero.GetMoveComp()->MinDashDuration) return false;
             return hero.AnimationComp->AnimManagerDict[HeroStateEnum::Dash].IsAnimationFinished();
         }, "Dash -> Locomotion");
 
@@ -95,29 +102,29 @@ namespace ETG
         {
             //The knockback the damage listener asked for. Applying it here means the force and the state can never
             //disagree, which they could while the listener did both jobs itself
-            hero.MoveComp->ApplyForce(hero.PendingKnockbackDir, hero.PendingKnockbackForce, hero.HitForceDuration);
+            hero.GetMoveComp()->ApplyForce(hero.PendingKnockbackDir, hero.PendingKnockbackForce, hero.HitForceDuration);
             hero.HitRequested = false;
         };
 
         DashNode->OnEnter = [](Hero& hero)
         {
-            hero.MoveComp->BeginDash();
+            hero.GetMoveComp()->BeginDash();
             hero.DashRequested = false;
         };
 
         DashNode->OnTick = [this](Hero& hero, float)
         {
-            hero.MoveComp->MakeDashMovement(TimeInState());
+            hero.GetMoveComp()->MakeDashMovement(TimeInState());
         };
 
         DashNode->OnExit = [](Hero& hero)
         {
-            hero.MoveComp->StartDashCooldown();
+            hero.GetMoveComp()->StartDashCooldown();
         };
 
         NormalMovement->OnTick = [](Hero& hero, float)
         {
-            hero.MoveComp->UpdateMovement();
+            hero.GetMoveComp()->UpdateMovement();
         };
 
         DieNode->OnTick = [](Hero& hero, float)

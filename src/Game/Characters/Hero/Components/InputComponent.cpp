@@ -4,16 +4,16 @@
 #include "HeroAnimComp.h"
 #include "HeroMoveComp.h"
 #include "../Hero.h"
-#include "../../Managers/GameManager.h"
-#include "../../../Engine/Editor/Engine.h"
-#include "../../../Engine/Managers/InputManager.h"
-#include "../../../Utils/DirectionUtils.h"
+#include "../../../Managers/GameManager.h"
+#include "../../../../Engine/Editor/Engine.h"
+#include "../../../../Engine/Managers/InputManager.h"
+#include "../../../../Utils/DirectionUtils.h"
 #include "../HeroDirections.h"
-#include "../../../Utils/Math.h"
-#include "../../../Utils/StrManipulateUtil.h"
+#include "../../../../Utils/Math.h"
+#include "../../../../Utils/StrManipulateUtil.h"
 
 //This class reads input and files requests on the Hero (RequestDash) or sets values the state machine's guards read
-//(CurrentDirection, IsShooting). It never assigns a state: HeroStateMachine decides, HeroAnimComp then draws it.
+//(CurrentDir, IsShooting). It never assigns a state: HeroStateMachine decides, HeroAnimComp then draws it.
 
 namespace ETG
 {
@@ -28,7 +28,7 @@ namespace ETG
         //Shooting input lives here (game side); only registered while the game window has focus,
         //matching the old InputManager behavior of freezing input when the editor UI captures the mouse.
         if (Engine::IsGameWindowFocused())
-            Hero::IsShooting = ETG::Mouse::isButtonPressed(ETG::Mouse::Left);
+            hero.IsShooting = ETG::Mouse::isButtonPressed(ETG::Mouse::Left);
 
         UpdateDirection(hero);
         HandleGunSwitch(hero);
@@ -49,16 +49,16 @@ namespace ETG
         const float angle = DirectionUtils::GetAngleToTarget(InputManager::WorldMousePos, hero.GetPosition());
 
         // Store on the Hero (used for gun rotation)
-        hero.MouseAngle = angle;
+        hero.AimAngle = angle;
 
         //NOTE: If it's Dash Set Hero's Direction based on the Keyboard Key
         if (hero.GetState() == HeroStateEnum::Dash)
         {
-            hero.CurrentDirection = HeroDirections::GetDashFacing();
+            hero.CurrentDir = HeroDirections::GetDashFacing();
         }
         else //NOTE: If it's not Dash, set Hero's input based on Mouse Angle.
         {
-            hero.CurrentDirection = DirectionUtils::GetDirectionFromAngle(angle);
+            hero.CurrentDir = DirectionUtils::GetDirectionFromAngle(angle);
         }
     }
 
@@ -67,6 +67,12 @@ namespace ETG
     void InputComponent::HandleDash(Hero& hero)
     {
         if (!ETG::Mouse::isButtonPressed(ETG::Mouse::Right)) return;
+
+        //NOTE: a dash in flight owns its direction. GetDashEnum() records LastDashDirection as a side effect, and
+        //that is what GetDashFacing() - and therefore the hero's facing and sprite flip - is resolved from. Calling
+        //it while dashing let a key pressed mid-dash turn the hero and swap his dash animation under him. Holding
+        //the button still chains dashes; the next one just reads the keys when it actually starts
+        if (hero.GetState() == HeroStateEnum::Dash) return;
 
         // If you put breakpoint this line, direction enum will always be unknown so put breakpoint below this line to capture dash direction
         hero.RequestDash(HeroDirections::GetDashEnum());

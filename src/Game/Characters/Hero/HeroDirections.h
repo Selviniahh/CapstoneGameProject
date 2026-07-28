@@ -1,7 +1,7 @@
 #pragma once
 #include "HeroStates.h"
-#include "../../Engine/Core/Direction.h"
-#include "../../Engine/Platform/Platform.h"
+#include "../../../Engine/Core/Direction.h"
+#include "../../../Engine/Platform/Platform.h"
 
 namespace ETG
 {

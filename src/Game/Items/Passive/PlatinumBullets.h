@@ -7,7 +7,7 @@
 namespace ETG
 {
     class CollisionComponent;
-    class Hero;
+    class Character;
 
     class PlatinumBullets : public PassiveItemBase
     {
@@ -25,7 +25,10 @@ namespace ETG
 
         std::unique_ptr<CollisionComponent> CollisionComp;
         float FireRateIncreasePerc = 20;
-        Hero* Hero{};
+
+        //Whoever picked the item up. Set on pickup rather than resolved through Hero::Get(), so an enemy carrying
+        //this buffs its own guns
+        Character* Holder{};
 
         BOOST_DESCRIBE_CLASS(PlatinumBullets, (PassiveItemBase), (FireRateIncreasePerc), (), ())
 
@@ -36,7 +39,7 @@ namespace ETG
         //changed, because a plain assignment left nothing to undo. It applies to every gun now, once each
         void ApplyToAllGuns();
 
-        bool IsPickedUp = false; //Only a collected item is allowed to modify the hero's guns
+        bool IsPickedUp = false; //Only a collected item is allowed to modify its holder's guns
         float PreviousFireRatePerc = 20; // Store previous value to detect changes
     };
 }

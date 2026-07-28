@@ -1,19 +1,19 @@
 #include "EnemyBase.h"
 #include <limits>
-#include "../../Utils/Math.h"
-#include "../Characters/Hand/Hand.h"
-#include "../Characters/Hero.h"
-#include "../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Engine/Managers/RenderContext.h"
-#include "../../Engine/Core/Factory.h"
-#include "../../Engine/Core/Components/BaseHealthComp.h"
-#include "../Projectile/ProjectileBase.h"
+#include "../../../Utils/Math.h"
+#include "../Hero/Hand/Hand.h"
+#include "../Hero/Hero.h"
+#include "../../../Engine/Core/Components/CollisionComponent.h"
+#include "../../../Engine/Managers/RenderContext.h"
+#include "../../../Engine/Core/Factory.h"
+#include "../../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../Projectile/ProjectileBase.h"
 #include "Components/EnemyMoveCompBase.h"
-#include "../Guns/Base/GunBase.h"
+#include "../../Guns/Base/GunBase.h"
 
 namespace ETG
 {
-    EnemyBase::EnemyBase() : Hand(nullptr), Hero(Hero::Get())
+    EnemyBase::EnemyBase() : Hero(Hero::Get())
     {
         CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
         CollisionComp->CollisionRadius = 4.f;
@@ -90,6 +90,7 @@ namespace ETG
     {
         MoveComp->Update();
         HealthComp->Update();
+        CollisionComp->Update();
 
         GameObjectBase::Update();
     }
@@ -119,7 +120,7 @@ namespace ETG
         }
     }
 
-    //Before calling this function, we already ensured that the projectile is not owned by any enemy 
+    //Before calling this function, we already ensured that the projectile is not owned by any enemy
     void EnemyBase::HandleHitForce(const ProjectileBase* projectile)
     {
         const auto* projectileOwnerGun = projectile->Owner->As<GunBase>();

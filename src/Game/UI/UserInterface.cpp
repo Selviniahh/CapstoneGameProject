@@ -1,6 +1,6 @@
 #include "UserInterface.h"
 #include "../../Engine/Managers/AssetManager.h"
-#include "../Characters/Hero.h"
+#include "../Characters/Hero/Hero.h"
 #include "../Guns/Base/GunBase.h"
 #include "../../Engine/Editor/Engine.h"
 #include "../Items/Active/ActiveItemBase.h"

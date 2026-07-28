@@ -1,11 +1,11 @@
 #include "../../Engine/Managers/Time.h"
 #include "ProjectileBase.h"
 #include <valarray>
-#include "../Characters/Hero.h"
+#include "../Characters/Hero/Hero.h"
 #include "../../Engine/Core/Factory.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Components/TimerComponent.h"
-#include "../Enemy/EnemyBase.h"
+#include "../Characters/Enemy/EnemyBase.h"
 #include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Managers/SpriteBatch.h"
 

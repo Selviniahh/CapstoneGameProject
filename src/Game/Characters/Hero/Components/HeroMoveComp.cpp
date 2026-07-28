@@ -1,8 +1,8 @@
-#include "../../../Engine/Managers/Time.h"
+#include "../../../../Engine/Managers/Time.h"
 #include "HeroMoveComp.h"
 #include "HeroAnimComp.h"
-#include "../../../Engine/Managers/InputManager.h"
-#include "../../../Utils/Math.h"
+#include "../../../../Engine/Managers/InputManager.h"
+#include "../../../../Utils/Math.h"
 #include "../Hero.h"  // For Hero
 #include "../HeroDirections.h"
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <unordered_map>
-#include "../../../Engine/Core/ComponentBase.h"
-#include "../../../Utils/DirectionUtils.h"
-#include "../../../Engine/Core/GameObjectBase.h"
+#include "../../../../Engine/Core/ComponentBase.h"
+#include "../../../../Utils/DirectionUtils.h"
+#include "../../../../Engine/Core/GameObjectBase.h"
 
 namespace ETG
 {

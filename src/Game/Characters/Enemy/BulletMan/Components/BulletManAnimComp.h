@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "../../../../Engine/Core/Components/BaseAnimComp.h"
+#include "../../../../../Engine/Core/Components/BaseAnimComp.h"
 
 namespace sf
 {
@@ -30,4 +30,3 @@ namespace ETG
     };
 
 }
-

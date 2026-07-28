@@ -1,8 +1,8 @@
 #pragma once
-#include "../../../Engine/Platform/Platform.h"
-#include "../../../Engine/Core/Components/BaseAnimComp.h"
-#include "../../Characters/Hero.h"
-#include "../../../Engine/Core/Events/EventDelegate.h"
+#include "../../../../Engine/Platform/Platform.h"
+#include "../../../../Engine/Core/Components/BaseAnimComp.h"
+#include "../Hero.h"
+#include "../../../../Engine/Core/Events/EventDelegate.h"
 
 namespace ETG
 {

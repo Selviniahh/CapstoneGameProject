@@ -1,8 +1,8 @@
 #pragma once
 #include <boost/describe/class.hpp>
-#include "../../../Engine/Platform/Platform.h"
+#include "../../../../Engine/Platform/Platform.h"
 
-#include "../../../Engine/Core/Components/BaseMoveComp.h"
+#include "../../../../Engine/Core/Components/BaseMoveComp.h"
 
 namespace ETG
 {

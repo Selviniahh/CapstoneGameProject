@@ -1,11 +1,11 @@
 #include "SpawnInitialLevel.h"
 #include <imgui.h>
 #include "../Managers/GameManager.h"
-#include "../Characters/Hero.h"
+#include "../Characters/Hero/Hero.h"
 #include "../Guns/AK-47/AK47.h"
 #include "../Guns/SawedOff/SawedOff.h"
 #include "../Guns/Magnum/Magnum.h"
-#include "../Enemy/BulletMan/BulletMan.h"
+#include "../Characters/Enemy/BulletMan/BulletMan.h"
 #include "../Items/Active/DoubleShoot.h"
 #include "../Items/Active/TakeNoDamage.h"
 #include "../Items/Passive/PlatinumBullets.h"

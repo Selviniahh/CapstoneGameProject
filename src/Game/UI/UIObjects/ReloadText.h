@@ -1,6 +1,6 @@
 #pragma once
 #include <cmath>
-#include "../../Characters/Hero.h"
+#include "../../Characters/Hero/Hero.h"
 #include "../../../Engine/Core/GameObjectBase.h"
 #include "../../../Utils/Math.h"
 #include "../../../Engine/Managers/AssetManager.h"

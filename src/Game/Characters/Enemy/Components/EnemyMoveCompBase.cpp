@@ -1,9 +1,9 @@
 #include "EnemyMoveCompBase.h"
-#include "../../../Engine/Core/GameObjectBase.h"
-#include "../../Characters/Hero.h"
-#include "../../../Utils/Math.h"
+#include "../../../../Engine/Core/GameObjectBase.h"
+#include "../../Hero/Hero.h"
+#include "../../../../Utils/Math.h"
 #include "../EnemyBase.h"
-#include "../../../Utils/DirectionUtils.h"
+#include "../../../../Utils/DirectionUtils.h"
 
 namespace ETG
 {
@@ -44,7 +44,7 @@ namespace ETG
         const float distanceToHero = GetDistanceToHero();
 
         // Update enemy's direction
-        OwnerEnemy->EnemyDir = DirectionUtils::GetDirectionToTarget(Hero->GetPosition(), OwnerEnemy->GetPosition());
+        OwnerEnemy->CurrentDir = DirectionUtils::GetDirectionToTarget(Hero->GetPosition(), OwnerEnemy->GetPosition());
 
         // Don't change state if currently shooting
         if (OwnerEnemy->GetState() == EnemyStateEnum::Shooting)

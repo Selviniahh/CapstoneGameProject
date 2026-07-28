@@ -1,6 +1,6 @@
 #pragma once
 #include "../EnemyBase.h"
-#include "../../Characters/Hero.h"
+#include "../../Hero/Hero.h"
 
 namespace ETG
 {
@@ -17,15 +17,14 @@ namespace ETG
         void Initialize() override;
         void Update() override;
         void Draw() override;
-        
+
         void BulletManShoot(); //Shoot if timer is up and attackDistance
         void HandleHitForce(const ProjectileBase* projectile) override;
 
     protected:
         void UpdateAnimations();
-        void UpdateHandAndGunPositions() const;
+        void UpdateAim();
         void UpdateShooting();
-        void UpdateVisibility() const;
 
     public:
         std::unique_ptr<BulletManAnimComp> AnimationComp;
@@ -34,9 +33,9 @@ namespace ETG
         float attackCooldown = 2.0f;
         float attackCooldownTimer = 0.0f;
 
+        //The gun this enemy spawns holding. Character owns the inventory (EquippedGuns / CurrentGun); this is the
+        //owning pointer for the one concrete weapon, handed over with EquipGun in the constructor
         std::unique_ptr<Magnum> Gun;
-
-        
 
         BOOST_DESCRIBE_CLASS(BulletMan, (EnemyBase),
                              (attackCooldown, attackCooldownTimer),

@@ -1,7 +1,7 @@
 #include "DoubleShoot.h"
 #include <filesystem>
 #include "../../../Engine/Core/Components/CollisionComponent.h"
-#include "../../Characters/Hero.h"
+#include "../../Characters/Character.h"
 #include "../../../Engine/Core/Factory.h"
 #include "../../Guns/Base/GunBase.h"
 #include "../../../Engine/Managers/RenderContext.h"
@@ -23,21 +23,16 @@ void ETG::DoubleShoot::Initialize()
     ActiveItemBase::Initialize();
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
-        //If collided object is hero:
-        //TODO: I want to create a character base class. Hero and EnemyBase will inherit from this base class 
-        //TODO: And then ActiveItemBase will add all this Collision Add Listener into it's Base initializer
-        //TODO: In base Character class, it'll have EquippedActiveItems both Hero player character and any enemy character
-        //TODO: like boss or random Bulletman can come up and equip the item and use it right away 
-        //TODO: so in ActiveItemBase, I'll base this listener and this if block will check if it's Character only not hero
-        if (auto* heroObj = eventData.Other->As<Hero>())
+        //Anyone who can carry a gun can carry this: the hero, or a BulletMan that happened to walk over it
+        //TODO: this listener is identical in every active item. It belongs in ActiveItemBase::Initialize
+        if (auto* character = eventData.Other->As<Character>())
         {
-            Owner = heroObj; //In UI move from scene to Hero
+            Owner = character; //In UI move from scene to whoever picked it up
             if (!IsVisible) return;
 
             PlayRandomPickupSound();
 
-            //Add self to the hero's equipped active items
-            heroObj->EquippedActiveItems.push_back(this);
+            character->PickUpActiveItem(this);
         }
     });
 }
@@ -68,6 +63,11 @@ void ETG::DoubleShoot::RequestUsage()
     // Only allow usage if the cooldown is complete
     if (ActiveItemState != ActiveItemState::Ready) return;
 
+    //Whoever picked the item up is who it buffs. Asking Hero::Get() instead would have buffed the player's gun no
+    //matter which character actually triggered the item
+    Character* const holder = Owner ? Owner->As<Character>() : nullptr;
+    if (!holder || !holder->GetCurrentHoldingGun()) return;
+
     ActivateSound.play();
 
     // Reset state
@@ -75,9 +75,9 @@ void ETG::DoubleShoot::RequestUsage()
     ConsumeTimer = 0;
 
     //Hands itself to the gun. From here until the effect runs out, every shot that gun fires comes back to
-    //ModifyShot below. Remembering the gun matters: the hero may switch weapons mid-effect, and the modifier has
+    //ModifyShot below. Remembering the gun matters: the holder may switch weapons mid-effect, and the modifier has
     //to come off the gun it was put on rather than whatever is in hand when the timer runs out
-    AffectedGun = Hero::Get()->GetCurrentHoldingGun();
+    AffectedGun = holder->GetCurrentHoldingGun();
     AffectedGun->modifierManager.AddModifier(this);
 }
 
