@@ -13,6 +13,8 @@ namespace ETG
         void Initialize() override;
         void Update() override;
         void Draw() override;
+        [[nodiscard]] bool WantsGripPinned() const override;
+        [[nodiscard]] float PinnedGripRotation() const override;
 
     public:
         std::unique_ptr<CollisionComponent> CollisionComp;

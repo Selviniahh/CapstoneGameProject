@@ -28,6 +28,7 @@ ETG::BulletMan::BulletMan(const ETG::Vector2f& position)
     BulletMan::Initialize();
 
     Hand = ETG::CreateGameObjectAttached<class Hand>(this);
+    OffHand = ETG::CreateGameObjectAttached<class Hand>(this);
 
     // Initialize animation component
     AnimationComp = ETG::CreateGameObjectAttached<BulletManAnimComp>(this);
@@ -68,7 +69,7 @@ void ETG::BulletMan::Update()
 
     //Same three steps the hero runs, in the same order: place the hand, aim from where the hand ended up, then move
     //the gun onto it
-    UpdateHand();
+    UpdateHoldPoint();
     UpdateAim();
     UpdateGuns();
 
@@ -78,9 +79,9 @@ void ETG::BulletMan::Update()
 
 void ETG::BulletMan::UpdateAnimations()
 {
-    // Update animation Flip sprites based on direction
+    // Update animation Flip sprites based on direction. The held gun is not flipped here: it follows the hand it
+    // is in, which Character::UpdateGuns decides further down this same tick
     if (CanFlipAnims()) AnimationComp->FlipSpritesX(CurrentDir, *this);
-    if (CanFlipAnims() && CurrentGun) AnimationComp->FlipSpritesY<GunBase>(CurrentDir, *CurrentGun);
 
     AnimationComp->Update();
 }
@@ -90,7 +91,9 @@ void ETG::BulletMan::UpdateAim()
 {
     if (!Hand || !Hero) return;
 
-    AimAngle = Math::AngleBetween(Hand->GetPosition(), Hero->GetPosition());
+    //Aims from the hold point rather than from the hand: the hands now sit on the gun, which is aimed by this very
+    //angle, so reading one of them back here would be a loop feeding on its own output
+    AimAngle = Math::AngleBetween(HoldPoint, Hero->GetPosition());
 }
 
 void ETG::BulletMan::UpdateShooting()
@@ -156,4 +159,5 @@ void ETG::BulletMan::Draw()
         if (gun) gun->Draw();
 
     Hand->Draw();
+    OffHand->Draw();
 }

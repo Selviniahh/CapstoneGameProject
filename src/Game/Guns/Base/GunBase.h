@@ -69,18 +69,72 @@ namespace ETG
         //As best practice, I need to move this back to the Active item.  
         float ShotDelay = 0.1f;
 
-        //How this particular gun sits in the hand, on top of the hand's own Hand::GunOffset.
-        //Applied by Character::UpdateGuns, so it only affects the gun while it is being held -
-        //a gun lying on the floor is unaffected.
+        //How this particular gun artwork sits under stationary hands, on top of Hand::GunOffset. Author the value
+        //for the right-held artwork; Character::UpdateGuns mirrors X when the gun changes sides. It only affects the
+        //gun while it is held, so a gun lying on the floor is unaffected.
         //NOTE: do NOT reach for Origin to nudge a gun. Origin is the pivot the gun rotates
         //around to aim, so shifting it swings the gun off-target by an amount that grows with
         //the aim angle. It is also rewritten from the animation every frame in
         //BaseAnimComp::Update, which is what makes the OriginOffset below a no-op.
         ETG::Vector2f HeldOffset{0.f, 0.f};
-        
+
+        //Where each hand grips this gun, in the gun sheet's own pixels with (0,0) at the frame's
+        //top-left corner - the numbers you read straight off the sprite in an image editor.
+        //Character turns them into an offset from the gun's Origin, so the grips rotate and flip
+        //with the gun for free, and a gun whose animation moves its origin still holds together.
+        ETG::Vector2f RightHandAnchor{};
+        ETG::Vector2f LeftHandAnchor{};
+
+        //A hand is attached to the gun only for an anchor that has actually been measured. An unmeasured
+        //off hand stays at the character's body instead; visibility belongs to the character.
+        bool HasRightHandAnchor{false};
+        bool HasLeftHandAnchor{false};
+
+        //Which side of the body this gun is held on, and therefore which way its sprite is mirrored. A half
+        //angle in degrees measured from straight right: the gun stays on the right hand while the aim is
+        //within +-HandSwapAngle of straight right, and changes hands beyond it. 90 is the honest value - it
+        //mirrors exactly when the barrel crosses vertical.
+        //
+        //NOTE: negative means the gun has no opinion, and the character falls back to its 8-way facing the way
+        //every gun used to. That turns over at 67.5 degrees, because that is where the DownRight arc ends -
+        //which leaves a 22.5 degree band where the gun is mirrored while still aiming to the right
+        float HandSwapAngle{-1.f};
+
+        [[nodiscard]] bool DecidesOwnHandSide() const { return HandSwapAngle >= 0.f; }
+
+        //Whether the gun sits on the right hand for this aim. `aimAngle` is in [0,360), 0 straight right,
+        //growing clockwise - the same convention DirectionUtils measures in. Only meaningful when the gun
+        //decides its own side
+        [[nodiscard]] bool IsHeldOnRightSide(float aimAngle) const;
+
+        //While a gun asks to be grip-pinned it turns about its LeftHandAnchor instead of about its own Origin:
+        //that one pixel is frozen where it sits at PinnedGripRotation and only the barrel swings around it. This
+        //is what keeps the grip welded to the hero once he turns his back, instead of letting it swing out below
+        //the sprite.
+        //
+        //NOTE: the pin belongs on the gun, not on the off hand. Pinning only the hand froze it in mid-air while
+        //the gun carried on rotating out from under it - two locks that had to agree, and did not. The hands are
+        //placed on the gun after this, so one lock on the gun is a lock on everything holding it.
+        [[nodiscard]] virtual bool WantsGripPinned() const { return false; }
+
+        //The rotation the pinned grip is frozen at. Only read while WantsGripPinned() is true
+        [[nodiscard]] virtual float PinnedGripRotation() const { return 180.f; }
+
+        //Where the gun draws while it is held, in front of its holder's body and behind it. SpriteBatch sorts
+        //greater depths first, so the larger of the two is the one behind. Both are seeded from the depth the gun
+        //was constructed with, so a gun that says nothing about it keeps drawing exactly where it always did; a
+        //gun that should disappear behind its holder's back gives HeldDepthBehindBody its own number.
+        //
+        //NOTE: one shared "behind" value on the character cannot work, because the guns do not agree on where
+        //front is - RogueSpecial is authored at depth 3 and so is already behind a hero at -1, while the AK is at
+        //-2 and in front of him. Behind is relative to a number only the gun knows
+        float HeldDepthInFront{};
+        float HeldDepthBehindBody{};
+
         float ForceDuration{1};
 
         using GameObjectBase::Rotation; //Make Rotation public in Gunbase
+        using GameObjectBase::Depth; //Its holder rewrites this per frame from the two values above
 
         //State will not contain direction. It will be idle, shoot, reload etc. 
         GunStateEnum CurrentGunState{GunStateEnum::Idle};
@@ -142,7 +196,9 @@ namespace ETG
 
         BOOST_DESCRIBE_CLASS(GunBase, (GameObjectBase),
                              (CurrentGunState, MaxAmmo, MagazineSize, MagazineAmmo, ShotDelay, ReloadTime, IsReloading,
-                                 FireRate, ShotSpeed, Range, Damage, Force, ForceDuration, Spread, HeldOffset),
+                                 FireRate, ShotSpeed, Range, Damage, Force, ForceDuration, Spread, HeldOffset,
+                                 RightHandAnchor, LeftHandAnchor, HasRightHandAnchor, HasLeftHandAnchor,
+                                 HandSwapAngle, HeldDepthInFront, HeldDepthBehindBody),
                              (ProjTexture, OriginOffset),
                              ())
     };

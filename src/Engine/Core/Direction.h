@@ -53,4 +53,12 @@ namespace ETG
 
         return true;
     }
+
+    //Whether a character facing this way is drawn from behind. The three upward arcs are the ones with a back
+    //sprite (Up gets the dedicated one, UpLeft and UpRight the three-quarter one), and they are exactly the
+    //facings where something the character holds in front of its body belongs behind it in the draw order.
+    [[nodiscard]] constexpr bool IsFacingBack(const Direction direction)
+    {
+        return direction == Direction::Up || direction == Direction::UpLeft || direction == Direction::UpRight;
+    }
 }

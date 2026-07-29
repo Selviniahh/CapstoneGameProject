@@ -30,8 +30,13 @@ ETG::RogueSpecial::RogueSpecial(const ETG::Vector2f& Position) : GunBase(Positio
 void ETG::RogueSpecial::Initialize()
 {
     GunBase::Initialize();
-    
+
     ArrowComp->arrowOffset = {20.f, -6.f};
+
+    //Changes hands the moment the barrel crosses vertical, rather than at the 67.5 degrees the body's facing
+    //turns over at. The revolver is short enough that the 22.5 degree band where the two disagreed - sprite
+    //already mirrored, muzzle still pointing to the right - was plainly visible on it
+    HandSwapAngle = 90.f;
 
     // Set up the muzzle flash animation.
     MuzzleFlash->SetAnimation("Guns/RogueSpecial/MuzzleFlash/", "RS_muzzleflash_001", "png", 0.10f);

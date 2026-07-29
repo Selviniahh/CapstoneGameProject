@@ -1,6 +1,7 @@
 #include "../../../Engine/Managers/Time.h"
 #include <filesystem>
 #include "GunBase.h"
+#include <cmath>
 #include <random>
 
 #include "../../Characters/Hero/Hero.h"
@@ -38,6 +39,11 @@ namespace ETG
         this->Position = Position;
         this->Depth = depth;
 
+        //Both seeded from the authored depth, so the swap its holder performs every frame is a no-op until a gun
+        //actually asks to hide behind that holder's back
+        HeldDepthInFront = depth;
+        HeldDepthBehindBody = depth;
+
         MagazineAmmo = MagazineSize.GetInt(); //Magazine needs to start with Magazine Ammo
 
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
@@ -50,6 +56,15 @@ namespace ETG
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 
         GunBase::Initialize();
+    }
+
+    bool GunBase::IsHeldOnRightSide(const float aimAngle) const
+    {
+        //Folded into [-180,180] so the test is symmetric about straight right and the wrap at 360 needs no
+        //second case: 350 degrees is 10 degrees above the axis, not 350 away from it
+        const float signedAngle = aimAngle > 180.f ? aimAngle - 360.f : aimAngle;
+
+        return std::abs(signedAngle) <= HandSwapAngle;
     }
 
     void GunBase::RemoveAllModifiersFrom(const std::string& source)

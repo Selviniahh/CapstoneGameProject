@@ -33,6 +33,7 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     StateMachine->Start(*this);
 
     Hand = ETG::CreateGameObjectAttached<class Hand>(this);
+    OffHand = ETG::CreateGameObjectAttached<class Hand>(this);
     RogueSpecial = ETG::CreateGameObjectAttached<class RogueSpecial>(this, Hand->GetRelativePosition());
     ReloadText = ETG::CreateGameObjectAttached<class ReloadText>(this);
     AnimationComp = ETG::CreateGameObjectAttached<HeroAnimComp>(this);
@@ -128,7 +129,8 @@ void ETG::Hero::UpdateComponents()
 
 void ETG::Hero::UpdateAnimations()
 {
-    if (CanFlipAnims() && CurrentGun) AnimationComp->FlipSpritesY<GunBase>(CurrentDir, *CurrentGun);
+    //Only the body is flipped here. The gun's own mirror follows the hand it is in, which is Character::UpdateGuns'
+    //call to make - a gun may change hands at an angle the body's 8-way facing knows nothing about
     if (CanFlipAnims()) AnimationComp->FlipSpritesX(CurrentDir, *this);
     AnimationComp->Update();
 }
@@ -164,7 +166,7 @@ void ETG::Hero::Update()
 
     HandleShooting();
     HandleActiveItemInput();
-    UpdateHand();
+    UpdateHoldPoint();
     UpdateGuns();
     UpdateHandAndGunVisibility();
 }
@@ -175,11 +177,15 @@ void ETG::Hero::Draw()
     GameObjectBase::Draw();
     SpriteBatch::Draw(GetDrawProperties());
     ReloadText->Draw();
-    Hand->Draw();
 
     //Draw all equipped guns (the holstered ones only draw their projectiles)
     for (const auto guns : EquippedGuns)
         guns->Draw();
+
+    //Hands are always submitted by the character after its guns, so an equipped gun cannot cover them at the
+    //same depth. Whether the off hand participates is still the concrete gun's decision through HasLeftHandAnchor.
+    Hand->Draw();
+    OffHand->Draw();
 
     if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }

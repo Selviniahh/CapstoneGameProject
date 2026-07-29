@@ -10,6 +10,9 @@
 
 ETG::Hand::Hand()
 {
+    //NOTE: no Depth here on purpose. Where a hand draws is the character's call, because it changes with facing -
+    //a hand is in front of the body from the front and behind it from the back - so the owner writes it every
+    //frame in Character::UpdateHands from its own HandDepthInFront / HandDepthBehindBody
     Hand::Initialize();
 }
 
