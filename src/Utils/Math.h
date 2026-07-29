@@ -1,6 +1,7 @@
 #pragma once
 #include "../Engine/Managers/Time.h"
 #include "../Engine/Platform/Platform.h"
+#include <algorithm>
 #include <complex>
 #include <numbers>
 #include "../Engine/Managers/RenderContext.h"
@@ -81,16 +82,37 @@ public:
         return value >= min && value <= max;
     }
 
-    //------------------------Trigonometry--------------------------------------------------------
+    //NOTE:------------------------Normalization-------------------------------------------------------
 
+    //Wrap a normalized value back into [0, 1) so a cycle repeats forever. std::clamp is the saturating
+    //counterpart of this, there is no wrapping equivalent in std, only the std::fmod primitive
+    //Use for looping effects: blinking, idle bobbing etc.
+    //NOTE: 0-1 arasi git gel yap
+    static float Repeat01(const float value)
+    {
+        // value sayısının 1.0 ile bölümünden kalan ondalıklı kısmı verir.
+        //Unutma isin icinde modulus varsa genelde 1 - 0 arası döngü istiyorum demektir bunu shaderlarda çok yapmıştık
+        const float wrapped = std::fmod(value, 1.0f);
+        return wrapped < 0.0f ? wrapped + 1.0f : wrapped;
+    }
+
+    //Map an elapsed duration onto the 0-1 range std::lerp expects and saturate at the ends
+    //Use for one shot progressions: reload, cooldown, force falloff etc. Once done, it stays done
+    //elapsed gecen sure demek
+    static float Progress01(const float elapsed, const float duration)
+    {
+        if (duration <= 0.0f) return 1.0f;
+        return std::clamp(elapsed / duration, 0.0f, 1.0f);
+    }
+
+    //NOTE:------------------------Trigonometry--------------------------------------------------------
     //Used for non internally incremented timer
     //look at ReloadSlider
     template <typename T>
     static T SinWaveLerp(T a, T b, T interval, float& timer)
     {
-        //Update the timer (0 to  and back)
-        timer += ETG::Time::FrameTick / interval;
-        if (timer > 1.0f) timer = 0.0f;
+        //Advance the timer and wrap it to the beginning of the next cycle
+        timer = Repeat01(timer + ETG::Time::FrameTick / interval);
 
         //Multiplying by π transforms this range into [0, π]
         //When timer = 0.5: sin(π/2) = 1 → fully at position b
@@ -106,13 +128,14 @@ public:
     //If interval is 10. reaching 0 -> 1 will take 10 seconds
     //Look at FrameLeftProgressBar
     template <typename T>
-    static T IntervalLerp(const T& a, const T& b, const T& interval, float timer)
+    static T IntervalLerp(const T& a, const T& b, const T& interval, const float timer)
     {
-        timer /= interval;
-        if (timer > 1.0f) timer = 0.0f;
+        //geçen süreyi std::lerp için gereken 0–1 aralığına normalize et
+        const float alpha = Progress01(timer, static_cast<float>(interval));
 
         //apply lerp
-        return static_cast<T>(std::lerp(a, b, timer));
+        //ALpha 0-1 arasi olacak,  0.5 %50 demek   0.1 %10 demek
+        return static_cast<T>(std::lerp(a, b, alpha));
     }
 
     // Returns a bell curve value that starts at 0, peaks at progress=0.5, and returns to 0

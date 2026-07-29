@@ -132,7 +132,9 @@ namespace ETG
         // Get force from projectile
         const float forceMagnitude = projectile->Force;
 
+        auto* Gun = projectile->Owner->As<GunBase>();
+        
         // Apply the force
-        MoveComp->ApplyForce(forceDirection, forceMagnitude, projectileOwnerGun->FireRate / ForceDurationDivider);
+        MoveComp->ApplyForce(forceDirection, forceMagnitude,  Gun->ForceDuration);
     }
 }

@@ -18,6 +18,7 @@ ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            5.0f, // ReloadTime
                                                            5.5f, // Damage
                                                            50.f, // Force
+                                                           1.f,
                                                            3.0f) // Spread (in degrees)
 {
     AnimationComp = CreateGameObjectAttached<SawedOffAnimComp>(this);

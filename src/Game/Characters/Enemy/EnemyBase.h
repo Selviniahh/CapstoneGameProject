@@ -59,12 +59,11 @@ namespace ETG
         EnemyStateFlag StateFlags{EnemyStateFlag::StateIdle};
 
         //TODO: This is stupid, remove this somehow I think the gun must decide how force duration should be so move this into the GunBase  
-        float ForceDurationDivider = 6.f;
 
         //Enemies keep the sprite flip in step with their sprites the way BulletMan always did: the hand and gun go
         //away only once the enemy is dead, not while it is reeling from a hit
         [[nodiscard]] bool ShouldShowHeldGun() const override { return CanFlipAnims(); }
 
-        BOOST_DESCRIBE_CLASS(EnemyBase, (Character), (KnockBackMagnitudeForDeath, KnockBackDurationForDeath), (Hero, ForceDurationDivider), (EnemyState))
+        BOOST_DESCRIBE_CLASS(EnemyBase, (Character), (KnockBackMagnitudeForDeath, KnockBackDurationForDeath), (Hero), (EnemyState))
     };
 }

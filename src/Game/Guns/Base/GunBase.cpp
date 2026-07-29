@@ -26,11 +26,12 @@ namespace ETG
                      const float reloadTime,
                      const float damage,
                      const float force,
+                     const float forceDuration,
                      const float spread)
         //NOTE: a number assigned to a Stat sets its base, so these are the gun's unmodified values. The block that
         //used to copy every BaseX into its X down in the body is gone with the twins themselves
         : FireRate(fireRate), ShotSpeed(shotSpeed), Range(range), ReloadTime(reloadTime),
-          Damage(damage), Force(force), Spread(spread),
+          Damage(damage), Force(force), ForceDuration(forceDuration), Spread(spread),
           MagazineSize(magazineSize), MaxAmmo(maxAmmo), Timer(timerForVelocity)
     {
         // Initialize common position and textures

@@ -79,9 +79,9 @@ namespace ETG
 
         if (ForceTimer < ForceMaxDuration)
         {
-            // Calculate current force magnitude using lerp (starts strong, gradually weakens)
-            //So for instance we will lerp from 200 to 0 over half second and then apply the value to position
-            const float currentForce = Math::IntervalLerp(ForceMagnitude * ForceSpeed, 0.0f, ForceMaxDuration, ForceTimer);
+            // Calculate current force magnitude using lerp (starts strong, gradually weakens) So for instance we will lerp from 200 to 0 over half second and then apply the value to position
+            //Suan uygulanmasi gereken Force
+            const float currentForce = Math::IntervalLerp(ForceMagnitude * ForceMultiplier, 0.0f, ForceMaxDuration, ForceTimer);
 
             // Apply force to position
             Owner->SetPosition(Owner->GetPosition() + ForceDirection * currentForce * Time::FrameTick);

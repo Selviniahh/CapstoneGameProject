@@ -28,14 +28,13 @@ namespace ETG
     {
     public:
         GunBase(ETG::Vector2f Position, float fireRate, float shotSpeed, float range, float timerForVelocity, float depth, int ammoSize, int magazineSize, float reloadTime,
-                float damage = 1.0f, float force = 1.0f, float spread = 0.0f);
+                float damage = 1.0f, float force = 1.0f, float forceDuration = 1.0f, float spread = 0.0f);
 
         ~GunBase() override;
         void Initialize() override;
         void Update() override;
         void Draw() override;
 
-    public:
         //When left click pressed from hero, this will be called. Based on the timer and fire rate, will be called to fire the bullets.
         //NOTE: This will handle every base gun should handle. They are: Check if shooting is possible, decrement magazine size, apply modifiers, broadcast event etc. NO SHOOTING LOGIC
         virtual void PrepareShooting(); //queue the bulletQueue
@@ -78,6 +77,8 @@ namespace ETG
         //the aim angle. It is also rewritten from the animation every frame in
         //BaseAnimComp::Update, which is what makes the OriginOffset below a no-op.
         ETG::Vector2f HeldOffset{0.f, 0.f};
+        
+        float ForceDuration{1};
 
         using GameObjectBase::Rotation; //Make Rotation public in Gunbase
 
@@ -141,7 +142,7 @@ namespace ETG
 
         BOOST_DESCRIBE_CLASS(GunBase, (GameObjectBase),
                              (CurrentGunState, MaxAmmo, MagazineSize, MagazineAmmo, ShotDelay, ReloadTime, IsReloading,
-                                 FireRate, ShotSpeed, Range, Damage, Force, Spread, HeldOffset),
+                                 FireRate, ShotSpeed, Range, Damage, Force, ForceDuration, Spread, HeldOffset),
                              (ProjTexture, OriginOffset),
                              ())
     };

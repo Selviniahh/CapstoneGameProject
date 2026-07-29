@@ -18,6 +18,7 @@ ETG::Magnum::Magnum(const ETG::Vector2f& pos) : GunBase(pos,
                                                        2.0f, // ReloadTime
                                                        5.5f, // Damage
                                                        4.f, // Force
+                                                       1.f,
                                                        3.0f) // Spread (in degrees)
 {
     AnimationComp = CreateGameObjectAttached<MagnumAnimComp>(this);

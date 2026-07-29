@@ -60,7 +60,7 @@ void ETG::Hero::Initialize()
     GameObjectBase::Initialize();
 
 
-    //NOTE: Hero got hit by something
+    //NOTE: Hero overlapped by something
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //NOTE: If collided with the enemy
@@ -76,6 +76,7 @@ void ETG::Hero::Initialize()
         //NOTE: If collided with a projectile
         if (eventData.Other->IsA<ProjectileBase>())
         {
+            return;
             auto* projectile = eventData.Other->As<ProjectileBase>();
 
             if (projectile && projectile->Owner && projectile->Owner->Owner &&

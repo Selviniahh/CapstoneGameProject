@@ -35,7 +35,7 @@ namespace ETG
         
 
         // Force parameters
-        float ForceSpeed = 1;
+        float ForceMultiplier = 1;
         float ForceMagnitude = 0.0f;
         float ForceTimer = 0.0f;
         float ForceMaxDuration = 0.0f; //will be set by the ApplyForce function
@@ -48,6 +48,6 @@ namespace ETG
 
         BOOST_DESCRIBE_CLASS(BaseMoveComp, (ComponentBase),
                              (MaxSpeed, Acceleration, Deceleration, Velocity,
-                                 ForceSpeed, ForceMaxDuration, IsBeingForced), (), ())
+                                 ForceMultiplier, ForceMaxDuration, IsBeingForced), (), ())
     };
 }

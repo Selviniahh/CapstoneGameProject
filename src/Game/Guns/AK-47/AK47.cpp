@@ -6,10 +6,8 @@
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
-
-
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
-    0.8f,     // FireRate
+    0.6f,     // FireRate
     150.0f,     // ShotSpeed
     1000.0f,    // Range (should be infinite but I will just give 2000)
     0.0f,      // timerForVelocity
@@ -17,8 +15,9 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     500,       // MaxAmmo
     30,        // MagazineSize
     2.0f,      // ReloadTime
-    2.5f,      // Damage
-    17.0f,      // Force
+    1.f,      // Damage
+    20.0f,     // Force
+    0.1f,     //force dur
     3.0f)      // Spread (in degrees)
 {
     AnimationComp = CreateGameObjectAttached<AK47AnimComp>(this);
