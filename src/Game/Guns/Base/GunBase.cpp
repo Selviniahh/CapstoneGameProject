@@ -43,7 +43,9 @@ namespace ETG
         if (!ProjTexture) ProjTexture = std::make_shared<ETG::Texture>();
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ArrowComp) ArrowComp = CreateGameObjectAttached<class ArrowComp>(this, AssetManager::Resolve("Projectiles/Arrow.png"));
-        if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this, "Guns/RogueSpecial/MuzzleFlash/", "RS_muzzleflash_001", "png", 0.10f);
+        //Created empty on purpose. Which sheet it plays is the individual gun's business, and
+        //it declares that in its own AnimComp::SetAnimations; GunBase::Initialize applies it.
+        if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this);
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 
         GunBase::Initialize();
@@ -79,7 +81,8 @@ namespace ETG
         this->Origin += OriginOffset;
         ArrowComp->SetOrigin(ArrowComp->GetOrigin() + ArrowComp->arrowOriginOffset);
 
-        // Muzzle flash animation should be set up by the derived class.
+        // Muzzle flash sheet is the derived gun's business; it calls SetAnimation on this in
+        // its own Initialize.
         MuzzleFlash->SetParent(this);
 
         ReloadSlider->LinkToGun(this);

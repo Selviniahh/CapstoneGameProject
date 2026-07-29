@@ -7,12 +7,18 @@
 
 namespace ETG
 {
-    MuzzleFlash::MuzzleFlash(const std::string& relativePath, const std::string& fileName, const std::string& extension, const float frameSpeed) : frameSpeed(frameSpeed)
+    MuzzleFlash::MuzzleFlash()
     {
-        // Load the animation from the sprite sheet
-        Animation = Animation::CreateSpriteSheet(relativePath, fileName, extension, frameSpeed);
         isActive = false; //Make sure animation not playing at the start
-        
+        MuzzleFlash::Initialize();
+    }
+
+    void MuzzleFlash::SetAnimation(const std::string& relativePath, const std::string& fileName, const std::string& extension, const float frameSpeed)
+    {
+        this->frameSpeed = frameSpeed;
+        Animation = Animation::CreateSpriteSheet(relativePath, fileName, extension, frameSpeed);
+        isActive = false;
+
         if (Animation.Texture)
         {
             Origin = {
@@ -20,8 +26,6 @@ namespace ETG
                 static_cast<float>(Animation.Texture->getSize().y / 2)
             };
         }
-
-        MuzzleFlash::Initialize();
     }
 
     void MuzzleFlash::Initialize()
@@ -66,7 +70,7 @@ namespace ETG
             const float angle = parentProps.Rotation * (std::numbers::pi / 180.0f);
 
             // Create a copy of the attachment offset
-            ETG::Vector2f offsetToUse = attachmentOffset;
+            ETG::Vector2f offsetToUse = AttachmentOffset;
 
             // If the parent is flipped vertically, flip the Y component of the offset
             if (parentProps.Scale.y < 0) offsetToUse.y = -offsetToUse.y;
@@ -79,12 +83,28 @@ namespace ETG
 
             // Set position relative to parent
             Position = parentProps.Position + rotatedOffset;
-            Rotation = parentProps.Rotation;
+
+            if (InheritParentRotation)
+            {
+                Rotation = parentProps.Rotation;
+            }
+            else
+            {
+                //Standing upright means the gun's angle can no longer tell this effect which
+                //way it is pointing, so take the facing from the parent's flip instead. Without
+                //it a plume drifts forwards when aiming right and backwards when aiming left.
+                Rotation = 0.f;
+                Scale.x = parentProps.Scale.y < 0 ? -std::abs(Scale.x) : std::abs(Scale.x);
+            }
         }
     }
 
     void MuzzleFlash::Activate()
     {
+        //A gun that never calls SetAnimation (the AK47, Magnum and SawedOff all hide their
+        //flash) has no frames, and Animation::Update would index an empty FrameRects.
+        if (!HasAnimation()) return;
+
         isActive = true;
         Animation.Active = true;
     }

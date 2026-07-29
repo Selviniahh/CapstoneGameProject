@@ -33,8 +33,8 @@ namespace ETG
     void Character::UpdateGuns() const
     {
         if (CurrentGun && Hand)
-        {
-            CurrentGun->SetPosition(Hand->GetPosition() + Hand->GunOffset);
+        {                                                                   //just in case if gun needs a bit tweak
+            CurrentGun->SetPosition(Hand->GetPosition() + Hand->GunOffset + CurrentGun->HeldOffset);
             CurrentGun->Rotation = AimAngle;
         }
 

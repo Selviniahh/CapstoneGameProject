@@ -88,6 +88,8 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(PlatinumBullets, PassiveItemBase);
     TypeRegistry::RegisterType<AK47>();
     REGISTER_BASE_CLASS(AK47, GunBase);
+    TypeRegistry::RegisterType<AK47AnimComp>();
+    REGISTER_BASE_CLASS(AK47AnimComp, BaseAnimComp<GunStateEnum>);
     TypeRegistry::RegisterType<SawedOff>();
     REGISTER_BASE_CLASS(SawedOff, GunBase);
     TypeRegistry::RegisterType<Magnum>();

@@ -35,8 +35,9 @@ void ETG::AK47::Initialize()
 {
     ArrowComp->arrowOriginOffset = {-6.f, 0.f};
     ArrowComp->arrowOffset = {15.f, -2.f};
+    HeldOffset = {0.f, -1.f}; //sits one unit higher in the hand than the other guns
     CollisionComp->Initialize();
-
+ 
     
     // Load the projectile texture for AK-47
     ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_002.png");
@@ -80,6 +81,7 @@ void ETG::AK47AnimComp::SetAnimations()
     BaseAnimComp<GunStateEnum>::SetAnimations();
 
     // Idle Animation
+    AttachmentOrigin = {0.f, 0.f};
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/AK47", "AK47_Single001", "png", 0.15f, false)};
     AddGunAnimationForState(GunStateEnum::Idle, IdleAnim);
 

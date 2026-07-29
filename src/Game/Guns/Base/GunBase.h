@@ -70,6 +70,15 @@ namespace ETG
         //As best practice, I need to move this back to the Active item.  
         float ShotDelay = 0.1f;
 
+        //How this particular gun sits in the hand, on top of the hand's own Hand::GunOffset.
+        //Applied by Character::UpdateGuns, so it only affects the gun while it is being held -
+        //a gun lying on the floor is unaffected.
+        //NOTE: do NOT reach for Origin to nudge a gun. Origin is the pivot the gun rotates
+        //around to aim, so shifting it swings the gun off-target by an amount that grows with
+        //the aim angle. It is also rewritten from the animation every frame in
+        //BaseAnimComp::Update, which is what makes the OriginOffset below a no-op.
+        ETG::Vector2f HeldOffset{0.f, 0.f};
+
         using GameObjectBase::Rotation; //Make Rotation public in Gunbase
 
         //State will not contain direction. It will be idle, shoot, reload etc. 
@@ -132,7 +141,7 @@ namespace ETG
 
         BOOST_DESCRIBE_CLASS(GunBase, (GameObjectBase),
                              (CurrentGunState, MaxAmmo, MagazineSize, MagazineAmmo, ShotDelay, ReloadTime, IsReloading,
-                                 FireRate, ShotSpeed, Range, Damage, Force, Spread),
+                                 FireRate, ShotSpeed, Range, Damage, Force, Spread, HeldOffset),
                              (ProjTexture, OriginOffset),
                              ())
     };

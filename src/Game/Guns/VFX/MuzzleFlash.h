@@ -8,9 +8,17 @@ namespace ETG
     class MuzzleFlash : public GameObjectBase
     {
     public:
-        // Constructor with path to animation sprite sheet
+        //Starts out empty: a flash belongs to a specific gun, so the owner hands it its
+        //sheet via SetAnimation instead of GunBase guessing one for everybody.
+        MuzzleFlash();
         ~MuzzleFlash() override = default;
-        MuzzleFlash(const std::string& relativePath, const std::string& fileName, const std::string& extension, float frameSpeed = 0.10f);
+
+        //Loads the sheet and centres the origin on it. Callers that need the origin
+        //somewhere else (a multi-frame strip, where the sheet centre is meaningless)
+        //override it with SetOrigin afterwards.
+        void SetAnimation(const std::string& relativePath, const std::string& fileName, const std::string& extension, float frameSpeed = 0.10f);
+        [[nodiscard]] bool HasAnimation() const { return Animation.Texture != nullptr; }
+
         void Initialize() override;
         void UpdatePosition();
         void Update() override;
@@ -24,25 +32,32 @@ namespace ETG
         bool IsFinished() const { return Animation.IsAnimationFinished(); }
         
         // Set attachment offset (relative to parent position)
-        void SetOffset(const ETG::Vector2f& offset) { attachmentOffset = offset; }
-        ETG::Vector2f GetOffset() const { return attachmentOffset; }
+        void SetAttachmentOffset(const ETG::Vector2f& offset) { AttachmentOffset = offset; }
+        ETG::Vector2f GetAttachedOffset() const { return AttachmentOffset; }
         
         // Set parent object to follow
         void SetParent(GameObjectBase* parent) { parentObject = parent; }
+
+        //A flash points down the barrel, so it turns with the gun. Smoke rises no matter
+        //which way the gun is aimed - and aiming left puts the gun at ~180 degrees, which
+        //would otherwise stand the smoke on its head and make it pour downwards.
+        //The attachment offset still rotates either way, so the effect stays put on the gun.
+        void SetInheritParentRotation(const bool inherit) { InheritParentRotation = inherit; }
         
         Animation Animation;
 
     private:
         bool isActive = false;
-        ETG::Vector2f attachmentOffset = {0.0f, 0.0f};
+        bool InheritParentRotation = true;
         GameObjectBase* parentObject = nullptr;
         
         // Frame speed for animation
         float frameSpeed = 0.10f;
+        ETG::Vector2f AttachmentOffset = {0.0f, 0.0f};
         
         BOOST_DESCRIBE_CLASS(MuzzleFlash, (GameObjectBase),
-            (isActive, frameSpeed),
-            (Animation, attachmentOffset),
+            (Texture, AttachmentOffset, isActive, frameSpeed),
+            (Animation),
             ())
     };
 }

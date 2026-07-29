@@ -27,6 +27,7 @@ namespace ETG
         void SetAnimations() override;
 
         float ReloadAnimInterval = 2 / 2.f; //Frame Count / Reload Time = Reload Time; 
-        BOOST_DESCRIBE_CLASS(AK47AnimComp, (BaseAnimComp), (),(),());
+        Vector2f AttachmentOrigin;
+        BOOST_DESCRIBE_CLASS(AK47AnimComp, (BaseAnimComp), (AttachmentOrigin), (), ());
     };
 }

@@ -14,8 +14,16 @@ namespace ETG
 
         void Initialize() override;
         void Update() override;
+        void Draw() override;
+        void Reload() override;
 
         BOOST_DESCRIBE_CLASS(RogueSpecial, (GunBase), (), (), ())
+
+    protected:
+        //Reload VFX. `class` is required on both: GunBase's own MuzzleFlash *member*
+        //hides the type name in this scope.
+        std::unique_ptr<class MuzzleFlash> ReloadFlash; //green flash off the barrel tip
+        std::unique_ptr<class MuzzleFlash> ReloadSmoke; //smoke venting from underneath
     };
 
     class RogueSpecialAnimComp : public BaseAnimComp<GunStateEnum>
