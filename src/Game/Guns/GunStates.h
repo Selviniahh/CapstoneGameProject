@@ -8,9 +8,10 @@ namespace ETG
     enum class GunStateEnum
     {
         Idle,
+        Recoil,
         Shoot,
         Reload
     };
 
-    BOOST_DESCRIBE_ENUM(GunStateEnum, Idle, Shoot, Reload)
+    BOOST_DESCRIBE_ENUM(GunStateEnum, Idle, Recoil, Shoot, Reload)
 }

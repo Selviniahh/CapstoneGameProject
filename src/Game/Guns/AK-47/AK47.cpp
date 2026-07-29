@@ -6,8 +6,10 @@
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 
+
+
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
-    0.4f,     // FireRate
+    0.8f,     // FireRate
     150.0f,     // ShotSpeed
     1000.0f,    // Range (should be infinite but I will just give 2000)
     0.0f,      // timerForVelocity
@@ -37,7 +39,6 @@ void ETG::AK47::Initialize()
     ArrowComp->arrowOffset = {15.f, -2.f};
     HeldOffset = {0.f, -1.f}; //sits one unit higher in the hand than the other guns
     CollisionComp->Initialize();
- 
     
     // Load the projectile texture for AK-47
     ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_002.png");
@@ -82,14 +83,31 @@ void ETG::AK47AnimComp::SetAnimations()
 
     // Idle Animation
     AttachmentOrigin = {0.f, 0.f};
+    
+    // interval = kare başına süre, animasyonun toplam süresi değil
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/AK47", "AK47_Single001", "png", 0.15f, false)};
     AddGunAnimationForState(GunStateEnum::Idle, IdleAnim);
 
     // Shoot animations
-    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_001", "png", 0.15f)};
+    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_001", "png", ShootAnimInterval)};
     AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim);
 
     // Reload Animation
     const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_reload_001", "png", ReloadAnimInterval, false)};
     AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim);
+    
+    // Recoil Animation. Plays once after the shoot animation, then GunBase drops back to Idle.
+    const Animation RecoilAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_recoil_001", "png", RecoilAnimInterval, false)};
+    AddGunAnimationForState(GunStateEnum::Recoil, RecoilAnim);
 }
+//
+// │        │ kare │ interval │  teslim süresi   │
+// ├────────┼──────┼──────────┼──────────────────┤
+// │ Shoot  │ 3    │ 0.08     │ 2 × 0.08 = 0.16s │
+// ├────────┼──────┼──────────┼──────────────────┤
+// │ Recoil │ 3    │ 0.10     │ 2 × 0.10 = 0.20s │
+// ├────────┼──────┼──────────┼──────────────────┤
+// │        │      │          │ toplam 0.36s     │
+// └────────┴──────┴──────────┴──────────────────┘
+
+//bizim zaten 0.4 saniye hakkimiz vardi 

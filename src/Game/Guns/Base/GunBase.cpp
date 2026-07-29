@@ -112,11 +112,17 @@ namespace ETG
             }
         }
 
-        // After shooting, reset back to idle
-        if (AnimationComp->CurrentState == GunStateEnum::Shoot &&
-            AnimationComp->AnimManagerDict[AnimationComp->CurrentState].IsAnimationFinished())
+        // Shoot runs out into Recoil, and Recoil runs out into Idle. A gun that never registered
+        // a Recoil animation drops straight back to Idle, so giving one to another gun later is
+        // just a line in its own SetAnimations - nothing to change here.
+        if (const GunStateEnum animState = AnimationComp->CurrentState;
+            (animState == GunStateEnum::Shoot || animState == GunStateEnum::Recoil) &&
+            AnimationComp->AnimManagerDict[animState].IsAnimationFinished())
         {
-            CurrentGunState = GunStateEnum::Idle;
+            const bool hasRecoil = AnimationComp->AnimManagerDict.contains(GunStateEnum::Recoil);
+            CurrentGunState = (animState == GunStateEnum::Shoot && hasRecoil)
+                                  ? GunStateEnum::Recoil
+                                  : GunStateEnum::Idle;
         }
 
         // Continue with the rest of the update logic
