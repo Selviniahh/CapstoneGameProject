@@ -90,15 +90,15 @@ void ETG::MagnumAnimComp::SetAnimations()
     // Idle Animation
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/Magnum", "magnum_idle_001", "png", 0.15f)};
     IdleAnim.Origin = {2.f, 12.f};
-    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim, true, IdleAnim.Origin);
+    AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim, true, IdleAnim.Origin);
 
     // Shoot Animations
-    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/Magnum", "magnum_shoot_001", "png", ShootAnimInterval)};
+    Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/Magnum", "magnum_shoot_001", "png", ShootAnimInterval)};
     ShootAnim.Origin = {2.f, 12.f};
-    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim, true, ShootAnim.Origin);
+    AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim, true, ShootAnim.Origin);
 
     // Reload Animation
-    const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/Magnum", "magnum_reload_001", "png", ReloadAnimInterval)};
+    Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/Magnum", "magnum_reload_001", "png", ReloadAnimInterval)};
     ReloadAnim.Origin = {2.f, 12.f};
-    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim, true, ReloadAnim.Origin);
+    AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim, true, ReloadAnim.Origin);
 }

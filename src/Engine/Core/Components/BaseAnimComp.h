@@ -49,9 +49,9 @@ namespace ETG
         }
 
         template <typename DirectionEnum>
-        void AddAnimationsForState(StateEnum state, const std::vector<Animation>& animations);
+        void AddAnimationsForState(StateEnum state, Playback playback, const std::vector<Animation>& animations);
 
-        void AddGunAnimationForState(StateEnum state, const Animation& animation, bool IsManualOrigin = false, ETG::Vector2f origin = {});
+        void AddGunAnimationForState(StateEnum state, Playback playback, const Animation& animation, bool IsManualOrigin = false, ETG::Vector2f origin = {});
 
         // Implement IAnimationComponent interface
         [[nodiscard]] ETG::IntRect GetCurrentTextureRect() const override { return CurrTexRect; }
@@ -125,7 +125,7 @@ namespace ETG
 
     template <typename StateEnum>
     template <typename DirectionEnum>
-    void BaseAnimComp<StateEnum>::AddAnimationsForState(StateEnum state, const std::vector<Animation>& animations)
+    void BaseAnimComp<StateEnum>::AddAnimationsForState(StateEnum state, const Playback playback, const std::vector<Animation>& animations)
     {
         auto animManager = AnimationManager{};
         std::vector<DirectionEnum> enumKeys = ConstructEnumVector<DirectionEnum>();
@@ -135,7 +135,9 @@ namespace ETG
 
         for (size_t i = 0; i < count; ++i)
         {
-            animManager.AddAnimation(enumKeys[i], animations[i]);
+            Animation anim = animations[i];
+            anim.Loops = playback == Playback::Loop;
+            animManager.AddAnimation(enumKeys[i], anim);
 
             // Only set the origin if the animation has valid frames
             if (!animations[i].FrameRects.empty())
@@ -151,10 +153,12 @@ namespace ETG
     }
 
     template <typename StateEnum>
-    void BaseAnimComp<StateEnum>::AddGunAnimationForState(StateEnum state, const Animation& animation, const bool IsManualOrigin, ETG::Vector2f origin)
+    void BaseAnimComp<StateEnum>::AddGunAnimationForState(StateEnum state, const Playback playback, const Animation& animation, const bool IsManualOrigin, ETG::Vector2f origin)
     {
         auto animManager = AnimationManager{};
-        animManager.AddAnimation(state, animation); // Using the state enum itself as the key
+        Animation anim = animation;
+        anim.Loops = playback == Playback::Loop;
+        animManager.AddAnimation(state, anim); // Using the state enum itself as the key
 
         if (!animation.FrameRects.empty())
         {

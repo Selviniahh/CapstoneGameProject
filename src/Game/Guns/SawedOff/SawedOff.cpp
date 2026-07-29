@@ -115,15 +115,15 @@ void ETG::SawedOffAnimComp::SetAnimations()
     // Idle Animation
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_idle_001", "png", 0.15f, false)};
     IdleAnim.Origin = {1.f, 5.f};
-    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim, true, IdleAnim.Origin);
+    AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim, true, IdleAnim.Origin);
 
     // Shoot Animations
-    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_fire_001", "png", ShootAnimInterval)};
+    Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_fire_001", "png", ShootAnimInterval)};
     ShootAnim.Origin = {1.f, 5.f};
-    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim, true, ShootAnim.Origin);
+    AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim, true, ShootAnim.Origin);
 
     // Reload Animation
-    const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_reload_001", "png", ReloadAnimInterval)};
+    Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_reload_001", "png", ReloadAnimInterval)};
     ReloadAnim.Origin = {5.f, 5.f};
-    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim, true, ReloadAnim.Origin);  
+    AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim, true, ReloadAnim.Origin);  
 }

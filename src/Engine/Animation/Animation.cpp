@@ -33,15 +33,37 @@ void Animation::Update()
     if (!Active || !Texture || Texture->getSize().x == 0) throw std::runtime_error("Something is wrong");
     if (AnimTimeLeft > 9999999.0f || AnimTimeLeft < -1000) throw std::runtime_error("Animation Time is so big");
 
-    //NOTE: Skip playing next frame if we only want to play the last frame
-    if (IsOnLastFrame) return;
-    
+    //A finished one-shot sits on its last frame. Returning early also keeps AnimTimeLeft from
+    //running away into the guard above, which it would if we kept draining it forever.
+    if (HasFinished)
+    {
+        CurrRect = FrameRects[CurrentFrame];
+        return;
+    }
+
     AnimTimeLeft -= ETG::Time::FrameTick;
     if (AnimTimeLeft <= 0)
     {
-        CurrentFrame++;
-        CurrentFrame = CurrentFrame >= FrameX ? 0 : CurrentFrame;
-        AnimTimeLeft = FrameInterval;
+        if (CurrentFrame + 1 >= FrameX)
+        {
+            if (Loops)
+            {
+                CurrentFrame = 0;
+                AnimTimeLeft = FrameInterval;
+            }
+            else
+            {
+                //Stay put on the last frame. This is the moment the animation is genuinely over,
+                //which is what IsFinished reports for a one-shot.
+                HasFinished = true;
+                AnimTimeLeft = 0;
+            }
+        }
+        else
+        {
+            CurrentFrame++;
+            AnimTimeLeft = FrameInterval;
+        }
     }
 
     CurrRect = FrameRects[CurrentFrame];
@@ -83,6 +105,7 @@ void Animation::Restart()
 {
     CurrentFrame = 0;
     AnimTimeLeft = FrameInterval;
+    HasFinished = false;
 }
 
 std::shared_ptr<ETG::Texture> Animation::GetCurrentFrameAsTexture() const
@@ -106,39 +129,22 @@ std::shared_ptr<ETG::Texture> Animation::GetCurrentFrameAsTexture() const
     return textureCache[CurrentFrame];
 }
 
-bool Animation::IsAnimationFinished() const
+bool Animation::IsFinished() const
 {
-    return CurrentFrame == FrameX - 1;
+    //One-shot: honest. True once the last frame has had its full time, and it stays true until
+    //Restart. Total run is FrameX * FrameInterval.
+    //
+    //Looping: there is no such thing as finished, so this keeps the old meaning - "showing the
+    //last frame". Two traps come with that, and they are why one-shots exist:
+    //  - it goes true again on every lap, so it is a state, not an event
+    //  - reaching the last frame takes (FrameX-1) * FrameInterval, one interval short of the run
+    //Ask this of a looping animation only if you really mean "is it on its last frame".
+    return Loops ? CurrentFrame == FrameX - 1 : HasFinished;
 }
 
 float Animation::GetTotalAnimationTime() const
 {
     return (float)FrameX * FrameInterval;
-}
-
-void Animation::PlayOnlyLastFrame()
-{
-    if (IsOnLastFrame) return; // Already on last frame
-
-    OriginalFrameInterval = FrameInterval; //Set original frame interval so that when we StopPlayingLastFrame, we can return back to initial FrameInterval 
-    CurrentFrame = FrameX - 1; // Set to last frame
-    AnimTimeLeft = 9999999.0f; // Effectively pause. Idk if there's a better way t handle this 
-    CurrRect = FrameRects[CurrentFrame]; // Update the current rectangle
-    IsOnLastFrame = true;
-}
-
-void Animation::StopPlayingLastFrame()
-{
-    if (!IsOnLastFrame) return;
-
-    FrameInterval = OriginalFrameInterval;
-    AnimTimeLeft = FrameInterval; // Reset the animation timer
-    IsOnLastFrame = false;
-}
-
-bool Animation::IsPlayingLastFrame() const
-{
-    return IsOnLastFrame;
 }
 
 namespace

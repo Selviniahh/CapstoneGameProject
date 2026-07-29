@@ -28,16 +28,16 @@ namespace ETG
 
         float ReloadAnimInterval = 1.f; //Frame Count / Reload Time = Reload Time;
 
-        //3 shoot frames. IsAnimationFinished goes true on REACHING the last frame, so the shot
-        //hands over to Recoil after (frames-1) * interval = 0.16s, not after all three frames.
-        //Holding the trigger restarts this every 0.4s fire tick, so whatever is left of that
-        //0.4s is all the time Recoil gets: at 0.15 only 0.10s remained and the kick was over
-        //before you could see it. At 0.08 it gets 0.24s and plays out fully.
-        float ShootAnimInterval = 0.16f;
-
-        //3 frames, so the whole kick lasts 0.15s. Has to stay well under the 0.4s fire rate,
-        //otherwise the next shot lands while the gun is still recoiling and it never settles.
-        float RecoilAnimInterval = 0.2f;
+        //Shoot and Recoil are one-shots, so each plays its full 3 * interval before handing over,
+        //and holding the trigger restarts the pair every 0.4s fire tick. For both to be seen in
+        //full they have to fit inside that tick:
+        //
+        //    3*Shoot + 3*Recoil <= 0.4   ->   Shoot + Recoil <= 0.133
+        //
+        //0.05 + 0.08 spends 0.39s of it. Going over is not a crash - the next shot just cuts the
+        //kick short, which is a fine look for a rifle - but go over deliberately, not by accident.
+        float ShootAnimInterval = 0.05f;
+        float RecoilAnimInterval = 0.08f;
         Vector2f AttachmentOrigin;
         BOOST_DESCRIBE_CLASS(AK47AnimComp, (BaseAnimComp), (AttachmentOrigin), (), ());
     };

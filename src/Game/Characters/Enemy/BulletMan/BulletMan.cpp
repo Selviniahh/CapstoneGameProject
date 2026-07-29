@@ -109,7 +109,7 @@ void ETG::BulletMan::UpdateShooting()
 
     // If the gun is not shooting and the animation is finished, set the state to idle
     if (GetState() == EnemyStateEnum::Shooting && Gun->CurrentGunState != GunStateEnum::Shoot &&
-        Gun->GetAnimationInterface()->GetAnimation()->IsAnimationFinished())
+        Gun->GetAnimationInterface()->GetAnimation()->IsFinished())
     {
         SetState(EnemyStateEnum::Idle);
     }
@@ -124,7 +124,7 @@ void ETG::BulletMan::BulletManShoot()
     if (!CanShoot()) return;
 
     //If the gun is shooting, we have to set enemy's animation to be shooting as well
-    if (Gun->CurrentGunState == GunStateEnum::Shoot && !Gun->GetAnimationInterface()->GetAnimation()->IsAnimationFinished())
+    if (Gun->CurrentGunState == GunStateEnum::Shoot && !Gun->GetAnimationInterface()->GetAnimation()->IsFinished())
     {
         SetState(EnemyStateEnum::Shooting);
         return;

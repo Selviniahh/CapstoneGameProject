@@ -117,15 +117,15 @@ void ETG::RogueSpecialAnimComp::SetAnimations()
 {
     //Idle Animation
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial", "RogueSpecial_Idle", "png", 0.15f, true)};
-    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim, true, ETG::Vector2f{1,10});
+    AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim, true, ETG::Vector2f{1,10});
 
     //Shoot animations
-    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial/Fire", "knav3_fire_001", "png", 0.15f)};
-    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim, true, ETG::Vector2f{1,10});
+    Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial/Fire", "knav3_fire_001", "png", 0.15f)};
+    AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim, true, ETG::Vector2f{1,10});
 
     //Reload Animation. 8 frames over the 2s reload time. The frames carry one spare row
     //above the gun so it can kick without shearing off its front sight, which is why the
     //origin is {1,11} here and {1,10} for the poses that have no such row.
-    const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial", "RogueSpecial_Reload", "png", 0.25f, true)};
-    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim, true, ETG::Vector2f{1,11});
+    Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/RogueSpecial", "RogueSpecial_Reload", "png", 0.25f, true)};
+    AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim, true, ETG::Vector2f{1,11});
 }

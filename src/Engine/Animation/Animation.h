@@ -6,6 +6,14 @@
 
 #include "../Core/GameClass.h"
 
+//Whether an animation starts over or stops on its last frame. Registering a state's animation
+//takes one of these explicitly, so a new animation cannot silently end up looping.
+enum class Playback
+{
+    Loop, //idle, run - runs until something else changes the state
+    Once  //shot, reload, dash, hit, death - plays out, then holds its last frame
+};
+
 class Animation : public GameClass
 {
 private:
@@ -15,8 +23,6 @@ private:
     int FrameY;
     mutable std::vector<std::shared_ptr<ETG::Texture>> textureCache;
 
-    float OriginalFrameInterval{}; // Store original interval when paused
-    bool IsOnLastFrame = false;    // Track if we're paused on last frame
 
 public:
     std::string AnimPathName;
@@ -28,6 +34,14 @@ public:
     bool IsValid = true;
     float flipX = 1.0f;
     bool Active = true;
+
+    //A one-shot animation - a shot, a reload, a death - holds its last frame instead of starting
+    //over. Looping stays the default so an animation keeps its old behaviour until it opts out.
+    bool Loops = true;
+
+    //Only meaningful while Loops is false: set once the last frame has had its full time on
+    //screen. Cleared by Restart.
+    bool HasFinished = false;
 
     //NOTE: Rule of Five: Destructor, Copy Constructor, Copy Assignment, Move Constructor, Move Assignment
     Animation(const std::shared_ptr<ETG::Texture>& texture, float eachFrameSpeed, int frameX, int frameY, int row = 1);
@@ -48,15 +62,12 @@ public:
     /// Restart the animation. Set `CurrentFrame` = 0, `AnimTimeLeft` = `EachFrameSpeed`
     void Restart();
     std::shared_ptr<ETG::Texture> GetCurrentFrameAsTexture() const;
-    bool IsAnimationFinished() const;
+    bool IsFinished() const;
     float GetTotalAnimationTime() const; //NOTE: If there are 5 frames and each frame interval is 0.1 then this will return (5 * 0.1 = 0.5)
-    void PlayOnlyLastFrame(); //Jump to last frame and pause the animation there
-    void StopPlayingLastFrame(); //Resume normal animation playback after stopping on the last frame
-    bool IsPlayingLastFrame() const; //Check if the animation is paused on the last frame
 
     //Omit FileName's last number. If file's name is "SpriteSheet_001" Give "SpriteSheet_00"
     //There's no Y axis sprite sheet creation. Only X 
     static Animation CreateSpriteSheet(const std::string& RelativePath, const std::string& FileName, const std::string& Extension, float eachFrameSpeed, bool IsSingleSprite = false);
 
-    BOOST_DESCRIBE_CLASS(Animation, (GameClass), (CurrRect, Texture, Origin, FrameRects, IsValid, flipX, Active), (), (FrameInterval))
+    BOOST_DESCRIBE_CLASS(Animation, (GameClass), (CurrRect, Texture, Origin, FrameRects, IsValid, flipX, Active, Loops, HasFinished), (), (FrameInterval))
 };

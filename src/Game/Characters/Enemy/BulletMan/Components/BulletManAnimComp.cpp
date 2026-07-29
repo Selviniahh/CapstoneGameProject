@@ -37,7 +37,7 @@ void ETG::BulletManAnimComp::SetAnimations()
         Animation::CreateSpriteSheet("Enemy/BulletMan/Idle", "bullet_idle_right_001", "png", 0.15f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Idle", "bullet_idle_right_001", "png", 0.15f),
     };
-    AddAnimationsForState<BulletManIdleEnum>(EnemyStateEnum::Idle, idleAnims);
+    AddAnimationsForState<BulletManIdleEnum>(EnemyStateEnum::Idle, Playback::Loop, idleAnims);
 
     // Run animation
     const auto runAnims = std::vector<Animation>{
@@ -46,26 +46,26 @@ void ETG::BulletManAnimComp::SetAnimations()
         Animation::CreateSpriteSheet("Enemy/BulletMan/Run", "bullet_run_right_001", "png", 0.12f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Run", "bullet_run_right_back_001", "png", 0.12f),
     };
-    AddAnimationsForState<BulletManRunEnum>(EnemyStateEnum::Run, runAnims);
+    AddAnimationsForState<BulletManRunEnum>(EnemyStateEnum::Run, Playback::Loop, runAnims);
 
     // Shooting animation
-    const auto shootingAnims = std::vector<Animation>{
+    auto shootingAnims = std::vector<Animation>{
         Animation::CreateSpriteSheet("Enemy/BulletMan/Shooting", "bullet_shooting_left_001", "png", 0.1f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Shooting", "bullet_shooting_right_001", "png", 0.1f),
     };
-    AddAnimationsForState<BulletManShootingEnum>(EnemyStateEnum::Shooting, shootingAnims);
+    AddAnimationsForState<BulletManShootingEnum>(EnemyStateEnum::Shooting, Playback::Once, shootingAnims);
 
     // Hit animation
-    const auto hitAnims = std::vector<Animation>{
+    auto hitAnims = std::vector<Animation>{
         Animation::CreateSpriteSheet("Enemy/BulletMan/Hit", "bullet_hit_back_left_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Hit", "bullet_hit_back_right_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Hit", "bullet_hit_left_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Hit", "bullet_hit_right_001", "png", 0.08f),
     };
-    AddAnimationsForState<BulletManHitEnum>(EnemyStateEnum::Hit, hitAnims);
+    AddAnimationsForState<BulletManHitEnum>(EnemyStateEnum::Hit, Playback::Once, hitAnims);
 
     // Death animation
-    const auto DeathAnims = std::vector<Animation>{
+    auto DeathAnims = std::vector<Animation>{
         Animation::CreateSpriteSheet("Enemy/BulletMan/Death", "bullet_death_back_south_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Death", "bullet_death_front_north_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Death", "bullet_death_left_back_001", "png", 0.08f),
@@ -75,7 +75,7 @@ void ETG::BulletManAnimComp::SetAnimations()
         Animation::CreateSpriteSheet("Enemy/BulletMan/Death", "bullet_death_right_front_001", "png", 0.08f),
         Animation::CreateSpriteSheet("Enemy/BulletMan/Death", "bullet_death_right_side_001", "png", 0.08f),
     };
-    AddAnimationsForState<BulletManDeathEnum>(EnemyStateEnum::Die, DeathAnims);
+    AddAnimationsForState<BulletManDeathEnum>(EnemyStateEnum::Die, Playback::Once, DeathAnims);
 }
 
 void ETG::BulletManAnimComp::Update()
@@ -120,9 +120,6 @@ void ETG::BulletManAnimComp::Update()
     // Update base animation component with current state and key
     BaseAnimComp<EnemyStateEnum>::Update(BulletMan->GetState(), newKey);
 
-    // When death animation finishes, pause on the last frame
-    if (BulletMan->GetState() == EnemyStateEnum::Die && AnimManagerDict[EnemyStateEnum::Die].IsAnimationFinished())
-    {
-        AnimManagerDict[EnemyStateEnum::Die].CurrentAnim->PlayOnlyLastFrame();
-    }
+    //NOTE: the death animations are registered as one-shots, so they stop on their last frame by
+    //themselves. This used to need a PlayOnlyLastFrame call here on every tick.
 }

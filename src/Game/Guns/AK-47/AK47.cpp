@@ -86,19 +86,19 @@ void ETG::AK47AnimComp::SetAnimations()
     
     // interval = kare başına süre, animasyonun toplam süresi değil
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/AK47", "AK47_Single001", "png", 0.15f, false)};
-    AddGunAnimationForState(GunStateEnum::Idle, IdleAnim);
+    AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim);
 
     // Shoot animations
-    const Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_001", "png", ShootAnimInterval)};
-    AddGunAnimationForState(GunStateEnum::Shoot, ShootAnim);
+    Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_001", "png", ShootAnimInterval)};
+    AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim);
 
     // Reload Animation
-    const Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_reload_001", "png", ReloadAnimInterval, false)};
-    AddGunAnimationForState(GunStateEnum::Reload, ReloadAnim);
+    Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_reload_001", "png", ReloadAnimInterval, false)};
+    AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim);
     
     // Recoil Animation. Plays once after the shoot animation, then GunBase drops back to Idle.
-    const Animation RecoilAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_recoil_001", "png", RecoilAnimInterval, false)};
-    AddGunAnimationForState(GunStateEnum::Recoil, RecoilAnim);
+    Animation RecoilAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_recoil_001", "png", RecoilAnimInterval, false)};
+    AddGunAnimationForState(GunStateEnum::Recoil, Playback::Once, RecoilAnim);
 }
 //
 // │        │ kare │ interval │  teslim süresi   │

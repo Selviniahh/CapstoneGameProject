@@ -81,7 +81,7 @@ public:
     const Animation* GetCurrentAnimation() const;
 
     // Check if the current animation has finished
-    bool IsAnimationFinished();
+    bool IsFinished();
 
     BOOST_DESCRIBE_CLASS(AnimationManager, (GameClass), (CurrentAnim, AnimationDict, LastKey), (), ())
 };
@@ -159,12 +159,12 @@ const inline Animation* AnimationManager::GetCurrentAnimation() const
     return nullptr;
 }
 
-inline bool AnimationManager::IsAnimationFinished()
+inline bool AnimationManager::IsFinished()
 {
     const auto it = AnimationDict.find(LastKey);
     if (it != AnimationDict.end())
     {
-        return it->second.IsAnimationFinished();
+        return it->second.IsFinished();
     }
     return true; // Or false, depending on your preference
 }

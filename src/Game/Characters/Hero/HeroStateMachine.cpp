@@ -83,13 +83,13 @@ namespace ETG
         //component has had its chance to restart the animation they are waiting on
         HitNode->AddTransition(NormalMovement, [this](const Hero& hero)
         {
-            return TimeInState() > 0.f && hero.AnimationComp->AnimManagerDict[HeroStateEnum::Hit].IsAnimationFinished();
+            return TimeInState() > 0.f && hero.AnimationComp->AnimManagerDict[HeroStateEnum::Hit].IsFinished();
         }, "Hit -> Locomotion");
 
         DashNode->AddTransition(NormalMovement, [this](const Hero& hero)
         {
             if (TimeInState() < hero.GetMoveComp()->MinDashDuration) return false;
-            return hero.AnimationComp->AnimManagerDict[HeroStateEnum::Dash].IsAnimationFinished();
+            return hero.AnimationComp->AnimManagerDict[HeroStateEnum::Dash].IsFinished();
         }, "Dash -> Locomotion");
 
         IdleNode->AddTransition(RunNode, [](const Hero&) { return InputManager::IsMoving(); }, "Idle -> Run");
@@ -127,11 +127,7 @@ namespace ETG
             hero.GetMoveComp()->UpdateMovement();
         };
 
-        DieNode->OnTick = [](Hero& hero, float)
-        {
-            //Hold the last frame forever. PlayOnlyLastFrame is idempotent, so running it every tick is fine
-            auto& deathAnim = hero.AnimationComp->AnimManagerDict[HeroStateEnum::Die];
-            if (deathAnim.IsAnimationFinished() && deathAnim.CurrentAnim) deathAnim.CurrentAnim->PlayOnlyLastFrame();
-        };
+        //NOTE: the death animation is registered as a one-shot, so it stops on its last frame by
+        //itself. This used to need an OnTick that re-pinned it with PlayOnlyLastFrame every frame.
     }
 }

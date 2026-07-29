@@ -17,6 +17,10 @@ namespace ETG
     {
         this->frameSpeed = frameSpeed;
         Animation = Animation::CreateSpriteSheet(relativePath, fileName, extension, frameSpeed);
+
+        //A flash, a puff of smoke - these fire once and are done. Update() below deactivates the
+        //whole object the moment the animation reports finished, so it must not loop round.
+        Animation.Loops = false;
         isActive = false;
 
         if (Animation.Texture)
@@ -43,7 +47,7 @@ namespace ETG
             Animation.Update();
 
             // If animation finished, deactivate
-            if (Animation.IsAnimationFinished())
+            if (Animation.IsFinished())
             {
                 Deactivate();
             }

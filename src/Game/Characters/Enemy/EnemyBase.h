@@ -58,9 +58,8 @@ namespace ETG
         Hero* Hero;
         EnemyStateFlag StateFlags{EnemyStateFlag::StateIdle};
 
-        //I am not sure is this the right way. Force should take time based on the hero's gun's fire rate. However, it also should be faster so that the enemy can stop force and have some time to shoot
-        //before another projectile is fired. After some tests, I decided to divide Gun->FireRate / 3
-        float ForceDurationDivider = 3.f;
+        //TODO: This is stupid, remove this somehow I think the gun must decide how force duration should be so move this into the GunBase  
+        float ForceDurationDivider = 6.f;
 
         //Enemies keep the sprite flip in step with their sprites the way BulletMan always did: the hand and gun go
         //away only once the enemy is dead, not while it is reeling from a hit

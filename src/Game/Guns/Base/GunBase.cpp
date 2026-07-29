@@ -117,7 +117,7 @@ namespace ETG
         // just a line in its own SetAnimations - nothing to change here.
         if (const GunStateEnum animState = AnimationComp->CurrentState;
             (animState == GunStateEnum::Shoot || animState == GunStateEnum::Recoil) &&
-            AnimationComp->AnimManagerDict[animState].IsAnimationFinished())
+            AnimationComp->AnimManagerDict[animState].IsFinished())
         {
             const bool hasRecoil = AnimationComp->AnimManagerDict.contains(GunStateEnum::Recoil);
             CurrentGunState = (animState == GunStateEnum::Shoot && hasRecoil)

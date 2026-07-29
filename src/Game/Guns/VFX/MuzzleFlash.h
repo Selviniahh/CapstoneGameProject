@@ -29,7 +29,7 @@ namespace ETG
         void Deactivate();
         void Restart();
         bool IsActive() const { return isActive; }
-        bool IsFinished() const { return Animation.IsAnimationFinished(); }
+        bool IsFinished() const { return Animation.IsFinished(); }
         
         // Set attachment offset (relative to parent position)
         void SetAttachmentOffset(const ETG::Vector2f& offset) { AttachmentOffset = offset; }
