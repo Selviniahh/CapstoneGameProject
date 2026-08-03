@@ -1,10 +1,10 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include "Vector2.h"
 #include "Rect.h"
 #include "Color.h"
 
-struct SDL_Texture;
 struct SDL_Surface;
 
 namespace ETG
@@ -37,7 +37,7 @@ namespace ETG
         SDL_Surface* m_surface = nullptr; //Always SDL_PIXELFORMAT_RGBA32
     };
 
-    //GPU texture backed by SDL_Texture, replacement for sf::Texture.
+    //GPU texture backed by a bgfx texture, replacement for sf::Texture.
     //A CPU side copy of the pixels is retained so textures can be copied and read back cheaply.
     class Texture
     {
@@ -51,17 +51,22 @@ namespace ETG
         Texture& operator=(Texture&& other) noexcept;
 
         bool loadFromFile(const std::string& path);
-        bool loadFromImage(const Image& image);
+
+        //Uploads the image to the GPU. Sprites are point sampled by default so pixel art stays
+        //crisp when the view is zoomed; pass true for text/UI atlases that want smoothing.
+        bool loadFromImage(const Image& image, bool linearSampling = false);
 
         [[nodiscard]] Vector2u getSize() const { return m_size; }
-        [[nodiscard]] SDL_Texture* getNativeHandle() const { return m_handle; }
+        //bgfx texture handle index, or ETG::InvalidGpuHandle when nothing is uploaded.
+        [[nodiscard]] std::uint16_t getNativeHandle() const { return m_handle; }
         [[nodiscard]] const Image& copyToImage() const { return m_image; }
 
     private:
         void destroy();
 
-        SDL_Texture* m_handle = nullptr;
+        std::uint16_t m_handle = 0xffffu; //ETG::InvalidGpuHandle, spelled out to keep GraphicsDevice.h out of this header
         Vector2u m_size{0, 0};
         Image m_image;
+        bool m_linearSampling = false;
     };
 }

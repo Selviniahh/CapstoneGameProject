@@ -19,9 +19,9 @@ if(NOT EXISTS ${SDL3_MIXER_INSTALL_DIR}/lib/cmake/SDL3_mixer/SDL3_mixerConfig.cm
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_INSTALL_PREFIX=${SDL3_MIXER_INSTALL_DIR}
             -DSDL3_DIR=${SDL3_INSTALL_DIR}/lib/cmake/SDL3
-            -DBUILD_SHARED_LIBS=ON
+            -DBUILD_SHARED_LIBS=${DEPS_BUILD_SHARED}
             -DSDLMIXER_VENDORED=OFF
-            -DSDLMIXER_DEPS_SHARED=ON
+            -DSDLMIXER_DEPS_SHARED=${DEPS_BUILD_SHARED}
             # Only WAVE + OGG (via SDL_mixer's own bundled stb_vorbis, no extra submodules
             # needed) — the project's sound assets are all .ogg.
             -DSDLMIXER_WAVE=ON

@@ -43,3 +43,8 @@
 [submodule "deps/boost/type_index"]
 	path = deps/boost/type_index
 	url = https://github.com/boostorg/type_index.git
+# CMake wrapper for bgfx; carries bgfx, bx and bimg as its own submodules.
+# Pinned by gitlink to v1.153.9385-561.
+[submodule "deps/bgfx.cmake"]
+	path = deps/bgfx.cmake
+	url = https://github.com/bkaradzic/bgfx.cmake.git

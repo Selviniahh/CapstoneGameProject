@@ -1,7 +1,7 @@
 #include "Texture.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
-#include "RenderWindow.h"
+#include "GraphicsDevice.h"
 
 namespace ETG
 {
@@ -120,7 +120,7 @@ namespace ETG
 
     Texture::Texture(const Texture& other)
     {
-        if (other.m_handle) loadFromImage(other.m_image);
+        if (other.m_handle != InvalidGpuHandle) loadFromImage(other.m_image, other.m_linearSampling);
     }
 
     Texture& Texture::operator=(const Texture& other)
@@ -129,14 +129,14 @@ namespace ETG
         destroy();
         m_size = {0, 0};
         m_image = Image{};
-        if (other.m_handle) loadFromImage(other.m_image);
+        if (other.m_handle != InvalidGpuHandle) loadFromImage(other.m_image, other.m_linearSampling);
         return *this;
     }
 
     Texture::Texture(Texture&& other) noexcept
-        : m_handle(other.m_handle), m_size(other.m_size), m_image(std::move(other.m_image))
+        : m_handle(other.m_handle), m_size(other.m_size), m_image(std::move(other.m_image)), m_linearSampling(other.m_linearSampling)
     {
-        other.m_handle = nullptr;
+        other.m_handle = InvalidGpuHandle;
         other.m_size = {0, 0};
     }
 
@@ -147,18 +147,18 @@ namespace ETG
         m_handle = other.m_handle;
         m_size = other.m_size;
         m_image = std::move(other.m_image);
-        other.m_handle = nullptr;
+        m_linearSampling = other.m_linearSampling;
+        other.m_handle = InvalidGpuHandle;
         other.m_size = {0, 0};
         return *this;
     }
 
     void Texture::destroy()
     {
-        if (m_handle && RenderWindow::GetRenderer())
-        {
-            SDL_DestroyTexture(m_handle);
-        }
-        m_handle = nullptr;
+        //Nothing to release once the device is gone: bgfx frees every resource on shutdown.
+        if (m_handle != InvalidGpuHandle && GraphicsDevice::IsInitialized())
+            GraphicsDevice::DestroyTexture(m_handle);
+        m_handle = InvalidGpuHandle;
     }
 
     bool Texture::loadFromFile(const std::string& path)
@@ -168,25 +168,23 @@ namespace ETG
         return loadFromImage(image);
     }
 
-    bool Texture::loadFromImage(const Image& image)
+    bool Texture::loadFromImage(const Image& image, const bool linearSampling)
     {
-        SDL_Renderer* renderer = RenderWindow::GetRenderer();
-        if (!renderer) return false;
-
         SDL_Surface* surface = image.getNativeSurface();
         if (!surface || surface->w == 0 || surface->h == 0) return false;
 
-        SDL_Texture* newTexture = SDL_CreateTextureFromSurface(renderer, surface);
-        if (!newTexture) return false;
+        //Image always keeps its pixels as RGBA32, which is exactly what the GPU side expects
+        const std::uint16_t handle = GraphicsDevice::CreateTexture2D(
+            static_cast<unsigned>(surface->w), static_cast<unsigned>(surface->h),
+            surface->pixels, static_cast<unsigned>(surface->pitch), linearSampling);
 
-        //Pixel art: nearest sampling keeps sprites crisp when the view is zoomed
-        SDL_SetTextureScaleMode(newTexture, SDL_SCALEMODE_NEAREST);
-        SDL_SetTextureBlendMode(newTexture, SDL_BLENDMODE_BLEND);
+        if (handle == InvalidGpuHandle) return false;
 
         destroy();
-        m_handle = newTexture;
+        m_handle = handle;
         m_size = image.getSize();
         m_image = image;
+        m_linearSampling = linearSampling;
         return true;
     }
 }

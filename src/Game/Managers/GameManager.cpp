@@ -151,6 +151,53 @@ void ETG::GameManager::SweepDestroyedObjects()
     }
 }
 
+namespace
+{
+    //Rewrite an event's mouse coordinates from window points into the fixed logical canvas.
+    //SDL's own SDL_ConvertEventToRenderCoordinates did this while SDL_Renderer owned the
+    //letterboxing; the letterbox is ours now (GraphicsDevice::GetViewportRect), so this is too.
+    void ConvertEventToLogicalCoordinates(SDL_Event& event)
+    {
+        const auto& window = ETG::RenderContext::Window;
+        if (!window) return;
+
+        const auto toLogical = [&window](const float x, const float y) { return window->mapWindowPointToLogical({x, y}); };
+
+        switch (event.type)
+        {
+        case SDL_EVENT_MOUSE_MOTION:
+            {
+                //Relative motion is a delta, so it only takes the scale, not the offset
+                const ETG::Vector2f origin = toLogical(0.f, 0.f);
+                const ETG::Vector2f moved = toLogical(event.motion.xrel, event.motion.yrel);
+                const ETG::Vector2f position = toLogical(event.motion.x, event.motion.y);
+                event.motion.x = position.x;
+                event.motion.y = position.y;
+                event.motion.xrel = moved.x - origin.x;
+                event.motion.yrel = moved.y - origin.y;
+                break;
+            }
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            {
+                const ETG::Vector2f position = toLogical(event.button.x, event.button.y);
+                event.button.x = position.x;
+                event.button.y = position.y;
+                break;
+            }
+        case SDL_EVENT_MOUSE_WHEEL:
+            {
+                const ETG::Vector2f position = toLogical(event.wheel.mouse_x, event.wheel.mouse_y);
+                event.wheel.mouse_x = position.x;
+                event.wheel.mouse_y = position.y;
+                break;
+            }
+        default:
+            break;
+        }
+    }
+}
+
 void ETG::GameManager::ProcessEvents()
 {
     //Reset per-frame input accumulators
@@ -177,11 +224,14 @@ void ETG::GameManager::ProcessEvents()
         }
 
         // Handle window resize
-        if (event.type == SDL_EVENT_WINDOW_RESIZED)
+        if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
         {
             // Update the global screen size (real window pixels; not used for layout anymore
             // since everything now draws against the fixed logical canvas)
             ScreenSize = {static_cast<unsigned>(event.window.data1), static_cast<unsigned>(event.window.data2)};
+
+            //The backbuffer follows the window; the logical canvas is re-letterboxed into it
+            Window->handleResize();
         }
 
         //Accumulate mouse wheel movement for this frame (used for gun switching)
@@ -190,11 +240,11 @@ void ETG::GameManager::ProcessEvents()
             InputManager::MouseWheelDelta += event.wheel.y;
         }
 
-        //Poll and process events for ImGUI. Convert coordinates into the logical/render
-        //coordinate space first, so ImGui's hit-testing lines up with the permanently-active
-        //logical presentation (ImGui itself draws in that same logical space, see Engine::Update).
+        //Poll and process events for ImGUI. Convert coordinates into the logical canvas first, so
+        //ImGui's hit-testing lines up with the letterboxed presentation (ImGui itself draws in
+        //that same logical space, see Engine::Update).
         SDL_Event imguiEvent = event;
-        SDL_ConvertEventToRenderCoordinates(Window->getNativeRenderer(), &imguiEvent);
+        ConvertEventToLogicalCoordinates(imguiEvent);
         ImGui_ImplSDL3_ProcessEvent(&imguiEvent);
     }
 }

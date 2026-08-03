@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <numbers>
-#include <SDL3/SDL.h>
 #include "RenderContext.h"
 #include "../../Utils/TextureUtils.h"
 
@@ -67,7 +66,7 @@ void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
         Vertex{transformPoint(w, 0.f), {right, top}, color},
         Vertex{transformPoint(w, h), {right, bottom}, color},
         Vertex{transformPoint(0.f, h), {left, bottom}, color},
-        texture, depth, drawCounter++
+        texture, depth, drawCounter++, sprite.getEffect()
     };
 
     sprites.push_back(quad);
@@ -76,9 +75,6 @@ void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
 void ETG::SpriteBatch::end(ETG::RenderWindow& window)
 {
     if (sprites.empty()) return;
-
-    SDL_Renderer* renderer = window.getNativeRenderer();
-    if (!renderer) return;
 
     // Sort sprites by draw order. If draw order same, draw the one has higher order.
     std::ranges::sort(sprites,
@@ -89,29 +85,34 @@ void ETG::SpriteBatch::end(ETG::RenderWindow& window)
                           return a.depth > b.depth;
                       });
 
-    std::vector<SDL_Vertex> vertices;
-    std::vector<int> indices;
+    std::vector<ETG::GfxVertex> vertices;
+    std::vector<std::uint16_t> indices;
     vertices.reserve(sprites.size() * 4);
     indices.reserve(sprites.size() * 6);
 
-    const auto flush = [&](const ETG::Texture* texture)
+    //A run of quads sharing a texture *and* a fragment program is one draw call. The view is
+    //submitted sequentially, so flushing at every change keeps the sorted order intact.
+    const ETG::Texture* currentTexture = sprites[0].texture;
+    ETG::ShaderEffect currentEffect = sprites[0].effect;
+
+    const auto flush = [&]
     {
         if (vertices.empty()) return;
-        SDL_RenderGeometry(renderer, texture ? texture->getNativeHandle() : nullptr,
-                           vertices.data(), static_cast<int>(vertices.size()),
-                           indices.data(), static_cast<int>(indices.size()));
+        ETG::GraphicsDevice::DrawIndexed(vertices.data(), static_cast<std::uint32_t>(vertices.size()),
+                                         indices.data(), static_cast<std::uint32_t>(indices.size()),
+                                         currentTexture, currentEffect);
         vertices.clear();
         indices.clear();
     };
 
-    const ETG::Texture* currentTexture = sprites[0].texture;
-
     for (const auto& quad : sprites)
     {
-        if (quad.texture != currentTexture)
+        //A batch is also capped by the 16 bit index buffer: 4 vertices per quad, so 16384 quads.
+        if (quad.texture != currentTexture || quad.effect != currentEffect || vertices.size() + 4 > 65536)
         {
-            flush(currentTexture);
+            flush();
             currentTexture = quad.texture;
+            currentEffect = quad.effect;
         }
 
         const ETG::Vector2u texSize = quad.texture->getSize();
@@ -119,16 +120,16 @@ void ETG::SpriteBatch::end(ETG::RenderWindow& window)
         const float texH = texSize.y > 0 ? static_cast<float>(texSize.y) : 1.f;
 
         const Vertex* quadVertices[4] = {&quad.v0, &quad.v1, &quad.v2, &quad.v3};
-        const int base = static_cast<int>(vertices.size());
+        const auto base = static_cast<std::uint16_t>(vertices.size());
 
         for (const Vertex* v : quadVertices)
         {
             const ETG::Vector2f screenPos = window.worldToScreen(v->position);
-            SDL_Vertex sdlVertex;
-            sdlVertex.position = SDL_FPoint{screenPos.x, screenPos.y};
-            sdlVertex.color = SDL_FColor{v->color.r / 255.f, v->color.g / 255.f, v->color.b / 255.f, v->color.a / 255.f};
-            sdlVertex.tex_coord = SDL_FPoint{v->texCoords.x / texW, v->texCoords.y / texH};
-            vertices.push_back(sdlVertex);
+            vertices.push_back(ETG::GfxVertex{
+                screenPos.x, screenPos.y,
+                v->texCoords.x / texW, v->texCoords.y / texH,
+                ETG::PackColor(v->color)
+            });
         }
 
         indices.push_back(base + 0);
@@ -139,7 +140,7 @@ void ETG::SpriteBatch::end(ETG::RenderWindow& window)
         indices.push_back(base + 3);
     }
 
-    flush(currentTexture);
+    flush();
 }
 
 void ETG::SpriteBatch::SimpleDraw(const std::shared_ptr<ETG::Texture>& tex, const ETG::Vector2f& pos, float Rotation, ETG::Vector2f origin, float Scale, float depth)
@@ -164,6 +165,7 @@ void ETG::SpriteBatch::Draw(const GameObjectBase::DrawProperties& DrawProperties
     frame.setRotation(DrawProperties.Rotation);
     frame.setOrigin(DrawProperties.Origin);
     frame.setColor(DrawProperties.Color);
+    frame.setEffect(DrawProperties.Effect);
     GlobSpriteBatch.Draw(frame, DrawProperties.Depth);
 }
 

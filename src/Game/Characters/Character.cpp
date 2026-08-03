@@ -11,9 +11,21 @@
 
 namespace ETG
 {
-    Character::Character() = default;
+    //Characters are the one thing in the dungeon drawn through the grayscale sprite program
+    //(fs_sprite_grayscale). Everything else - guns, projectiles, items, the HUD - keeps its colour,
+    //which is what makes the effect visible at a glance. The strength is global and live-tweakable
+    //through GraphicsDevice::SetGrayscaleAmount.
+    Character::Character()
+    {
+        SetGrayscaleEnabled(true);
+    }
 
     Character::~Character() = default;
+
+    void Character::SetGrayscaleEnabled(const bool enabled)
+    {
+        Effect = enabled ? ShaderEffect::Grayscale : ShaderEffect::None;
+    }
 
     namespace
     {

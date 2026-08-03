@@ -45,6 +45,7 @@ namespace ETG
             const ETG::Texture* texture;
             float depth;
             int drawOrder;
+            ETG::ShaderEffect effect; //Which fragment program this quad is submitted with
         };
 
         std::vector<SpriteQuad> sprites;

@@ -1,11 +1,12 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "Vector2.h"
 #include "Rect.h"
 #include "Color.h"
+#include "Texture.h"
 
 struct TTF_Font;
-struct SDL_Texture;
 
 namespace ETG
 {
@@ -75,7 +76,7 @@ namespace ETG
 
         //Cached rasterization. Rendered white and tinted at draw time, so color changes
         //don't force a re-render.
-        mutable SDL_Texture* m_texture = nullptr;
+        mutable std::unique_ptr<Texture> m_texture;
         mutable Vector2f m_textureSize{0.f, 0.f};
         mutable std::string m_cachedString;
         mutable unsigned m_cachedSize = 0;

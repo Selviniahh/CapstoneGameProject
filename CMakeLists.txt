@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Build the project's compiled libraries as shared libraries by default.
 option(BUILD_SHARED_LIBS "Build project libraries as shared libraries" ON)
 
+# Emscripten links everything into one wasm module; shared libraries there mean side modules,
+# which buy nothing for a single executable.
+if(EMSCRIPTEN)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build project libraries as shared libraries" FORCE)
+endif()
+
 # Export symbols automatically from our DLL targets on Windows. This keeps the
 # current source code portable without requiring __declspec(dllexport) macros.
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -33,7 +39,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 #    and cached in depbuilt/ (needs SDL3 built first)
 #  - SDL3_ttf (font rendering, vendored freetype): git submodule under deps/SDL_ttf,
 #    built once and cached in depbuilt/ (needs SDL3 built first)
-#  - Dear ImGui (+ SDL3 backends): git submodule under deps/imgui
+#  - bgfx (+ bx, bimg): the renderer. git submodule under deps/bgfx.cmake, built once and cached
+#    in depbuilt/. Also provides shaderc, which compiles src/Engine/Shaders into Resources/Shaders
+#  - Dear ImGui (+ SDL3 platform backend; the renderer backend is ours, see ImGuiBgfxBackend)
 #  - Boost (header-only: type_index, describe): required Boost modules are git
 #    submodules under deps/boost
 # ------------------------------------------------------------------------------
@@ -43,7 +51,9 @@ include(cmake/depBuild/SDL3_mixer.cmake) # SDL3'ten SONRA: kendi find_package(SD
 include(cmake/depBuild/SDL3_image.cmake) # SDL3'ten SONRA
 include(cmake/depBuild/SDL3_ttf.cmake)   # SDL3'ten SONRA
 include(cmake/depBuild/imgui.cmake)   # SDL3'ten SONRA: imgui SDL3::SDL3'e link eder
+include(cmake/depBuild/bgfx.cmake)
 include(cmake/depBuild/boost.cmake)
+include(cmake/Shaders.cmake)
 
 #std::thread icin 
 find_package(Threads REQUIRED)
@@ -56,6 +66,8 @@ set(PLATFORM_SOURCES
         src/Engine/Platform/Rect.h
         src/Engine/Platform/Color.h
         src/Engine/Platform/View.h
+        src/Engine/Platform/GraphicsDevice.cpp
+        src/Engine/Platform/GraphicsDevice.h
         src/Engine/Platform/Texture.cpp
         src/Engine/Platform/Texture.h
         src/Engine/Platform/Sprite.h
@@ -108,6 +120,15 @@ set(ENGINE_SOURCES
         src/Engine/Editor/UI/EngineUI.h
         src/Engine/Editor/UI/UIUtils.cpp
         src/Engine/Editor/UI/UIUtils.h
+        src/Engine/Editor/UI/ImGuiBgfxBackend.cpp
+        src/Engine/Editor/UI/ImGuiBgfxBackend.h
+)
+
+set(SHADER_SOURCES
+        src/Engine/Shaders/varying.def.sc
+        src/Engine/Shaders/vs_sprite.sc
+        src/Engine/Shaders/fs_sprite.sc
+        src/Engine/Shaders/fs_sprite_grayscale.sc
 )
 
 set(UI_SOURCES
@@ -268,6 +289,9 @@ target_link_libraries(etgcore PUBLIC
         SDL3_image::SDL3_image
         SDL3_ttf::SDL3_ttf
         imgui
+        bgfx::bgfx
+        bgfx::bx
+        bgfx::bimg
         Boost::type_index
         Boost::describe
 )
@@ -282,7 +306,15 @@ target_link_libraries(utils PUBLIC Boost::type_index Boost::describe SDL3::SDL3 
 add_library(modifiers INTERFACE)
 target_include_directories(modifiers INTERFACE src)
 
-add_executable(ETG main.cpp)
+add_executable(ETG main.cpp ${SHADER_SOURCES})
+
+# Shader binaries are committed under Resources/Shaders (one directory per backend), so a build
+# without the tools still runs. When shaderc is available they are regenerated from the .sc sources
+# before ETG links.
+if(ETG_COMPILE_SHADERS)
+    etg_compile_shaders(etg_shaders)
+    add_dependencies(ETG etg_shaders)
+endif()
 
 target_link_libraries(ETG PRIVATE
         etgcore  # Our consolidated core library
@@ -291,10 +323,32 @@ target_link_libraries(ETG PRIVATE
         SDL3::SDL3
         SDL3_mixer::SDL3_mixer
         imgui
+        bgfx::bgfx
         Boost::type_index
         Boost::describe
         Threads::Threads
 )
+
+# ------------------------------------------------------------------------------
+# Web build (Emscripten). Configure with the emsdk toolchain file and build as usual:
+#   emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release
+#   cmake --build build-web
+# The result is build/bin/ETG.html + .js + .wasm + .data, served over http (file:// won't do).
+# ------------------------------------------------------------------------------
+if(EMSCRIPTEN)
+    set_target_properties(ETG PROPERTIES SUFFIX ".html")
+    target_link_options(ETG PRIVATE
+            # bgfx renders through WebGL 2 in the browser (the essl shader binaries)
+            -sMIN_WEBGL_VERSION=2
+            -sMAX_WEBGL_VERSION=2
+            -sFULL_ES3=1
+            -sALLOW_MEMORY_GROWTH=1
+            -sSTACK_SIZE=1MB
+            -sEXIT_RUNTIME=0
+            # AssetManager reads plain paths, so the whole Resources tree is packaged into MEMFS
+            "--preload-file=${CMAKE_SOURCE_DIR}/Resources@/Resources"
+    )
+endif()
 
 # AssetManager resolves assets relative to the executable (SDL_GetBasePath), so
 # mirror the Resources folder next to the binary after every successful build.

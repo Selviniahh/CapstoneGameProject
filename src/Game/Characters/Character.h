@@ -74,6 +74,12 @@ namespace ETG
         //hand holding it
         [[nodiscard]] bool IsGunOnRightSide() const;
 
+        //<---------- Rendering ---------->
+        //Characters draw through the grayscale sprite program by default; this turns it off (or back
+        //on) for a single character. How strong "on" is, is global: GraphicsDevice::SetGrayscaleAmount.
+        void SetGrayscaleEnabled(bool enabled);
+        [[nodiscard]] bool IsGrayscaleEnabled() const { return Effect == ShaderEffect::Grayscale; }
+
     protected:
         //<---------- The rig, step by step ---------->
         //Protected rather than private: a boss with a stranger rig can reuse the steps it likes and replace the

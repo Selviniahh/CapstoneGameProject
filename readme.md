@@ -1,6 +1,8 @@
 # Enter the Gungeon Clone
 
-A clone of the game Enter the Gungeon built with SDL3. It aims to replicate the original game, featuring modern C++ design, clean modular code, and a reflection system that lets you easily modify any initialized game object's variables. 
+A clone of the game Enter the Gungeon built with SDL3 and bgfx. It aims to replicate the original game, featuring modern C++ design, clean modular code, and a reflection system that lets you easily modify any initialized game object's variables.
+
+SDL3 owns the window, input, audio and asset decoding; everything that reaches the screen is drawn by bgfx, so the same renderer and shaders run on desktop, in the browser (WebGL 2 via Emscripten) and on mobile. See [docs/BgfxRenderer.md](docs/BgfxRenderer.md).
 
 [![Watch the video](https://img.youtube.com/vi/lgvuDcSot1w/0.jpg)](https://youtu.be/lgvuDcSot1w)
 
@@ -26,15 +28,26 @@ cmake --build build --parallel --config Release
 ```
 
 ### Other Platforms
-The build process is similar on Linux and macOS. On Linux, install the usual SDL build dependencies first (X11/Wayland development headers, e.g. `libxcursor-dev libxi-dev libxrandr-dev libxtst-dev libxkbcommon-dev libgl1-mesa-dev libasound2-dev`).
+The build process is similar on Linux and macOS. On Linux, install the usual SDL build dependencies first, plus the GL/EGL headers bgfx needs (X11/Wayland development headers, e.g. `libxcursor-dev libxi-dev libxrandr-dev libxtst-dev libxkbcommon-dev libgl1-mesa-dev libegl1-mesa-dev libasound2-dev`).
+
+### Browser (WebAssembly)
+With the [emsdk](https://emscripten.org/docs/getting_started/downloads.html) active:
+
+```
+emcmake cmake -G Ninja -S . -B build-web -DCMAKE_BUILD_TYPE=Release
+cmake --build build-web --parallel
+```
+
+This produces `build-web/bin/ETG.html`, which has to be served over HTTP (`python3 -m http.server`) rather than opened from disk. Mobile builds and the details of the renderer are covered in [docs/BgfxRenderer.md](docs/BgfxRenderer.md).
 
 # Dependencies
 
-- SDL3 (window, rendering, and input)
+- SDL3 (window, input, and event loop)
+- bgfx (rendering: Direct3D / Vulkan / Metal / OpenGL / WebGL)
 - SDL3_mixer (audio playback and OGG decoding)
 - SDL3_image (PNG decoding)
 - SDL3_ttf (font rendering)
-- Dear ImGui (with the SDL3 + SDL_Renderer3 backends)
+- Dear ImGui (SDL3 platform backend; the renderer backend is the project's own, on bgfx)
 - boost-type-index
 - boost-describe
 

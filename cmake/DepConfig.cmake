@@ -1,6 +1,18 @@
 set(DEPS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
-# Keep shared dependency builds separate from older static cached installs.
-set(DEPS_BUILD_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/depbuilt/shared)
+
+# Desktop builds link the dependencies as shared libraries. A cross build cannot: Emscripten has
+# no dynamic linking worth the name, and every target needs its own cache anyway, so those get a
+# static build under their own directory (depbuilt/Emscripten-static, depbuilt/Android-static, ...).
+if(EMSCRIPTEN OR ANDROID OR CMAKE_CROSSCOMPILING)
+    set(DEPS_BUILD_SHARED OFF)
+    set(DEPS_BUILD_STATIC ON)
+    set(DEPS_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/depbuilt/${CMAKE_SYSTEM_NAME}-static)
+else()
+    # Keep shared dependency builds separate from older static cached installs.
+    set(DEPS_BUILD_SHARED ON)
+    set(DEPS_BUILD_STATIC OFF)
+    set(DEPS_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/depbuilt/shared)
+endif()
 
 # CLion can configure multiple profiles concurrently. Serialize access to the
 # shared dependency cache so two CMake processes never configure/build it at

@@ -21,6 +21,9 @@ namespace ETG
             float Depth{};
             ETG::Color Color{ETG::Color::White};
             ETG::Texture* Texture = nullptr;
+            //Which fragment program the renderer submits this object with. Characters override it
+            //to ShaderEffect::Grayscale; everything else stays on the plain sprite shader.
+            ETG::ShaderEffect Effect{ETG::ShaderEffect::None};
         };
 
     public:
@@ -44,6 +47,10 @@ namespace ETG
         ETG::Vector2f Origin{0.f, 0.f};
         ETG::Color Color{ETG::Color::White};
         float Depth{};
+
+        //The shader this object's sprite goes through. Set once by whoever wants it (Character
+        //asks for grayscale in its constructor) and copied into DrawProps every frame.
+        ETG::ShaderEffect Effect{ETG::ShaderEffect::None};
 
         //Destroy
         bool PendingDestroy = false;

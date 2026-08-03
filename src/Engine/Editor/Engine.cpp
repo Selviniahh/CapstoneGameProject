@@ -1,7 +1,7 @@
 #include <iostream>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlrenderer3.h>
+#include "UI/ImGuiBgfxBackend.h"
 #include <SDL3/SDL.h>
 #include <cstring>
 #include "Engine.h"
@@ -31,10 +31,11 @@ void Engine::Initialize()
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
-    if (!ImGui_ImplSDL3_InitForSDLRenderer(Window->getNativeWindow(), Window->getNativeRenderer()))
+    //SDL3 still feeds ImGui its input; drawing goes through our own bgfx backend
+    if (!ImGui_ImplSDL3_InitForOther(Window->getNativeWindow()))
         throw std::runtime_error("Cannot initialize ImGUI with the given Window");
-    if (!ImGui_ImplSDLRenderer3_Init(Window->getNativeRenderer()))
-        throw std::runtime_error("Cannot initialize the ImGUI SDL_Renderer backend");
+    if (!ImGui_ImplBgfx_Init())
+        throw std::runtime_error("Cannot initialize the ImGUI bgfx backend");
 
     windowSize = {400, (float)ETG::RenderWindow::LogicalSize.y};
     std::cout << std::unitbuf;
@@ -45,7 +46,7 @@ void Engine::Initialize()
 void Engine::Update()
 {
     //Start a new ImGui frame
-    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplBgfx_NewFrame();
     ImGui_ImplSDL3_NewFrame();
 
     //ImGui draws entirely in the fixed logical canvas (RenderWindow::LogicalSize); SDL's
@@ -114,7 +115,7 @@ void Engine::Draw()
 {
     //Render
     ImGui::Render();
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), Window->getNativeRenderer());
+    ImGui_ImplBgfx_RenderDrawData(ImGui::GetDrawData());
 }
 
 //Probably the way I am making selection is wrong. Fix it with the convenient way ImGUI handled before
@@ -256,5 +257,5 @@ void Engine::LoadFont()
     std::memcpy(imguiOwned, fontData.data(), fontData.size());
     SegoeFont = io.Fonts->AddFontFromMemoryTTF(imguiOwned, static_cast<int>(fontData.size()), 18.f);
     if (SegoeFont == nullptr) throw std::runtime_error("Failed to build ImGui font from Fonts/SegoeUI.ttf");
-    //NOTE: With ImGui 1.92+ and the SDL_Renderer3 backend, the font atlas texture is managed automatically
+    //NOTE: With ImGui 1.92+ the font atlas texture is uploaded on demand by the renderer backend
 }

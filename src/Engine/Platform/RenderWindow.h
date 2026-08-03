@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include "Vector2.h"
 #include "Rect.h"
@@ -7,16 +8,16 @@
 #include "Shapes.h"
 
 struct SDL_Window;
-struct SDL_Renderer;
 union SDL_Event;
 
 namespace ETG
 {
     class Text;
 
-    //SDL3 window + 2D renderer, replacement for sf::RenderWindow.
-    //Only one instance is expected to exist; the renderer is exposed statically so
-    //that textures/fonts can be created from anywhere (mirroring SFML's behavior).
+    //SDL3 window driving a bgfx device, replacement for sf::RenderWindow.
+    //SDL still owns the window, the event loop, input and audio; every pixel is drawn by bgfx
+    //(see GraphicsDevice), which is why there is no SDL_Renderer here anymore.
+    //Only one instance is expected to exist.
     class RenderWindow
     {
     public:
@@ -46,16 +47,23 @@ namespace ETG
         [[nodiscard]] View getDefaultView() const;
 
         //Convert a pixel (window) coordinate to world coordinates for the given view.
-        //Always accounts for the letterbox transform (see beginLetterboxedScene), since
+        //Always accounts for the letterbox transform (see GraphicsDevice::GetViewportRect), since
         //the only caller maps mouse position onto the letterboxed game world view.
         [[nodiscard]] Vector2f mapPixelToCoords(const Vector2i& pixel, const View& view) const;
+
+        //Window point (the unit SDL reports mouse events in) -> logical canvas coordinate.
+        //Used by everything that draws straight into the logical canvas, ImGui above all.
+        [[nodiscard]] Vector2f mapWindowPointToLogical(const Vector2f& point) const;
 
         //Transform a world coordinate to screen (pixel) coordinates using the current view
         [[nodiscard]] Vector2f worldToScreen(const Vector2f& world) const;
         //Scale factor from world units to pixels of the current view (x, y)
         [[nodiscard]] Vector2f worldToScreenScale() const;
-        
+
         bool setVSyncEnabled(bool enabled) const;
+
+        //Re-sizes the backbuffer to the window's current pixel size. Called on resize events.
+        void handleResize() const;
 
         //---------------- Immediate mode drawing (uses the current view) ----------------
         void draw(const RectangleShape& rect);
@@ -64,28 +72,17 @@ namespace ETG
         void drawLine(const Vector2f& from, const Vector2f& to, const Color& color);
 
         [[nodiscard]] SDL_Window* getNativeWindow() const { return m_window; }
-        [[nodiscard]] SDL_Renderer* getNativeRenderer() const { return m_renderer; }
 
-        //Global access for resource creation (textures, fonts). Null until a window exists.
-        static SDL_Renderer* GetRenderer() { return s_renderer; }
-
-        //Fixed design resolution everything (world, HUD, ImGui) is drawn against. SDL's
-        //logical presentation (set once, permanently, in the constructor) letterboxes this
-        //canvas onto the real window, regardless of how the window is resized/shaped.
+        //Fixed design resolution everything (world, HUD, ImGui) is drawn against. GraphicsDevice
+        //letterboxes this canvas onto the real window, regardless of how the window is resized.
         static constexpr Vector2u LogicalSize{1920, 1080};
 
     private:
         SDL_Window* m_window = nullptr;
-        SDL_Renderer* m_renderer = nullptr;
         bool m_open = false;
         View m_view;
 
         unsigned m_framerateLimit = 0;
         std::uint64_t m_lastFrameTimeNs = 0;
-
-        Vector2u m_logicalSize;
-        [[nodiscard]] Vector2f windowPixelToLogical(const Vector2f& physicalPixel) const;
-
-        static SDL_Renderer* s_renderer;
     };
 }

@@ -142,8 +142,8 @@ void UIUtils::DisplayTexture(const std::shared_ptr<ETG::Texture>& value)
 {
     if (value)
     {
-        // The SDL_Renderer ImGui backend uses SDL_Texture* as the texture identifier
-        const auto textId = reinterpret_cast<ImTextureID>(value->getNativeHandle());
+        // The bgfx ImGui backend uses the bgfx texture handle as the texture identifier
+        const auto textId = static_cast<ImTextureID>(value->getNativeHandle());
 
         float texWidth = static_cast<float>(value->getSize().x);
         float texHeight = static_cast<float>(value->getSize().y);

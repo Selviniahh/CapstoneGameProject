@@ -5,7 +5,7 @@ Here’s a revised and improved version of your rendering guidelines with cleare
 # Rendering Guidelines
 
 ## **Why Use SpriteBatch?**
-- **Performance**: Reduces draw calls by grouping sprites with the same texture into a single batch.
+- **Performance**: Reduces draw calls by grouping sprites that share a texture *and* a shader into a single bgfx submit.
 - **Best Practice**: Direct calls to `Window->draw()` are **prohibited** except for non-batched debug elements (e.g., `ETG::Text`, `ETG::RectangleShape`).
 
 ---
@@ -41,6 +41,8 @@ SpriteBatch.end(*Window); // Render all batched sprites in one go
 3. **Batch Lifecycle**:
     - `begin()`: Resets the batch buffer.
     - `end()`: Flushes the batch to the GPU. **Call this *before* changing the view**.
+
+4. **Shaders**: a sprite carries an `ETG::ShaderEffect` (see [BgfxRenderer.md](BgfxRenderer.md)). A run of quads is only merged into one submit while both the texture and the effect stay the same, so mixing effects has the same cost as mixing textures.
 
 ---
 
@@ -117,7 +119,7 @@ void ETG::GameManager::Draw() {
 ---
 
 ## **Debugging Exceptions**
-- **Debug Text**: Uses `ETG::Text` directly. The platform layer renders text with a single SDL_RenderGeometry call per string.
+- **Debug Text**: Uses `ETG::Text` directly. The platform layer rasterizes the string once and renders it as one textured quad per string.
 - **Shapes/Lines**: Use sparingly. For example:
   ```cpp
   // ❌ Avoid (not batched):
@@ -135,7 +137,7 @@ void ETG::GameManager::Draw() {
 2. **Minimize Texture Swaps**:
     - Group sprites by texture within a batch (e.g., render all "hero" sprites before "enemies").
 3. **Profile Performance**:
-    - Track SDL_RenderGeometry calls per frame to measure batching efficiency.
+    - Track submits per frame (bgfx's debug stats, or how often `SpriteBatch::end` flushes) to measure batching efficiency.
 
 ---
 

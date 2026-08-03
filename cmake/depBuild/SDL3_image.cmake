@@ -13,9 +13,9 @@ if(NOT EXISTS ${SDL3_IMAGE_INSTALL_DIR}/lib/cmake/SDL3_image/SDL3_imageConfig.cm
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_INSTALL_PREFIX=${SDL3_IMAGE_INSTALL_DIR}
             -DSDL3_DIR=${SDL3_INSTALL_DIR}/lib/cmake/SDL3
-            -DBUILD_SHARED_LIBS=ON
+            -DBUILD_SHARED_LIBS=${DEPS_BUILD_SHARED}
             -DSDLIMAGE_VENDORED=OFF
-            -DSDLIMAGE_DEPS_SHARED=ON
+            -DSDLIMAGE_DEPS_SHARED=${DEPS_BUILD_SHARED}
             # Only PNG, decoded by SDL_image's bundled stb_image (no libpng or extra
             # submodules needed) — the project's texture assets are all .png.
             -DSDLIMAGE_BACKEND_STB=ON

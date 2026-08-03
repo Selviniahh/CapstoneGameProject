@@ -16,7 +16,7 @@ if(NOT EXISTS ${SDL3_TTF_INSTALL_DIR}/lib/cmake/SDL3_ttf/SDL3_ttfConfig.cmake)
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_INSTALL_PREFIX=${SDL3_TTF_INSTALL_DIR}
             -DSDL3_DIR=${SDL3_INSTALL_DIR}/lib/cmake/SDL3
-            -DBUILD_SHARED_LIBS=ON
+            -DBUILD_SHARED_LIBS=${DEPS_BUILD_SHARED}
             # Vendored freetype (deps/SDL_ttf/external/freetype submodule), no system dependency.
             -DSDLTTF_VENDORED=ON
             # ASCII debug/UI text only: no complex shaping (harfbuzz) or color emoji (plutosvg) needed.

@@ -3,6 +3,7 @@
 #include "Vector2.h"
 #include "Rect.h"
 #include "Color.h"
+#include "GraphicsDevice.h"
 
 namespace ETG
 {
@@ -32,6 +33,8 @@ namespace ETG
         void setRotation(float degrees) { m_rotation = degrees; }
         void rotate(float degrees) { m_rotation += degrees; }
         void setColor(const Color& color) { m_color = color; }
+        //Which fragment program this sprite is drawn with (see ETG::ShaderEffect)
+        void setEffect(ShaderEffect effect) { m_effect = effect; }
 
         [[nodiscard]] const Texture* getTexture() const { return m_texture; }
         [[nodiscard]] const IntRect& getTextureRect() const { return m_textureRect; }
@@ -40,6 +43,7 @@ namespace ETG
         [[nodiscard]] const Vector2f& getOrigin() const { return m_origin; }
         [[nodiscard]] float getRotation() const { return m_rotation; }
         [[nodiscard]] const Color& getColor() const { return m_color; }
+        [[nodiscard]] ShaderEffect getEffect() const { return m_effect; }
 
     private:
         const Texture* m_texture = nullptr;
@@ -49,5 +53,6 @@ namespace ETG
         Vector2f m_origin{0.f, 0.f};
         float m_rotation = 0.f;
         Color m_color = Color::White;
+        ShaderEffect m_effect = ShaderEffect::None;
     };
 }

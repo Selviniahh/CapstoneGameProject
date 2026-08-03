@@ -4,20 +4,11 @@
 #include <stdexcept>
 #include <vector>
 #include <SDL3/SDL.h>
+#include "GraphicsDevice.h"
 #include "Text.h"
 
 namespace ETG
 {
-    SDL_Renderer* RenderWindow::s_renderer = nullptr;
-
-    namespace
-    {
-        SDL_FColor ToFColor(const Color& c)
-        {
-            return SDL_FColor{c.r / 255.f, c.g / 255.f, c.b / 255.f, c.a / 255.f};
-        }
-    }
-
     RenderWindow::RenderWindow(const unsigned width, const unsigned height, const std::string& title, const bool fullscreen)
     {
         if (!SDL_WasInit(SDL_INIT_VIDEO))
@@ -26,34 +17,28 @@ namespace ETG
                 throw std::runtime_error(std::string("SDL video init failed: ") + SDL_GetError());
         }
 
-        SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE;
+        //HIGH_PIXEL_DENSITY: bgfx renders into real pixels, so ask SDL for a real-pixel backbuffer
+        //instead of an upscaled one. METAL is what lets SDL hand bgfx a CAMetalLayer on Apple platforms.
+        SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
         if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
+#if defined(SDL_PLATFORM_MACOS) || defined(SDL_PLATFORM_IOS)
+        flags |= SDL_WINDOW_METAL;
+#endif
         m_window = SDL_CreateWindow(title.c_str(), static_cast<int>(width), static_cast<int>(height), flags);
         if (!m_window)
             throw std::runtime_error(std::string("SDL_CreateWindow failed: ") + SDL_GetError());
         if (fullscreen)
-            SDL_SyncWindow(m_window); //Wait for the fullscreen resize so getSize() below is accurate
+            SDL_SyncWindow(m_window); //Wait for the fullscreen resize so the backbuffer below is sized correctly
 
-        m_renderer = SDL_CreateRenderer(m_window, nullptr);
-        if (!m_renderer)
+        if (!GraphicsDevice::Init(m_window))
         {
-            //Fall back to the software renderer (e.g. headless environments)
-            m_renderer = SDL_CreateRenderer(m_window, SDL_SOFTWARE_RENDERER);
+            SDL_DestroyWindow(m_window);
+            m_window = nullptr;
+            throw std::runtime_error("bgfx could not create a renderer for this platform");
         }
-        if (!m_renderer)
-            throw std::runtime_error(std::string("SDL_CreateRenderer failed: ") + SDL_GetError());
 
-        SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
-
-        s_renderer = m_renderer;
         m_open = true;
         m_lastFrameTimeNs = SDL_GetTicksNS();
-
-        //Fixed design resolution (see RenderWindow.h). SDL letterboxes/scales this onto the
-        //real window forever; nothing else needs to react to resize events anymore.
-        m_logicalSize = LogicalSize;
-        SDL_SetRenderLogicalPresentation(m_renderer, static_cast<int>(m_logicalSize.x), static_cast<int>(m_logicalSize.y), SDL_LOGICAL_PRESENTATION_LETTERBOX);
-
         m_view = getDefaultView();
     }
 
@@ -65,14 +50,10 @@ namespace ETG
 
     void RenderWindow::close()
     {
-        if (m_renderer)
-        {
-            SDL_DestroyRenderer(m_renderer);
-            m_renderer = nullptr;
-            s_renderer = nullptr;
-        }
         if (m_window)
         {
+            //Order matters: bgfx has to let go of the native surface before SDL destroys it
+            GraphicsDevice::Shutdown();
             SDL_DestroyWindow(m_window);
             m_window = nullptr;
         }
@@ -93,17 +74,14 @@ namespace ETG
 
     void RenderWindow::clear(const Color& color)
     {
-        if (!m_renderer) return;
-        SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
-        SDL_RenderClear(m_renderer);
+        GraphicsDevice::BeginFrame(color);
     }
 
     void RenderWindow::display()
     {
-        if (!m_renderer) return;
-        SDL_RenderPresent(m_renderer);
+        GraphicsDevice::EndFrame();
 
-        //Manual framerate limiting (SDL has no built-in equivalent of SFML's setFramerateLimit)
+        //Manual framerate limiting (bgfx only offers vsync)
         if (m_framerateLimit > 0)
         {
             const std::uint64_t targetNs = 1'000'000'000ull / m_framerateLimit;
@@ -119,7 +97,7 @@ namespace ETG
 
     void RenderWindow::requestFocus() const
     {
-        if (m_window) 
+        if (m_window)
             SDL_RaiseWindow(m_window);
     }
 
@@ -128,71 +106,108 @@ namespace ETG
         return m_window && (SDL_GetWindowFlags(m_window) & SDL_WINDOW_INPUT_FOCUS);
     }
 
+    void RenderWindow::handleResize() const
+    {
+        if (!m_window) return;
+        int w = 0, h = 0;
+        SDL_GetWindowSizeInPixels(m_window, &w, &h);
+        GraphicsDevice::Resize(static_cast<unsigned>(w), static_cast<unsigned>(h));
+    }
+
     //---------------- View handling ----------------
     View RenderWindow::getDefaultView() const
     {
-        const auto w = static_cast<float>(m_logicalSize.x);
-        const auto h = static_cast<float>(m_logicalSize.y);
+        constexpr auto w = static_cast<float>(LogicalSize.x);
+        constexpr auto h = static_cast<float>(LogicalSize.y);
         return View{{w / 2.f, h / 2.f}, {w, h}};
     }
 
-    //Physical window pixel -> logical letterboxed-scene pixel. Delegates to SDL, which
-    //knows the current logical presentation transform (letterbox scale + offset) exactly.
-    Vector2f RenderWindow::windowPixelToLogical(const Vector2f& physicalPixel) const
+    //Window point -> logical canvas pixel. SDL reports mouse positions in window points, which on a
+    //HiDPI display are not backbuffer pixels, so scale by the density before undoing the letterbox.
+    Vector2f RenderWindow::mapWindowPointToLogical(const Vector2f& point) const
     {
-        if (!m_renderer) return physicalPixel;
-
-        float lx = physicalPixel.x, ly = physicalPixel.y;
-        SDL_RenderCoordinatesFromWindow(m_renderer, physicalPixel.x, physicalPixel.y, &lx, &ly);
-        return {lx, ly};
+        const float density = m_window ? SDL_GetWindowPixelDensity(m_window) : 1.f;
+        return GraphicsDevice::WindowPixelToLogical({point.x * density, point.y * density});
     }
 
     Vector2f RenderWindow::mapPixelToCoords(const Vector2i& pixel, const View& view) const
     {
-        const Vector2f logicalPixel = windowPixelToLogical({static_cast<float>(pixel.x), static_cast<float>(pixel.y)});
-        const Vector2f win{static_cast<float>(m_logicalSize.x), static_cast<float>(m_logicalSize.y)};
+        const Vector2f logicalPixel = mapWindowPointToLogical({static_cast<float>(pixel.x), static_cast<float>(pixel.y)});
+        constexpr Vector2f canvas{static_cast<float>(LogicalSize.x), static_cast<float>(LogicalSize.y)};
         const Vector2f viewSize = view.getSize();
         const Vector2f center = view.getCenter();
 
         return {
-            center.x + (logicalPixel.x - win.x / 2.f) * (viewSize.x / win.x),
-            center.y + (logicalPixel.y - win.y / 2.f) * (viewSize.y / win.y)
+            center.x + (logicalPixel.x - canvas.x / 2.f) * (viewSize.x / canvas.x),
+            center.y + (logicalPixel.y - canvas.y / 2.f) * (viewSize.y / canvas.y)
         };
     }
 
     Vector2f RenderWindow::worldToScreen(const Vector2f& world) const
     {
-        //Our own draw calls always target logical coordinates — SDL's permanently-active
-        //logical presentation then scales/letterboxes them onto the real window.
-        const Vector2f win{static_cast<float>(m_logicalSize.x), static_cast<float>(m_logicalSize.y)};
+        //Our own draw calls always target the fixed logical canvas — GraphicsDevice's orthographic
+        //view then scales/letterboxes that onto the real backbuffer.
+        constexpr Vector2f canvas{static_cast<float>(LogicalSize.x), static_cast<float>(LogicalSize.y)};
         const Vector2f viewSize = m_view.getSize();
         const Vector2f center = m_view.getCenter();
 
         return {
-            (world.x - center.x) * (win.x / viewSize.x) + win.x / 2.f,
-            (world.y - center.y) * (win.y / viewSize.y) + win.y / 2.f
+            (world.x - center.x) * (canvas.x / viewSize.x) + canvas.x / 2.f,
+            (world.y - center.y) * (canvas.y / viewSize.y) + canvas.y / 2.f
         };
     }
 
     Vector2f RenderWindow::worldToScreenScale() const
     {
         const Vector2f viewSize = m_view.getSize();
-        return {static_cast<float>(m_logicalSize.x) / viewSize.x, static_cast<float>(m_logicalSize.y) / viewSize.y};
+        return {static_cast<float>(LogicalSize.x) / viewSize.x, static_cast<float>(LogicalSize.y) / viewSize.y};
     }
 
-    bool RenderWindow::setVSyncEnabled(bool enabled) const
+    bool RenderWindow::setVSyncEnabled(const bool enabled) const
     {
-        if (!m_renderer)
-            return false;
-        
-        return SDL_SetRenderVSync(m_renderer, enabled ? 1 : SDL_RENDERER_VSYNC_DISABLED);
+        GraphicsDevice::SetVSyncEnabled(enabled);
+        return true;
     }
 
     //---------------- Immediate mode drawing ----------------
+    namespace
+    {
+        //Every immediate draw is untextured, so they all go through the sprite program against the
+        //device's built-in 1x1 white texture.
+        void SubmitQuad(const Vector2f& topLeft, const Vector2f& size, const Color& color)
+        {
+            if (color.a == 0) return;
+
+            const std::uint32_t rgba = PackColor(color);
+            const GfxVertex vertices[4]{
+                {topLeft.x, topLeft.y, 0.f, 0.f, rgba},
+                {topLeft.x + size.x, topLeft.y, 1.f, 0.f, rgba},
+                {topLeft.x + size.x, topLeft.y + size.y, 1.f, 1.f, rgba},
+                {topLeft.x, topLeft.y + size.y, 0.f, 1.f, rgba},
+            };
+            constexpr std::uint16_t indices[6]{0, 1, 2, 0, 2, 3};
+            GraphicsDevice::DrawIndexed(vertices, 4, indices, 6, nullptr);
+        }
+
+        //Consecutive points turned into a line list (bgfx has no line strip primitive)
+        void SubmitLineStrip(const std::vector<Vector2f>& points, const Color& color)
+        {
+            if (points.size() < 2 || color.a == 0) return;
+
+            const std::uint32_t rgba = PackColor(color);
+            std::vector<GfxVertex> vertices;
+            vertices.reserve((points.size() - 1) * 2);
+            for (std::size_t i = 1; i < points.size(); ++i)
+            {
+                vertices.push_back(GfxVertex{points[i - 1].x, points[i - 1].y, 0.f, 0.f, rgba});
+                vertices.push_back(GfxVertex{points[i].x, points[i].y, 0.f, 0.f, rgba});
+            }
+            GraphicsDevice::DrawLines(vertices.data(), static_cast<std::uint32_t>(vertices.size()));
+        }
+    }
+
     void RenderWindow::draw(const RectangleShape& rect)
     {
-        if (!m_renderer) return;
-
         //Normalize a possibly negative size (used by progress bars growing upwards)
         Vector2f pos = rect.getPosition() - rect.getOrigin();
         Vector2f size = rect.getSize();
@@ -201,27 +216,25 @@ namespace ETG
 
         const Vector2f screenPos = worldToScreen(pos);
         const Vector2f scale = worldToScreenScale();
-        const SDL_FRect frect{screenPos.x, screenPos.y, size.x * scale.x, size.y * scale.y};
+        const Vector2f screenSize{size.x * scale.x, size.y * scale.y};
 
-        const Color& fill = rect.getFillColor();
-        if (fill.a > 0)
-        {
-            SDL_SetRenderDrawColor(m_renderer, fill.r, fill.g, fill.b, fill.a);
-            SDL_RenderFillRect(m_renderer, &frect);
-        }
+        SubmitQuad(screenPos, screenSize, rect.getFillColor());
 
-        const Color& outline = rect.getOutlineColor();
-        if (rect.getOutlineThickness() > 0.f && outline.a > 0)
+        if (rect.getOutlineThickness() > 0.f && rect.getOutlineColor().a > 0)
         {
-            SDL_SetRenderDrawColor(m_renderer, outline.r, outline.g, outline.b, outline.a);
-            SDL_RenderRect(m_renderer, &frect);
+            const std::vector<Vector2f> outline{
+                {screenPos.x, screenPos.y},
+                {screenPos.x + screenSize.x, screenPos.y},
+                {screenPos.x + screenSize.x, screenPos.y + screenSize.y},
+                {screenPos.x, screenPos.y + screenSize.y},
+                {screenPos.x, screenPos.y},
+            };
+            SubmitLineStrip(outline, rect.getOutlineColor());
         }
     }
 
     void RenderWindow::draw(const CircleShape& circle)
     {
-        if (!m_renderer) return;
-
         //SFML circles are positioned by their top-left corner (minus origin); center accordingly
         const float radius = circle.getRadius();
         const Vector2f worldCenter = circle.getPosition() - circle.getOrigin() + Vector2f{radius, radius};
@@ -231,48 +244,52 @@ namespace ETG
         const float ry = radius * scale.y;
 
         constexpr int segments = 32;
-        std::vector<SDL_FPoint> points;
+        std::vector<Vector2f> points;
         points.reserve(segments + 1);
         for (int i = 0; i <= segments; ++i)
         {
             const float angle = static_cast<float>(i) / segments * 2.f * std::numbers::pi_v<float>;
-            points.push_back(SDL_FPoint{screenCenter.x + std::cos(angle) * rx, screenCenter.y + std::sin(angle) * ry});
+            points.push_back(Vector2f{screenCenter.x + std::cos(angle) * rx, screenCenter.y + std::sin(angle) * ry});
         }
 
         const Color& fill = circle.getFillColor();
         if (fill.a > 0)
         {
-            //Simple fan fill
-            std::vector<SDL_Vertex> vertices;
-            std::vector<int> indices;
-            const SDL_FColor fcolor = ToFColor(fill);
-            vertices.push_back(SDL_Vertex{SDL_FPoint{screenCenter.x, screenCenter.y}, fcolor, SDL_FPoint{0, 0}});
-            for (int i = 0; i <= segments; ++i)
-                vertices.push_back(SDL_Vertex{points[i], fcolor, SDL_FPoint{0, 0}});
+            //Triangle fan around the centre, expanded into the triangle list bgfx wants
+            const std::uint32_t rgba = PackColor(fill);
+            std::vector<GfxVertex> vertices;
+            std::vector<std::uint16_t> indices;
+            vertices.reserve(segments + 2);
+            indices.reserve(segments * 3);
+
+            vertices.push_back(GfxVertex{screenCenter.x, screenCenter.y, 0.f, 0.f, rgba});
+            for (const Vector2f& p : points)
+                vertices.push_back(GfxVertex{p.x, p.y, 0.f, 0.f, rgba});
+
             for (int i = 1; i <= segments; ++i)
             {
                 indices.push_back(0);
-                indices.push_back(i);
-                indices.push_back(i + 1);
+                indices.push_back(static_cast<std::uint16_t>(i));
+                indices.push_back(static_cast<std::uint16_t>(i + 1));
             }
-            SDL_RenderGeometry(m_renderer, nullptr, vertices.data(), static_cast<int>(vertices.size()), indices.data(), static_cast<int>(indices.size()));
+            GraphicsDevice::DrawIndexed(vertices.data(), static_cast<std::uint32_t>(vertices.size()),
+                                        indices.data(), static_cast<std::uint32_t>(indices.size()), nullptr);
         }
 
-        const Color& outline = circle.getOutlineColor();
-        if (circle.getOutlineThickness() > 0.f && outline.a > 0)
-        {
-            SDL_SetRenderDrawColor(m_renderer, outline.r, outline.g, outline.b, outline.a);
-            SDL_RenderLines(m_renderer, points.data(), static_cast<int>(points.size()));
-        }
+        if (circle.getOutlineThickness() > 0.f)
+            SubmitLineStrip(points, circle.getOutlineColor());
     }
 
     void RenderWindow::drawLine(const Vector2f& from, const Vector2f& to, const Color& color)
     {
-        if (!m_renderer) return;
+        const std::uint32_t rgba = PackColor(color);
         const Vector2f a = worldToScreen(from);
         const Vector2f b = worldToScreen(to);
-        SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
-        SDL_RenderLine(m_renderer, a.x, a.y, b.x, b.y);
+        const GfxVertex vertices[2]{
+            {a.x, a.y, 0.f, 0.f, rgba},
+            {b.x, b.y, 0.f, 0.f, rgba},
+        };
+        GraphicsDevice::DrawLines(vertices, 2);
     }
 
     void RenderWindow::draw(const Text& text)

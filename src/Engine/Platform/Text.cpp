@@ -1,6 +1,7 @@
 #include "Text.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include "GraphicsDevice.h"
 #include "RenderWindow.h"
 
 namespace ETG
@@ -52,17 +53,14 @@ namespace ETG
 
     void Text::destroyTexture() const
     {
-        if (m_texture && RenderWindow::GetRenderer()) SDL_DestroyTexture(m_texture);
-        m_texture = nullptr;
+        m_texture.reset();
     }
 
     bool Text::ensureTexture() const
     {
         if (!m_font || !m_font->isLoaded() || m_string.empty()) return false;
         if (m_texture && m_string == m_cachedString && m_characterSize == m_cachedSize) return true;
-
-        SDL_Renderer* renderer = RenderWindow::GetRenderer();
-        if (!renderer) return false;
+        if (!GraphicsDevice::IsInitialized()) return false;
 
         TTF_Font* font = m_font->getNativeHandle();
         TTF_SetFontSize(font, static_cast<float>(m_characterSize));
@@ -70,15 +68,37 @@ namespace ETG
         SDL_Surface* surface = TTF_RenderText_Blended(font, m_string.c_str(), 0, SDL_Color{255, 255, 255, 255});
         if (!surface) return false;
 
-        destroyTexture();
-        m_texture = SDL_CreateTextureFromSurface(renderer, surface);
-        m_textureSize = {static_cast<float>(surface->w), static_cast<float>(surface->h)};
-        SDL_DestroySurface(surface);
-        if (!m_texture) return false;
+        //SDL_ttf hands back whatever format suits it; Image (and therefore the GPU path) is RGBA32
+        SDL_Surface* rgba = surface->format == SDL_PIXELFORMAT_RGBA32 ? surface : SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
 
-        //Text looks better with linear filtering when scaled by the view
-        SDL_SetTextureScaleMode(m_texture, SDL_SCALEMODE_LINEAR);
-        SDL_SetTextureBlendMode(m_texture, SDL_BLENDMODE_BLEND);
+        auto texture = std::make_unique<Texture>();
+        bool uploaded = false;
+        if (rgba)
+        {
+            Image image;
+            image.create(static_cast<unsigned>(rgba->w), static_cast<unsigned>(rgba->h), Color::Transparent);
+
+            if (SDL_Surface* dst = image.getNativeSurface())
+            {
+                const int rowBytes = rgba->w * 4;
+                for (int row = 0; row < rgba->h; ++row)
+                {
+                    SDL_memcpy(static_cast<std::uint8_t*>(dst->pixels) + static_cast<size_t>(row) * dst->pitch,
+                               static_cast<const std::uint8_t*>(rgba->pixels) + static_cast<size_t>(row) * rgba->pitch,
+                               rowBytes);
+                }
+
+                //Linear sampling: text is scaled by the view, so it should smooth rather than block up
+                uploaded = texture->loadFromImage(image, true);
+                if (uploaded) m_textureSize = {static_cast<float>(rgba->w), static_cast<float>(rgba->h)};
+            }
+        }
+
+        if (rgba && rgba != surface) SDL_DestroySurface(rgba);
+        SDL_DestroySurface(surface);
+        if (!uploaded) return false;
+
+        m_texture = std::move(texture);
         m_cachedString = m_string;
         m_cachedSize = m_characterSize;
         return true;
@@ -99,15 +119,22 @@ namespace ETG
     void Text::drawTo(RenderWindow& window) const
     {
         if (!ensureTexture()) return;
-        SDL_Renderer* renderer = window.getNativeRenderer();
-        if (!renderer) return;
 
         const Vector2f screen = window.worldToScreen(m_position - m_origin);
         const Vector2f scale = window.worldToScreenScale();
-        const SDL_FRect dst{screen.x, screen.y, m_textureSize.x * scale.x, m_textureSize.y * scale.y};
+        const float w = m_textureSize.x * scale.x;
+        const float h = m_textureSize.y * scale.y;
 
-        SDL_SetTextureColorMod(m_texture, m_fillColor.r, m_fillColor.g, m_fillColor.b);
-        SDL_SetTextureAlphaMod(m_texture, m_fillColor.a);
-        SDL_RenderTexture(renderer, m_texture, nullptr, &dst);
+        //The glyphs were rasterized white, so the fill colour is just the vertex tint
+        const std::uint32_t rgba = PackColor(m_fillColor);
+        const GfxVertex vertices[4]{
+            {screen.x, screen.y, 0.f, 0.f, rgba},
+            {screen.x + w, screen.y, 1.f, 0.f, rgba},
+            {screen.x + w, screen.y + h, 1.f, 1.f, rgba},
+            {screen.x, screen.y + h, 0.f, 1.f, rgba},
+        };
+        constexpr std::uint16_t indices[6]{0, 1, 2, 0, 2, 3};
+
+        GraphicsDevice::DrawIndexed(vertices, 4, indices, 6, m_texture.get());
     }
 }

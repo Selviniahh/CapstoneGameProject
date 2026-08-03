@@ -13,8 +13,8 @@ if(NOT EXISTS ${SDL3_INSTALL_DIR}/lib/cmake/SDL3/SDL3Config.cmake)
             -B ${SDL3_BUILD_DIR}
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_INSTALL_PREFIX=${SDL3_INSTALL_DIR}
-            -DSDL_SHARED=ON
-            -DSDL_STATIC=OFF
+            -DSDL_SHARED=${DEPS_BUILD_SHARED}
+            -DSDL_STATIC=${DEPS_BUILD_STATIC}
             -DSDL_TEST_LIBRARY=OFF
             -DSDL_TESTS=OFF
             -DSDL_EXAMPLES=OFF
