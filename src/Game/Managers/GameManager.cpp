@@ -94,8 +94,8 @@ void ETG::GameManager::Draw()
 
     //NOTE: Draw the main game scene with Custom view. These draws will be drawn zoomed.
     //Everything is drawn against the fixed logical canvas (RenderWindow::LogicalSize);
-    //SDL's permanently-active logical presentation letterboxes it onto the real window,
-    //regardless of how the window is resized.
+    //GraphicsDevice letterboxes it onto the real window, regardless of how the window is
+    //resized or what aspect ratio it ends up with.
     Window->setView(RenderContext::MainView);
 
     GlobSpriteBatch.begin();

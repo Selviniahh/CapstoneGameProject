@@ -49,10 +49,10 @@ void Engine::Update()
     ImGui_ImplBgfx_NewFrame();
     ImGui_ImplSDL3_NewFrame();
 
-    //ImGui draws entirely in the fixed logical canvas (RenderWindow::LogicalSize); SDL's
-    //permanently-active logical presentation is what maps that onto the real, possibly-HiDPI
-    //window. Force both so ImGui doesn't also apply its own (unrelated) DPI scale, and so its
-    //DisplaySize matches the logical canvas that GameManager converts mouse events into.
+    //ImGui draws entirely in the fixed logical canvas (RenderWindow::LogicalSize); the device's
+    //letterbox transform (GraphicsDevice::GetViewportRect) is what maps that onto the real,
+    //possibly-HiDPI window. Force both so ImGui doesn't also apply its own (unrelated) DPI scale,
+    //and so its DisplaySize matches the logical canvas that GameManager converts mouse events into.
     ImGuiIO& io = ImGui::GetIO();
     io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
     io.DisplaySize = ImVec2((float)ETG::RenderWindow::LogicalSize.x, (float)ETG::RenderWindow::LogicalSize.y);
