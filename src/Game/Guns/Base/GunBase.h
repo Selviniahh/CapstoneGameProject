@@ -107,18 +107,45 @@ namespace ETG
         //decides its own side
         [[nodiscard]] bool IsHeldOnRightSide(float aimAngle) const;
 
-        //While a gun asks to be grip-pinned it turns about its LeftHandAnchor instead of about its own Origin:
-        //that one pixel is frozen where it sits at PinnedGripRotation and only the barrel swings around it. This
-        //is what keeps the grip welded to the hero once he turns his back, instead of letting it swing out below
-        //the sprite.
+        //Which hand the holder decided this gun is in this frame, written by Character::PublishHeldSideToGun
+        //before anything reads it. A gun on the floor keeps whatever it last had, which nothing looks at.
+        //
+        //NOTE: the gun does not work this out for itself even though it has HandSwapAngle to do it with, because
+        //a gun that leaves the angle negative has no opinion and the answer is then the *body's* facing - which
+        //the gun cannot see. Being told is what makes every gun agree with its holder
+        bool IsHeldOnRightHand{true};
+
+        //<---------- Grip pinning ---------->
+        //A two-handed gun looks broken when its forward grip swings out from under the holder while the barrel
+        //points up: the off hand ends up in mid-air, off the sprite entirely. Pinning freezes that one pixel
+        //against the body and lets the barrel swing around it - the gun still rotates, it just rotates about the
+        //grip instead of about its own Origin.
+        //
+        //Set this and the two rules below do the whole job; a gun held in one hand leaves it false.
         //
         //NOTE: the pin belongs on the gun, not on the off hand. Pinning only the hand froze it in mid-air while
         //the gun carried on rotating out from under it - two locks that had to agree, and did not. The hands are
-        //placed on the gun after this, so one lock on the gun is a lock on everything holding it.
-        [[nodiscard]] virtual bool WantsGripPinned() const { return false; }
+        //placed on the gun afterwards, so one lock on the gun is a lock on everything holding it
+        bool PinsGripWhenAimingUp{false};
 
-        //The rotation the pinned grip is frozen at. Only read while WantsGripPinned() is true
-        [[nodiscard]] virtual float PinnedGripRotation() const { return 180.f; }
+        //Whether the barrel points above the horizontal, either side. That is the half of the circle where the
+        //holder is drawn from behind, and the only half where an unpinned grip leaves the sprite
+        [[nodiscard]] bool IsBarrelAboveHorizontal() const { return GetRotation() > 180.f; }
+
+        //Override only for a gun whose pin follows some other rule - a boss arm welded on permanently, say.
+        //
+        //NOTE: a pure function of the aim on purpose. This was a latch once, engaged when the barrel came up and
+        //released only when the gun changed hands. Two different angles for the two halves of one rule is what
+        //kept the grip frozen across a whole quadrant where it should have been free to ride up with the barrel
+        [[nodiscard]] virtual bool WantsGripPinned() const
+        {
+            return PinsGripWhenAimingUp && IsBarrelAboveHorizontal();
+        }
+
+        //The angle the pinned grip is frozen at: the horizontal pose of whichever side the gun is held on. Picking
+        //the side's own horizontal is what makes the pin engage with zero displacement - the barrel crosses that
+        //exact angle on its way up, so nothing jumps at the moment the pin takes hold
+        [[nodiscard]] virtual float PinnedGripRotation() const { return IsHeldOnRightHand ? 0.f : 180.f; }
 
         //Where the gun draws while it is held, in front of its holder's body and behind it. SpriteBatch sorts
         //greater depths first, so the larger of the two is the one behind. Both are seeded from the depth the gun

@@ -45,26 +45,86 @@ namespace ETG
         [[nodiscard]] virtual bool CanUseActiveItems() const = 0;
 
         //<---------- Per-frame work shared by every character ---------->
-        //Left out of Update() deliberately: the two branches run these in different orders against their own state
-        //machinery, and that ordering is the part they do not agree on
+        //THE HELD-GUN RIG. Everything that decides where a held gun and the two hands on it end up, split one
+        //decision per function. Every character that carries a gun runs the identical set - hero, BulletMan, and
+        //whatever boss comes next - so a fix here is a fix for all of them, and a new shooter needs no new
+        //geometry at all. The per-gun knobs it reads are the ones documented in GunBase; the whole rig, its
+        //ordering and the reasoning behind each step is written up in docs/HeldGunRig.tr.md.
+        //
+        //Only three of these are called from outside, in this order, and the order is not a preference: each step
+        //reads values the previous one wrote.
+        //
+        //   1. UpdateHoldPoint()             the joint the gun hangs from
+        //   2. UpdateGuns()                  the gun onto the joint, then the hands onto the gun
+        //   3. UpdateHandAndGunVisibility()  whether any of it is drawn at all
+        //
+        //Left out of Update() deliberately: the two branches run these against their own state machinery, and
+        //when in their tick they run is the part they do not agree on
         void UpdateHoldPoint();
         void UpdateGuns();
         void UpdateHandAndGunVisibility() const;
 
-        //Which hand the current gun is in, and therefore which way its sprite is mirrored. The gun answers this
-        //itself when it names a GunBase::HandSwapAngle - a revolver flipping exactly at vertical - and otherwise
-        //the body's 8-way facing decides. One answer, read by the hold point, both hands and the gun's flip, so
-        //they cannot turn over at different angles
+        //Which hand the current gun is in, and therefore which way its sprite is mirrored. THE single decider -
+        //every step below asks this and none of them decides it again. The gun answers for itself when it names a
+        //GunBase::HandSwapAngle (a revolver changing hands exactly at vertical); otherwise the body's 8-way facing
+        //answers, which is what every gun did before the knob existed.
+        //
+        //NOTE: this being one function is the whole point. The hold point, the mirror and the hands used to work
+        //it out separately, so a gun with its own swap angle had its sprite turn over 22.5 degrees away from the
+        //hand holding it
         [[nodiscard]] bool IsGunOnRightSide() const;
 
-        //Honours a gun that asked to turn about its left-hand grip instead of about its own origin, by sliding the
-        //whole gun so that grip lands back on its pinned point. Called from UpdateGuns once the gun's rotation and
-        //mirror are settled, and before the hands are placed on it - so the hands ride the pin for free
+    protected:
+        //<---------- The rig, step by step ---------->
+        //Protected rather than private: a boss with a stranger rig can reuse the steps it likes and replace the
+        //rest, instead of copying the geometry
+
+        //Tells the gun which hand it ended up in, so the gun's own rules (PinnedGripRotation) can read the
+        //decision instead of working it out a second time from an angle it would have to interpret itself
+        void PublishHeldSideToGun() const;
+
+        //The gun onto the hold point, aimed down AimAngle. Nothing about hands or mirroring here
+        void PlaceHeldGun() const;
+
+        //Mirrors the gun vertically while it is held on the left, so its sprite is never upside down. Skipped
+        //entirely while the character may not flip its animations (mid-dash, dead)
+        void MirrorHeldGun() const;
+
+        //Puts the gun in front of the body or behind it, from the gun's own two depths. Runs before the gun ticks,
+        //because a gun bakes its depth into its draw properties inside its own Update
+        void UpdateHeldGunDepth() const;
+
+        //Honours a gun that asked to turn about its left-hand grip instead of about its own Origin, by sliding the
+        //whole gun until that grip lands back on its pinned point. Runs after the rotation and the mirror are
+        //settled, because it reads both, and before the hands are placed - so the hands ride the pin for free
         void ApplyGripPin() const;
 
-        //Both hands land on the pixels the current gun named for them. Called from UpdateGuns, after the guns have
+        //Every equipped gun ticks, not only the one in hand: the holstered ones still have projectiles in flight
+        void TickEquippedGuns() const;
+
+        //Both hands onto the pixels the current gun named for them. Called from UpdateGuns AFTER the guns have
         //ticked, because it reads the Origin their animations just wrote
         void UpdateHands() const;
+
+        //Which side of the body the hands draw on. Same rule the gun's depth follows, for the same reason
+        void UpdateHandDepths() const;
+
+        //Places one hand, on the gun if the gun named a grip for it and against the body if it did not. Both
+        //hands go through this: they differ only in which anchor and which resting offset they are given
+        void PlaceHand(class Hand& hand, bool gunNamesGrip, const ETG::Vector2f& gripAnchor,
+                       const ETG::Vector2f& bodyRestPosition, const ETG::Vector2f& heldOffset) const;
+
+        //The gun's HeldOffset with its X mirrored when the gun is held on the left, so a value authored against
+        //the right-held artwork keeps meaning the same thing on the other side. Read by the gun's placement and
+        //by the hands, which is exactly why it is a function and not two copies of the ternary
+        [[nodiscard]] ETG::Vector2f MirroredHeldOffset() const;
+
+        //A point offset from the body, in world space. The body's own mirror is deliberately NOT fed into the
+        //rotation: facing is already baked into whichever offset the caller picked, and passing Scale.x = -1 in
+        //as well would mirror it a second time
+        [[nodiscard]] ETG::Vector2f BodyRestPosition(const ETG::Vector2f& offset) const;
+
+    public:
 
         //Fires the held active item if the character is currently allowed to. Reads no input: the hero calls this
         //from its Space binding, an enemy calls it whenever its AI decides to

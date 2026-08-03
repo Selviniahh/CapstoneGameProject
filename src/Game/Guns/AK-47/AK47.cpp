@@ -55,6 +55,10 @@ void ETG::AK47::Initialize()
     //depth as well, so the rifle does not cover the fingers gripping it
     HeldDepthBehindBody = 1.f;
 
+    //A rifle is held with both hands, so the forward grip is welded to the body whenever the barrel comes up
+    //above the horizontal. GunBase's default rules cover the rest; there is nothing to override
+    PinsGripWhenAimingUp = true;
+
     CollisionComp->Initialize();
     
     // Load the projectile texture for AK-47
@@ -86,26 +90,6 @@ void ETG::AK47::Draw()
 {
     GunBase::Draw();
     if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
-}
-
-bool ETG::AK47::WantsGripPinned() const
-{
-    //Pinned for exactly as long as the barrel is above the horizontal - the upper half of the circle on either
-    //side, which is precisely where the hero shows his back and where an unpinned grip drops out from under his
-    //sprite. Below the horizontal the grip is free and rides up and down with the barrel.
-    //
-    //NOTE: this used to be a latch, engaged here and released only when the gun changed hands. The release angle
-    //being different from the engage angle is what suppressed the off hand across the whole lower right quadrant:
-    //sweeping 0 -> 90 stayed pinned to the 0 degree reference, so the grip sat still while the original lifts it
-    //with the barrel. There is nothing to remember - the pin is a property of where the gun points
-    return GetRotation() > 180.f;
-}
-
-float ETG::AK47::PinnedGripRotation() const
-{
-    //The horizontal pose of the side the gun is held on. Picking the side's own horizontal is what makes the pin
-    //engage with zero displacement: the barrel crosses that exact angle on its way up, so nothing jumps
-    return IsHeldOnRightSide(GetRotation()) ? 0.f : 180.f;
 }
 
 ETG::AK47AnimComp::AK47AnimComp()

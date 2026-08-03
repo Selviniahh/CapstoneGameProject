@@ -20,6 +20,9 @@ namespace ETG
         //Where an anchor pixel of the gun ends up in the world. The anchor is measured from the sheet's top-left
         //while the gun draws around its Origin, so their difference is the offset in gun space; feeding the gun's
         //own scale into the rotation is what keeps it on the right pixel when the gun is mirrored to aim left.
+        //
+        //Nothing here knows about pinning, and it does not need to: a pinned gun has already been slid so that its
+        //grip sits on the pinned point, so a hand placed on that grip lands there for free.
         ETG::Vector2f AnchorPositionOnGun(const GunBase& gun, const ETG::Vector2f& anchor,
                                           const ETG::Vector2f& heldOffset)
         {
@@ -29,27 +32,115 @@ namespace ETG
             return gun.GetPosition() - heldOffset +
                    Math::RotateVector(gun.GetRotation(), gun.GetScale(), gunLocal);
         }
-
-        //Puts one hand on a pixel of the gun. Nothing here knows about pinning: a pinned gun has already been
-        //moved so that its grip sits on the pinned point, so a hand placed on that grip lands there for free.
-        void PlaceHandOnGun(Hand& hand, const GunBase& gun, const ETG::Vector2f& anchor,
-                            const ETG::Vector2f& heldOffset)
-        {
-            hand.SetPosition(AnchorPositionOnGun(gun, anchor, heldOffset));
-            hand.SetRotation(gun.GetRotation());
-        }
     }
 
-    //<---------- Per-frame work ---------->
+    //<---------- The held-gun rig: the one decision everything else reads ---------->
     bool Character::IsGunOnRightSide() const
     {
-        //A gun that names its own swap angle is asked directly, so the side it is held on can turn over
-        //somewhere other than where the body's 8-way facing does. Everything else falls back to the facing,
-        //which is what every gun did before there was a swap angle at all
+        //A gun that names its own swap angle is asked directly, so the side it is held on can turn over somewhere
+        //other than where the body's 8-way facing does. Everything else falls back to the facing, which is what
+        //every gun did before there was a swap angle at all
         if (CurrentGun && CurrentGun->DecidesOwnHandSide())
             return CurrentGun->IsHeldOnRightSide(AimAngle);
 
         return ETG::IsFacingRight(CurrentDir);
+    }
+
+    //<---------- The rig: shared geometry ---------->
+    ETG::Vector2f Character::BodyRestPosition(const ETG::Vector2f& offset) const
+    {
+        //Only the magnitude of the scale goes in. FlipSpritesX mirrors the body by setting Scale.x = -1, and the
+        //caller has already chosen a left or right offset, so passing the sign in would mirror it twice
+        const ETG::Vector2f scaleMagnitude{std::abs(Scale.x), std::abs(Scale.y)};
+
+        return Position + Math::RotateVector(Rotation, scaleMagnitude, offset);
+    }
+
+    ETG::Vector2f Character::MirroredHeldOffset() const
+    {
+        if (!CurrentGun) return {};
+
+        //Only the horizontal component mirrors, so a negative X keeps meaning "further back along the barrel"
+        //on both sides. Y means up in the artwork either way, because the sprite mirrors about the barrel
+        ETG::Vector2f heldOffset = CurrentGun->HeldOffset;
+        if (!IsGunOnRightSide()) heldOffset.x = -heldOffset.x;
+
+        return heldOffset;
+    }
+
+    //<---------- The rig: step 1, the joint ---------->
+    void Character::UpdateHoldPoint()
+    {
+        if (!Hand) return;
+
+        const ETG::Vector2f facingOffset = IsGunOnRightSide() ? HandOffsetRight : HandOffsetLeft;
+
+        HoldPoint = BodyRestPosition(Hand->HandOffset + facingOffset);
+    }
+
+    //<---------- The rig: step 2, the gun and then the hands ---------->
+    void Character::UpdateGuns()
+    {
+        //Hand is required as well as the gun: its GunOffset is part of where the gun hangs
+        if (CurrentGun && Hand)
+        {
+            //Read the order downwards. Each line needs the ones above it and nothing below it, which is why they
+            //are separate calls rather than one function: the sequence is the design, so it should be legible
+            PublishHeldSideToGun(); //the gun learns which hand it is in
+            PlaceHeldGun();         //onto the hold point, aimed
+            UpdateHeldGunDepth();   //in front of the body or behind it
+            MirrorHeldGun();        //needs the side; the pin below needs the mirror
+            ApplyGripPin();         //needs the rotation and the mirror both
+        }
+
+        TickEquippedGuns();
+
+        //After the guns, never before: a gun's Origin is rewritten from its current animation frame inside its own
+        //Update, and that Origin is what every grip anchor is measured against
+        UpdateHands();
+    }
+
+    //Each step guards its own precondition rather than trusting UpdateGuns' outer check, because they are
+    //protected: a boss reusing three of the five gets the same safety the rig itself has
+    void Character::PublishHeldSideToGun() const
+    {
+        if (!CurrentGun) return;
+
+        CurrentGun->IsHeldOnRightHand = IsGunOnRightSide();
+    }
+
+    void Character::PlaceHeldGun() const
+    {
+        if (!CurrentGun || !Hand) return;
+
+        CurrentGun->SetPosition(HoldPoint + Hand->GunOffset + MirroredHeldOffset());
+        CurrentGun->Rotation = AimAngle;
+    }
+
+    void Character::UpdateHeldGunDepth() const
+    {
+        if (!CurrentGun) return;
+
+        //Same rule the hands follow, and for the same reason: with the body drawn from behind, whatever it is
+        //holding is on the far side of it
+        CurrentGun->Depth = ETG::IsFacingBack(CurrentDir)
+                                ? CurrentGun->HeldDepthBehindBody
+                                : CurrentGun->HeldDepthInFront;
+    }
+
+    void Character::MirrorHeldGun() const
+    {
+        //A character that may not flip its animations keeps the mirror it already had - mid-dash or dead, the
+        //sprite is not tracking the aim any more
+        if (!CurrentGun || !CanFlipAnims()) return;
+
+        //NOTE: this used to be an AnimationComp->FlipSpritesY(CurrentDir, gun) call in Hero and another in
+        //BulletMan, two copies of the decision, and both read the body's 8-way facing while the hold point read
+        //IsGunOnRightSide. A gun with its own swap angle therefore had its sprite turn over 22.5 degrees away
+        //from the hand holding it
+        ETG::Vector2f gunScale = CurrentGun->GetScale();
+        gunScale.y = IsGunOnRightSide() ? std::abs(gunScale.y) : -std::abs(gunScale.y);
+        CurrentGun->SetScale(gunScale);
     }
 
     void Character::ApplyGripPin() const
@@ -60,118 +151,75 @@ namespace ETG
         const ETG::Vector2f gripLocal = CurrentGun->LeftHandAnchor - CurrentGun->GetOrigin();
         const ETG::Vector2f scale = CurrentGun->GetScale();
 
-        //Sliding the gun by the difference between the two puts the grip exactly where the pinned rotation would
+        //Sliding the gun by the difference between these two puts the grip exactly where the pinned rotation would
         //have left it, whatever the barrel is doing. The gun therefore turns about its grip rather than about its
-        //own origin - which is the whole trick: one pixel stands still, everything else swings around it
+        //own Origin - which is the whole trick: one pixel stands still and everything else swings around it
         const ETG::Vector2f whereTheGripIs = Math::RotateVector(CurrentGun->GetRotation(), scale, gripLocal);
         const ETG::Vector2f whereItStays = Math::RotateVector(CurrentGun->PinnedGripRotation(), scale, gripLocal);
 
         CurrentGun->SetPosition(CurrentGun->GetPosition() + whereItStays - whereTheGripIs);
     }
 
-    void Character::UpdateHoldPoint()
+    void Character::TickEquippedGuns() const
     {
-        if (!Hand) return;
-
-        const ETG::Vector2f facingOffset = IsGunOnRightSide() ? HandOffsetRight : HandOffsetLeft;
-
-        //Facing is already baked into the ternary above, so feed only the scale magnitude into the rotation:
-        //FlipSpritesX flips the body by setting Scale.x = -1, and passing that in would mirror the offset a second time
-        const ETG::Vector2f scaleMagnitude{std::abs(Scale.x), std::abs(Scale.y)};
-        HoldPoint = Position + Math::RotateVector(Rotation, scaleMagnitude, Hand->HandOffset + facingOffset);
-    }
-
-    void Character::UpdateGuns()
-    {
-        if (CurrentGun && Hand)
-        {
-            //HeldOffset is authored against the right-held artwork. Mirror only its horizontal component when the
-            //gun changes sides, so a negative X offset continues to mean "back" while held on the left.
-            ETG::Vector2f heldOffset = CurrentGun->HeldOffset;
-            if (!IsGunOnRightSide()) heldOffset.x = -heldOffset.x;
-
-            CurrentGun->SetPosition(HoldPoint + Hand->GunOffset + heldOffset);
-            CurrentGun->Rotation = AimAngle;
-
-            //Same rule the hands follow, and for the same reason: with the body drawn from behind, what it is
-            //holding is on the far side of it. Written before the gun ticks, because the gun bakes its depth into
-            //its draw properties in there
-            CurrentGun->Depth = ETG::IsFacingBack(CurrentDir)
-                                    ? CurrentGun->HeldDepthBehindBody
-                                    : CurrentGun->HeldDepthInFront;
-
-            //The gun is mirrored vertically while it is held on the left, so its sprite is never upside down.
-            //
-            //NOTE: this used to be an AnimationComp->FlipSpritesY(CurrentDir, gun) call in Hero and in BulletMan,
-            //i.e. two copies of the decision, both reading the body's facing while the hold point read this one.
-            //A gun with its own swap angle would have had its sprite turn over 22.5 degrees away from its hand
-            if (CanFlipAnims())
-            {
-                ETG::Vector2f gunScale = CurrentGun->GetScale();
-                gunScale.y = IsGunOnRightSide() ? std::abs(gunScale.y) : -std::abs(gunScale.y);
-                CurrentGun->SetScale(gunScale);
-            }
-
-            //Last, because it reads the rotation and the mirror decided just above
-            ApplyGripPin();
-        }
-
-        //Every equipped gun ticks, not only the one in hand: the holstered ones still have projectiles in flight
         for (GunBase* gun : EquippedGuns)
             if (gun)
                 gun->Update();
-
-        //After the guns, never before: a gun's Origin is rewritten from its current animation frame inside its own
-        //Update, and that origin is what the grips are measured against
-        UpdateHands();
     }
 
+    //<---------- The rig: step 2b, the hands onto the gun ---------->
     void Character::UpdateHands() const
     {
-        //Written before the hands tick, not after: a hand bakes its depth into its draw properties inside its own
-        //Update, so a value set later would be a frame late - and one frame late on a facing change is the frame
-        //where the hand is visibly on the wrong side of the body
-        const float handDepth = ETG::IsFacingBack(CurrentDir) ? HandDepthBehindBody : HandDepthInFront;
-        if (Hand) Hand->Depth = handDepth;
-        if (OffHand) OffHand->Depth = handDepth;
+        UpdateHandDepths();
 
-        ETG::Vector2f heldOffset{};
-        if (CurrentGun)
-        {
-            heldOffset = CurrentGun->HeldOffset;
-            if (!IsGunOnRightSide()) heldOffset.x = -heldOffset.x;
-        }
+        const ETG::Vector2f heldOffset = MirroredHeldOffset();
+        const bool gunNamesRightGrip = CurrentGun && CurrentGun->HasRightHandAnchor;
+        const bool gunNamesLeftGrip = CurrentGun && CurrentGun->HasLeftHandAnchor;
 
+        //The primary hand falls back to the hold point itself - no measured grip means the gun simply sits in it
         if (Hand)
-        {
-            if (CurrentGun && CurrentGun->HasRightHandAnchor)
-                PlaceHandOnGun(*Hand, *CurrentGun, CurrentGun->RightHandAnchor, heldOffset);
-            else
-            {
-                //No measured grip, so the hand stays where it always was and the gun sits in it
-                Hand->SetPosition(HoldPoint);
-                Hand->SetRotation(Rotation);
-            }
-            Hand->Update();
-        }
+            PlaceHand(*Hand, gunNamesRightGrip,
+                      gunNamesRightGrip ? CurrentGun->RightHandAnchor : ETG::Vector2f{},
+                      HoldPoint, heldOffset);
 
+        //The off hand falls back to the opposite side of the body, so it stays visible on a one-handed gun
+        //instead of sitting at its construction position at world (0,0)
         if (OffHand)
         {
-            if (CurrentGun && CurrentGun->HasLeftHandAnchor)
-                PlaceHandOnGun(*OffHand, *CurrentGun, CurrentGun->LeftHandAnchor, heldOffset);
-            else
-            {
-                //A gun without a measured second grip leaves the off hand on the opposite side of the body.
-                //The hand therefore remains visible instead of keeping its construction position at world (0,0).
-                const ETG::Vector2f offHandOffset = IsGunOnRightSide()
-                                                        ? HandOffsetLeft
-                                                        : HandOffsetRight;
-                const ETG::Vector2f scaleMagnitude{std::abs(Scale.x), std::abs(Scale.y)};
-                OffHand->SetPosition(Position + Math::RotateVector(Rotation, scaleMagnitude, offHandOffset));
-                OffHand->SetRotation(Rotation);
-            }
-            OffHand->Update();
+            const ETG::Vector2f restOffset = IsGunOnRightSide() ? HandOffsetLeft : HandOffsetRight;
+
+            PlaceHand(*OffHand, gunNamesLeftGrip,
+                      gunNamesLeftGrip ? CurrentGun->LeftHandAnchor : ETG::Vector2f{},
+                      BodyRestPosition(restOffset), heldOffset);
         }
+    }
+
+    void Character::UpdateHandDepths() const
+    {
+        //Written before the hands tick, not after: a hand bakes its depth into its draw properties inside its own
+        //Update, so a value set later would be a frame late - and one frame late on a facing change is exactly the
+        //frame where the hand is visibly on the wrong side of the body
+        const float handDepth = ETG::IsFacingBack(CurrentDir) ? HandDepthBehindBody : HandDepthInFront;
+
+        if (Hand) Hand->Depth = handDepth;
+        if (OffHand) OffHand->Depth = handDepth;
+    }
+
+    void Character::PlaceHand(class Hand& hand, const bool gunNamesGrip, const ETG::Vector2f& gripAnchor,
+                              const ETG::Vector2f& bodyRestPosition, const ETG::Vector2f& heldOffset) const
+    {
+        if (gunNamesGrip)
+        {
+            hand.SetPosition(AnchorPositionOnGun(*CurrentGun, gripAnchor, heldOffset));
+            hand.SetRotation(CurrentGun->GetRotation()); //a hand turns with the gun it is holding
+        }
+        else
+        {
+            hand.SetPosition(bodyRestPosition);
+            hand.SetRotation(Rotation); //resting against the body, so it turns with the body
+        }
+
+        hand.Update();
     }
 
     void Character::UpdateHandAndGunVisibility() const
