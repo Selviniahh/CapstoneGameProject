@@ -63,6 +63,10 @@ namespace ETG
         void DrawEquippedPassiveItemsAtLeftUI() const;
         void Draw() override;
 
+        //Which hero this HUD was built around. GameManager compares it against the live one and rebuilds the UI
+        //when they differ, so the cached hero/gun pointers below can never outlive what they point at
+        [[nodiscard]] const Hero* GetHero() const { return hero; }
+
         BOOST_DESCRIBE_CLASS(UserInterface, (GameObjectBase),
                              (), (), (CurrentGun, RightFrameOffsetPerc, AmmoBarOffsetPercX, InitialAmmoBarOffsetY, GameScreenSize))
     };

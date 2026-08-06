@@ -17,6 +17,27 @@ endif()
 # current source code portable without requiring __declspec(dllexport) macros.
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# ------------------------------------------------------------------------------
+# Tests (Test/). Two suites, two executables, and two switches deciding whether the
+# game's build waits on them. Everything here is off/harmless by default: with no
+# option touched, the game builds and runs exactly as it did before, and the two test
+# executables are simply available to run on their own.
+#
+#   cmake -B build                                                the game, both test targets built, no gates
+#   cmake -B build -DETG_RUN_UNIT_TESTS_BEFORE_GAME=ON            unit tests must pass before the game builds
+#   cmake -B build -DETG_RUN_INTERACTIVE_TESTS_BEFORE_GAME=ON     the interactive session opens before the game
+#   cmake -B build -DETG_BUILD_UNIT_TESTS=OFF -DETG_BUILD_INTERACTIVE_TESTS=OFF   game only, nothing else built
+#
+# Test/README.md walks through the combinations and how to write a new test.
+# ------------------------------------------------------------------------------
+option(ETG_BUILD_UNIT_TESTS "Build the GoogleTest unit test target (ETGUnitTests)" ON)
+option(ETG_BUILD_INTERACTIVE_TESTS "Build the interactive gameplay test target (ETGInteractiveTests)" ON)
+option(ETG_RUN_UNIT_TESTS_BEFORE_GAME "Run ETGUnitTests as part of building ETG, before the game can start" OFF)
+option(ETG_RUN_INTERACTIVE_TESTS_BEFORE_GAME "Launch ETGInteractiveTests as part of building ETG, before the game can start" OFF)
+option(ETG_UNIT_TESTS_FAIL_BUILD "A failing unit test gate stops the build" ON)
+option(ETG_INTERACTIVE_TESTS_FAIL_BUILD "A failed interactive gameplay check stops the build" ON)
+option(ETG_INTERACTIVE_TESTS_STRICT "The interactive gate also demands that every test was played to a verdict" OFF)
+
 #- CMAKE_INSTALL_BINDIR → usually in "bin"
 #CMAKE_INSTALL_LIBDIR -> usually "lib"  
 include(GNUInstallDirs)
@@ -358,6 +379,11 @@ add_custom_command(TARGET ETG POST_BUILD
                 $<TARGET_FILE_DIR:ETG>/Resources
         COMMENT "Copying Resources next to ETG"
 )
+
+# The test targets and the optional "run before the game" gates. Added AFTER the ETG target exists, because a
+# gate attaches itself to it with add_dependencies.
+enable_testing()
+add_subdirectory(Test)
 
 # Windows only searches a limited set of locations for runtime DLLs. Copy all
 # shared-library dependencies next to ETG.exe after every successful build.

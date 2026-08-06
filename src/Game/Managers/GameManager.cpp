@@ -10,6 +10,7 @@
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Scene/Scene.h"
 #include "../UI/UserInterface.h"
+#include "../Characters/Hero/Hero.h"
 #include "../Levels/SpawnInitialLevel.h"
 #include "RegisterGameTypes.h"
 
@@ -61,10 +62,18 @@ void ETG::GameManager::Initialize()
     //Scene joins WorldObjects first, then the level content is spawned through the same pending-spawn
     //queue as runtime spawns and flushed immediately so everything is in place before the first Update.
     WorldObjects.push_back(std::move(scene));
-    SpawnInitialLevel::Spawn(*this);
+
+    //The game spawns its level; a test host (Test/Interactive) replaces it with its own world
+    if (LevelSpawnOverride)
+        LevelSpawnOverride(*this);
+    else
+        SpawnInitialLevel::Spawn(*this);
+
     FlushPendingSpawns();
 
-    UI = CreateGameObjectDefault<UserInterface>();
+    //The HUD needs a hero holding a gun. The game's level has just spawned one, so this builds it right here;
+    //a host that starts with an empty world gets its UI on the frame its hero appears instead
+    EnsureGameUI();
 
     //Always initialize debug text last
     DebugText = std::make_unique<class DebugText>();
@@ -80,9 +89,13 @@ void ETG::GameManager::Update()
     //Objects spawned last frame join the list before anyone updates, so they never draw un-updated
     FlushPendingSpawns();
 
+    //Before anything reads the UI: it is tied to whichever hero is alive right now
+    EnsureGameUI();
+
     for (const auto& obj : WorldObjects)
         obj->Update();
-    UI->Update();
+
+    if (UI) UI->Update();
 
     //Deallocate everything marked with MarkForDestroy during this frame
     SweepDestroyedObjects();
@@ -107,9 +120,12 @@ void ETG::GameManager::Draw()
     //NOTE: Which means, even though The view zoomed or moved, these draws will always stay persistent in initial given coords
     Window->setView(Window->getDefaultView());
 
-    ETG::GlobSpriteBatch.begin();
-    UI->Draw();
-    ETG::GlobSpriteBatch.end(*Window);
+    if (UI)
+    {
+        ETG::GlobSpriteBatch.begin();
+        UI->Draw();
+        ETG::GlobSpriteBatch.end(*Window);
+    }
 
     //NOTE: non batch draws here.
     // DebugText->Draw(*Window);
@@ -117,6 +133,26 @@ void ETG::GameManager::Draw()
 
     //Display the frame after everything is set to be drawn
     Window->display();
+}
+
+void ETG::GameManager::EnsureGameUI()
+{
+    //A hero that has already been marked for destruction is still Hero::Get() until the sweep runs, and that is
+    //fine: it is alive for the rest of this frame, and the UI is dropped on the next one
+    Hero* hero = Hero::Get();
+
+    //No hero (or one that has not been handed a gun yet) means there is nothing for the HUD to show. Dropping it
+    //also drops the pointers it cached into that hero, which is the whole point
+    if (!hero || !hero->GetCurrentHoldingGun())
+    {
+        UI.reset();
+        return;
+    }
+
+    //Already built for this hero
+    if (UI && UI->GetHero() == hero) return;
+
+    UI = CreateGameObjectDefault<UserInterface>();
 }
 
 void ETG::GameManager::FlushPendingSpawns()

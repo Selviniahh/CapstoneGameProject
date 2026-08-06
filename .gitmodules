@@ -48,3 +48,7 @@
 [submodule "deps/bgfx.cmake"]
 	path = deps/bgfx.cmake
 	url = https://github.com/bkaradzic/bgfx.cmake.git
+# GoogleTest, only used by the unit test target under Test/. Pinned by gitlink to tag v1.15.2.
+[submodule "deps/googletest"]
+	path = deps/googletest
+	url = https://github.com/google/googletest.git

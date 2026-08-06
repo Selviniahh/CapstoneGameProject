@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <vector>
 #include "../../Engine/Managers/RenderContext.h"
@@ -27,6 +28,15 @@ namespace ETG
         //Spawn a world object into the central scene list at runtime. Safe to call mid-frame (even from
         //another object's Update): the object is queued and joins the list at the start of the next Update.
         //Objects marked with MarkForDestroy() are swept and deallocated at the end of each Update.
+        //What gets spawned into the world once the engine is up. Left empty - which is what the game itself does -
+        //Initialize spawns the game level (SpawnInitialLevel). A different host sets this BEFORE constructing the
+        //GameManager and gets a world containing exactly what it spawned instead: that is how the interactive
+        //gameplay tests (Test/Interactive) build their own environment without anyone editing the game's level.
+        //
+        //NOTE: static on purpose. It has to be set before the constructor runs, because the constructor is what
+        //spawns the level
+        inline static std::function<void(GameManager&)> LevelSpawnOverride{};
+
         template <typename T, typename... Args>
         T* SpawnGameObject(Args&&... args)
         {
@@ -39,7 +49,17 @@ namespace ETG
         }
 
     private:
-        //When an object needs to be spawns, it gets added to PendingSpawns. This function transfers those objects into WorldObjects and refreshes PendingSpawns   
+        //The HUD reads the live hero (its gun, its items), so it can only exist while there is one. Called at the
+        //top of every Update: it builds the UI once a hero with a gun is in the world and drops it the moment that
+        //hero is gone.
+        //
+        //NOTE: the game never notices this - its level spawns a hero before the first frame, so the UI is built on
+        //that frame and never dropped. It matters for a host whose world is empty at startup and whose hero is
+        //replaced at runtime (the interactive gameplay tests): the UI used to capture Hero::Get() once, in its
+        //constructor, which is a dangling pointer the moment a different hero takes over
+        void EnsureGameUI();
+
+        //When an object needs to be spawns, it gets added to PendingSpawns. This function transfers those objects into WorldObjects and refreshes PendingSpawns
         void FlushPendingSpawns();
         
         void SweepDestroyedObjects();

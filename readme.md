@@ -40,6 +40,27 @@ cmake --build build-web --parallel
 
 This produces `build-web/bin/ETG.html`, which has to be served over HTTP (`python3 -m http.server`) rather than opened from disk. Mobile builds and the details of the renderer are covered in [docs/BgfxRenderer.md](docs/BgfxRenderer.md).
 
+# Tests
+
+Two suites live under [`Test/`](Test/README.md), each producing its own executable:
+
+- **`ETGUnitTests`** — GoogleTest, console only. Pure logic: the angle → direction table, `StatModifier`, the shared maths helpers.
+- **`ETGInteractiveTests`** — the real engine booted with an *empty* world. One gameplay test is loaded at a time and builds its own scene (its own hero, enemies, guns); its assertions sit at `PENDING` in an ImGui panel and flip to `PASSED`/`FAILED` as you play. This is where a mechanic gets exercised without touching the game's own level.
+
+```
+cmake -G Ninja -B build          # both test targets are built by default
+./build/bin/ETGUnitTests         # or: ctest --test-dir build
+./build/bin/ETGInteractiveTests
+```
+
+Either suite can also be made a gate on the game's own build, so `ETG` will not start until it passes:
+
+```
+cmake -G Ninja -B build -DETG_RUN_UNIT_TESTS_BEFORE_GAME=ON -DETG_RUN_INTERACTIVE_TESTS_BEFORE_GAME=ON
+```
+
+Both default to `OFF`; [`Test/README.md`](Test/README.md) covers the full option matrix and how to write a new test of either kind.
+
 # Dependencies
 
 - SDL3 (window, input, and event loop)
@@ -50,6 +71,7 @@ This produces `build-web/bin/ETG.html`, which has to be served over HTTP (`pytho
 - Dear ImGui (SDL3 platform backend; the renderer backend is the project's own, on bgfx)
 - boost-type-index
 - boost-describe
+- GoogleTest (unit tests only; a missing `deps/googletest` submodule just disables them)
 
 # Contributing
 Please read the docs folder to understand the project structure.
