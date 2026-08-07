@@ -219,6 +219,8 @@ set(GUNS_SOURCES
         src/Game/Guns/RogueSpecial/RogueSpecial.h
         src/Game/Guns/VFX/MuzzleFlash.cpp
         src/Game/Guns/VFX/MuzzleFlash.h
+        src/Game/Guns/VFX/MagazineDrop.cpp
+        src/Game/Guns/VFX/MagazineDrop.h
         src/Game/Guns/AK-47/AK47.cpp
         src/Game/Guns/AK-47/AK47.h
         src/Game/Guns/SawedOff/SawedOff.cpp

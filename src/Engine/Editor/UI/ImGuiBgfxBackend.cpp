@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <vector>
 #include <imgui.h>
 
 #include "../../Platform/GraphicsDevice.h"
@@ -109,17 +110,38 @@ void ImGui_ImplBgfx_RenderDrawData(ImDrawData* drawData)
     const ImVec2 clipOffset = drawData->DisplayPos;
     const ETG::FloatRect viewport = ETG::GraphicsDevice::GetViewportRect();
 
+    //Every command of a draw list indexes that list's one vertex buffer, so they are gathered here
+    //and submitted together - see GraphicsDevice::DrawIndexedRawBatched for why submitting them one
+    //by one is not just slower but lossy. Kept across frames so the panel costs no allocation.
+    static std::vector<ETG::GraphicsDevice::RawDrawRange> ranges;
+
     for (const ImDrawList* drawList : drawData->CmdLists)
     {
         const auto* vertices = reinterpret_cast<const ETG::GfxVertex*>(drawList->VtxBuffer.Data);
         const auto vertexCount = static_cast<std::uint32_t>(drawList->VtxBuffer.Size);
+        if (vertexCount == 0) continue;
+
+        ranges.clear();
+
+        //Anything gathered so far has to reach the screen before a user callback runs, or the
+        //callback would see a render state that the draws it precedes have not been issued against.
+        const auto flush = [&]
+        {
+            if (ranges.empty()) return;
+            ETG::GraphicsDevice::DrawIndexedRawBatched(vertices, vertexCount,
+                                                       ranges.data(), static_cast<std::uint32_t>(ranges.size()));
+            ranges.clear();
+        };
 
         for (const ImDrawCmd& cmd : drawList->CmdBuffer)
         {
             if (cmd.UserCallback)
             {
                 if (cmd.UserCallback != ImDrawCallback_ResetRenderState)
+                {
+                    flush();
                     cmd.UserCallback(drawList, &cmd);
+                }
                 continue;
             }
 
@@ -133,16 +155,17 @@ void ImGui_ImplBgfx_RenderDrawData(ImDrawData* drawData)
             const float bottom = std::min(clipMax.y, viewport.top + viewport.height);
             if (right <= left || bottom <= top) continue;
 
-            const ETG::IntRect scissor{
-                static_cast<int>(left), static_cast<int>(top),
-                static_cast<int>(right - left), static_cast<int>(bottom - top)
-            };
-
-            ETG::GraphicsDevice::DrawIndexedRaw(vertices, vertexCount,
-                                                drawList->IdxBuffer.Data + cmd.IdxOffset,
-                                                static_cast<std::uint32_t>(cmd.ElemCount),
-                                                static_cast<std::uint16_t>(cmd.GetTexID()),
-                                                &scissor);
+            ranges.push_back({
+                drawList->IdxBuffer.Data + cmd.IdxOffset,
+                static_cast<std::uint32_t>(cmd.ElemCount),
+                static_cast<std::uint16_t>(cmd.GetTexID()),
+                ETG::IntRect{
+                    static_cast<int>(left), static_cast<int>(top),
+                    static_cast<int>(right - left), static_cast<int>(bottom - top)
+                }
+            });
         }
+
+        flush();
     }
 }

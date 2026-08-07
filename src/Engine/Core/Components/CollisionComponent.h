@@ -17,7 +17,7 @@ namespace ETG
         void Update() override;
 
         //Radius to expand collision box beyond the texture boundaries
-        float CollisionRadius = 0.0f;
+        float CollisionRadius = 1.0f;
 
         //Whether to show collision bounds for debugging
         bool ShowCollisionBounds = false;
@@ -53,7 +53,7 @@ namespace ETG
         static std::vector<CollisionComponent*> AllCollisionRegistries;
 
         //Whether this collision component is active
-        bool CollisionEnabled{};
+        bool CollisionEnabled{true};
         bool DrawCollisionLineBetweenCenters{};
         bool DrawImpactPoint{true};
 

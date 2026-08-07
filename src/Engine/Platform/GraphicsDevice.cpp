@@ -447,14 +447,56 @@ namespace ETG
         SubmitGeometry(vertices, vertexCount, indices, indexCount, handle, effect, nullptr, 0);
     }
 
-    void GraphicsDevice::DrawIndexedRaw(const GfxVertex* vertices, const std::uint32_t vertexCount,
-                                        const std::uint16_t* indices, const std::uint32_t indexCount,
-                                        const std::uint16_t textureHandle, const IntRect* scissorPixels)
+    void GraphicsDevice::DrawIndexedRawBatched(const GfxVertex* vertices, const std::uint32_t vertexCount,
+                                               const RawDrawRange* ranges, const std::uint32_t rangeCount)
     {
-        bgfx::TextureHandle handle = BGFX_INVALID_HANDLE;
-        if (textureHandle != InvalidGpuHandle) handle = bgfx::TextureHandle{textureHandle};
+        DeviceState& d = Device();
+        if (!d.initialized || !vertices || !ranges || vertexCount == 0 || rangeCount == 0) return;
 
-        SubmitGeometry(vertices, vertexCount, indices, indexCount, handle, ShaderEffect::None, scissorPixels, 0);
+        std::uint32_t totalIndices = 0;
+        for (std::uint32_t i = 0; i < rangeCount; ++i) totalIndices += ranges[i].indexCount;
+        if (totalIndices == 0) return;
+
+        //Reserve for the whole batch up front: dropping it whole beats leaving half a panel drawn.
+        if (bgfx::getAvailTransientVertexBuffer(vertexCount, d.layout) < vertexCount) return;
+        if (bgfx::getAvailTransientIndexBuffer(totalIndices) < totalIndices) return;
+
+        //The one upload the whole batch shares. Every range below binds a window into it, so the
+        //cost is (vertices + indices) instead of (ranges x vertices).
+        bgfx::TransientVertexBuffer tvb{};
+        bgfx::allocTransientVertexBuffer(&tvb, vertexCount, d.layout);
+        std::memcpy(tvb.data, vertices, vertexCount * sizeof(GfxVertex));
+
+        bgfx::TransientIndexBuffer tib{};
+        bgfx::allocTransientIndexBuffer(&tib, totalIndices);
+        auto* indexData = reinterpret_cast<std::uint16_t*>(tib.data);
+
+        std::uint32_t indexOffset = 0;
+        for (std::uint32_t i = 0; i < rangeCount; ++i)
+        {
+            const RawDrawRange& range = ranges[i];
+            if (range.indexCount == 0 || !range.indices) continue;
+
+            std::memcpy(indexData + indexOffset, range.indices, range.indexCount * sizeof(std::uint16_t));
+
+            bgfx::setVertexBuffer(0, &tvb);
+            bgfx::setIndexBuffer(&tib, indexOffset, range.indexCount);
+
+            const bgfx::TextureHandle texture = range.textureHandle != InvalidGpuHandle
+                                                   ? bgfx::TextureHandle{range.textureHandle}
+                                                   : d.whiteTexture;
+            bgfx::setTexture(0, d.texColorUniform, texture, UINT32_MAX);
+
+            bgfx::setScissor(static_cast<std::uint16_t>(std::max(0, range.scissorPixels.left)),
+                             static_cast<std::uint16_t>(std::max(0, range.scissorPixels.top)),
+                             static_cast<std::uint16_t>(std::max(0, range.scissorPixels.width)),
+                             static_cast<std::uint16_t>(std::max(0, range.scissorPixels.height)));
+
+            bgfx::setState(State2D);
+            bgfx::submit(SceneView, d.spriteProgram);
+
+            indexOffset += range.indexCount;
+        }
     }
 
     void GraphicsDevice::DrawLines(const GfxVertex* vertices, const std::uint32_t vertexCount)
@@ -475,11 +517,23 @@ namespace ETG
         //texture so draw calls never have to think about it.
         const std::uint64_t flags = (linearSampling ? BGFX_SAMPLER_NONE : BGFX_SAMPLER_POINT) | BGFX_SAMPLER_UVW_CLAMP;
 
+        //Allocate empty and fill in a second step, never by handing the pixels to createTexture2D.
+        //bgfx marks any texture created *with* initial memory immutable (bgfx.cpp, `immutable =
+        //NULL != _mem`), and updateTexture2D on an immutable texture is dropped with nothing but a
+        //BX_WARN, which compiles out of release builds. That silently breaks every texture this
+        //engine uploads to more than once - the ImGui font atlas above all, which bakes new glyphs
+        //into itself as new characters appear on screen.
         const bgfx::TextureHandle handle = bgfx::createTexture2D(
             static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height),
-            false, 1, bgfx::TextureFormat::RGBA8, flags, PackRows(rgba, width, height, pitch));
+            false, 1, bgfx::TextureFormat::RGBA8, flags, nullptr);
 
-        return bgfx::isValid(handle) ? handle.idx : InvalidGpuHandle;
+        if (!bgfx::isValid(handle)) return InvalidGpuHandle;
+
+        bgfx::updateTexture2D(handle, 0, 0, 0, 0,
+                              static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height),
+                              PackRows(rgba, width, height, pitch));
+
+        return handle.idx;
     }
 
     void GraphicsDevice::UpdateTexture2D(const std::uint16_t handle, const unsigned x, const unsigned y,

@@ -13,6 +13,7 @@
 #include "../../../Utils/Math.h"
 #include "../../Items/Passive/PlatinumBullets.h"
 #include "../../../Engine/Managers/AssetManager.h"
+#include "../../Guns/VFX/MagazineDrop.h"
 
 namespace ETG
 {
@@ -55,6 +56,12 @@ namespace ETG
         if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this);
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 
+        //Built here, with the gun's other owned sub-objects, because GunBase::Update and ::Draw tick it for
+        //EVERY gun. A gun that never calls Magazine->SetSprite simply drops nothing - MagazineDrop::Drop
+        //returns early without a sprite - which is what lets the base own the object while the artwork stays
+        //the individual gun's business, exactly like MuzzleFlash above
+        if (!Magazine) Magazine = CreateGameObjectAttached<MagazineDrop>(this);
+
         GunBase::Initialize();
     }
 
@@ -65,6 +72,34 @@ namespace ETG
         const float signedAngle = aimAngle > 180.f ? aimAngle - 360.f : aimAngle;
 
         return std::abs(signedAngle) <= HandSwapAngle;
+    }
+
+    ETG::Vector2f GunBase::MirroredHeldOffset() const
+    {
+        //Only the horizontal component mirrors, so a negative X keeps meaning "further back along the barrel"
+        //on both sides. Y means up in the artwork either way, because the sprite mirrors about the barrel
+        ETG::Vector2f heldOffset = HeldOffset;
+        if (!IsHeldOnRightHand) heldOffset.x = -heldOffset.x;
+
+        return heldOffset;
+    }
+
+    ETG::Vector2f GunBase::WorldPointOnGun(const ETG::Vector2f& anchor) const
+    {
+        //The anchor is measured from the sheet's top-left while the gun draws around its Origin, so their
+        //difference is the point in gun space. Feeding the gun's own scale into the rotation is what keeps
+        //it on the right pixel when the gun is mirrored to aim left
+        const ETG::Vector2f gunLocal = anchor - GetOrigin();
+
+        //HeldOffset slides the gun artwork under stationary hands. Remove that world-space displacement here,
+        //otherwise everything anchored to the gun would drag along with the slide
+        return GetPosition() - MirroredHeldOffset() +
+               Math::RotateVector(GetRotation(), GetScale(), gunLocal);
+    }
+
+    float GunBase::ReloadProgress() const
+    {
+        return Math::Progress01(ReloadElapsed, ReloadTime.Get());
     }
 
     void GunBase::RemoveAllModifiersFrom(const std::string& source)
@@ -110,6 +145,10 @@ namespace ETG
 
         Timer += Time::FrameTick;
 
+        //The reload's own clock. ReloadSlider owns when a reload ends (it clears IsReloading once it has run
+        //for ReloadTime), so this only has to count while one is running
+        if (IsReloading) ReloadElapsed += Time::FrameTick;
+
         //Fire all the bullets inside bulletQueue and remove them from the vector
         if (!bulletQueue.empty())
         {
@@ -141,6 +180,13 @@ namespace ETG
                                   : GunStateEnum::Idle;
         }
 
+        //A reload does not end with its animation the way a shot does: ReloadSlider clears IsReloading after
+        //ReloadTime, whatever the sheet happens to be doing, so the pose has to be dropped from here.
+        //NOTE: without this the gun holds its last reload frame - on the AK, the tilted magazine-out pose -
+        //until the next shot happens to change the state
+        if (CurrentGunState == GunStateEnum::Reload && !IsReloading)
+            CurrentGunState = GunStateEnum::Idle;
+
         // Continue with the rest of the update logic
         ArrowComp->SetPosition(this->Position + Math::RotateVector(Rotation, Scale, ArrowComp->arrowOffset));
         ArrowComp->SetRotation(this->GetDrawProperties().Rotation);
@@ -157,6 +203,8 @@ namespace ETG
         UpdateProjectiles();
 
         ReloadSlider->Update();
+        
+        Magazine->Update();
     }
 
     void GunBase::Draw()
@@ -167,7 +215,11 @@ namespace ETG
             proj->Draw();
         }
 
-        if (!IsVisible) return; //If dashing, this will be false and self gun shouldn't be drawn however projectiles should be. So we first draw projectiles then we draw self if visible 
+        //Above the IsVisible check for the same reason the projectiles are: the magazine has already left the
+        //gun, so it keeps falling while the hero dashes and the gun itself is hidden
+        Magazine->Draw();
+
+        if (!IsVisible) return; //If dashing, this will be false and self gun shouldn't be drawn however projectiles should be. So we first draw projectiles then we draw self if visible
         GameObjectBase::Draw();
 
         // Draw the gun.
@@ -179,6 +231,13 @@ namespace ETG
         // Draw the muzzle flash.
         if (MuzzleFlash->IsVisible) MuzzleFlash->Draw();
         ReloadSlider->Draw();
+        
+        if (CollisionComp) 
+            CollisionComp->Visualize(*ETG::RenderContext::Window);
+        
+        //Outside GunBase::Draw's own IsVisible check on purpose: the magazine has already left the gun, so it
+        //keeps falling while the hero dashes and the rifle itself is hidden
+        Magazine->Draw();
     }
 
     void GunBase::UpdateProjectiles()
@@ -285,9 +344,15 @@ namespace ETG
         CurrentGunState = GunStateEnum::Reload; //update animation
         RestartCurrentAnimStateAnimation();
         IsReloading = true;
+        ReloadElapsed = 0.f; //the performance the gun puts on is timed off this, so it starts with the reload
         ReloadSound.play();
         OnAmmoRunOut.Broadcast(false); // Notify that we have ammo again
         OnReloadInvoke.Broadcast(true);
+        
+        //GunBase::Reload bails out when the magazine is already full or a reload is already running, so the drop
+        //is only armed when a reload genuinely began
+        if (IsReloading) 
+            MagazineEjected = false;
     }
 
     void GunBase::RestartCurrentAnimStateAnimation()

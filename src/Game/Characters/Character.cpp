@@ -27,25 +27,6 @@ namespace ETG
         Effect = enabled ? ShaderEffect::Grayscale : ShaderEffect::None;
     }
 
-    namespace
-    {
-        //Where an anchor pixel of the gun ends up in the world. The anchor is measured from the sheet's top-left
-        //while the gun draws around its Origin, so their difference is the offset in gun space; feeding the gun's
-        //own scale into the rotation is what keeps it on the right pixel when the gun is mirrored to aim left.
-        //
-        //Nothing here knows about pinning, and it does not need to: a pinned gun has already been slid so that its
-        //grip sits on the pinned point, so a hand placed on that grip lands there for free.
-        ETG::Vector2f AnchorPositionOnGun(const GunBase& gun, const ETG::Vector2f& anchor,
-                                          const ETG::Vector2f& heldOffset)
-        {
-            const ETG::Vector2f gunLocal = anchor - gun.GetOrigin();
-            //HeldOffset slides the gun artwork under stationary hands. Remove that world-space displacement here,
-            //otherwise the grip anchors would drag both hands along with the gun.
-            return gun.GetPosition() - heldOffset +
-                   Math::RotateVector(gun.GetRotation(), gun.GetScale(), gunLocal);
-        }
-    }
-
     //<---------- The held-gun rig: the one decision everything else reads ---------->
     bool Character::IsGunOnRightSide() const
     {
@@ -72,12 +53,10 @@ namespace ETG
     {
         if (!CurrentGun) return {};
 
-        //Only the horizontal component mirrors, so a negative X keeps meaning "further back along the barrel"
-        //on both sides. Y means up in the artwork either way, because the sprite mirrors about the barrel
-        ETG::Vector2f heldOffset = CurrentGun->HeldOffset;
-        if (!IsGunOnRightSide()) heldOffset.x = -heldOffset.x;
-
-        return heldOffset;
+        //The mirroring rule itself lives on the gun, because the gun needs it too: WorldPointOnGun has to
+        //undo the same slide to locate a pixel of its own artwork. PublishHeldSideToGun has already told the
+        //gun which side it is on, so both answers come out of the one decision IsGunOnRightSide made
+        return CurrentGun->MirroredHeldOffset();
     }
 
     //<---------- The rig: step 1, the joint ---------->
@@ -184,15 +163,15 @@ namespace ETG
     {
         UpdateHandDepths();
 
-        const ETG::Vector2f heldOffset = MirroredHeldOffset();
         const bool gunNamesRightGrip = CurrentGun && CurrentGun->HasRightHandAnchor;
         const bool gunNamesLeftGrip = CurrentGun && CurrentGun->HasLeftHandAnchor;
 
-        //The primary hand falls back to the hold point itself - no measured grip means the gun simply sits in it
+        //The gesture is added to the anchor here rather than inside the gun, so a gun that acts nothing out
+        //(every one of them but the AK, so far) is placed on exactly the pixel it always was
         if (Hand)
             PlaceHand(*Hand, gunNamesRightGrip,
-                      gunNamesRightGrip ? CurrentGun->RightHandAnchor : ETG::Vector2f{},
-                      HoldPoint, heldOffset);
+                      gunNamesRightGrip ? CurrentGun->RightHandAnchor + CurrentGun->RightHandGesture : ETG::Vector2f{},
+                      HoldPoint);
 
         //The off hand falls back to the opposite side of the body, so it stays visible on a one-handed gun
         //instead of sitting at its construction position at world (0,0)
@@ -201,8 +180,8 @@ namespace ETG
             const ETG::Vector2f restOffset = IsGunOnRightSide() ? HandOffsetLeft : HandOffsetRight;
 
             PlaceHand(*OffHand, gunNamesLeftGrip,
-                      gunNamesLeftGrip ? CurrentGun->LeftHandAnchor : ETG::Vector2f{},
-                      BodyRestPosition(restOffset), heldOffset);
+                      gunNamesLeftGrip ? CurrentGun->LeftHandAnchor + CurrentGun->LeftHandGesture : ETG::Vector2f{},
+                      BodyRestPosition(restOffset));
         }
     }
 
@@ -218,11 +197,13 @@ namespace ETG
     }
 
     void Character::PlaceHand(class Hand& hand, const bool gunNamesGrip, const ETG::Vector2f& gripAnchor,
-                              const ETG::Vector2f& bodyRestPosition, const ETG::Vector2f& heldOffset) const
+                              const ETG::Vector2f& bodyRestPosition) const
     {
         if (gunNamesGrip)
         {
-            hand.SetPosition(AnchorPositionOnGun(*CurrentGun, gripAnchor, heldOffset));
+            //Nothing here knows about pinning, and it does not need to: a pinned gun has already been slid so
+            //that its grip sits on the pinned point, so a hand placed on that grip lands there for free
+            hand.SetPosition(CurrentGun->WorldPointOnGun(gripAnchor));
             hand.SetRotation(CurrentGun->GetRotation()); //a hand turns with the gun it is holding
         }
         else

@@ -116,9 +116,11 @@ namespace ETG
         void UpdateHandDepths() const;
 
         //Places one hand, on the gun if the gun named a grip for it and against the body if it did not. Both
-        //hands go through this: they differ only in which anchor and which resting offset they are given
+        //hands go through this: they differ only in which anchor and which resting offset they are given.
+        //`gripAnchor` already carries whatever the gun is acting out this frame (GunBase's hand gestures),
+        //because from here a hand on a grip and a hand halfway through a reload are the same job
         void PlaceHand(class Hand& hand, bool gunNamesGrip, const ETG::Vector2f& gripAnchor,
-                       const ETG::Vector2f& bodyRestPosition, const ETG::Vector2f& heldOffset) const;
+                       const ETG::Vector2f& bodyRestPosition) const;
 
         //The gun's HeldOffset with its X mirrored when the gun is held on the left, so a value authored against
         //the right-held artwork keeps meaning the same thing on the other side. Read by the gun's placement and

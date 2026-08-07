@@ -85,12 +85,26 @@ namespace ETG
                                 const std::uint16_t* indices, std::uint32_t indexCount,
                                 const Texture* texture, ShaderEffect effect = ShaderEffect::None);
 
-        //Same, but against a raw GPU texture handle and with an optional scissor rectangle in
-        //backbuffer pixels. This is the entry point the ImGui backend uses. Sampling comes from
-        //the flags the texture was created with.
-        static void DrawIndexedRaw(const GfxVertex* vertices, std::uint32_t vertexCount,
-                                   const std::uint16_t* indices, std::uint32_t indexCount,
-                                   std::uint16_t textureHandle, const IntRect* scissorPixels);
+        //One piece of a batched draw: an index range into a shared vertex buffer, with its own
+        //raw GPU texture handle and its own scissor rectangle in backbuffer pixels. Sampling comes
+        //from the flags the texture was created with.
+        struct RawDrawRange
+        {
+            const std::uint16_t* indices{nullptr};
+            std::uint32_t indexCount{0};
+            std::uint16_t textureHandle{InvalidGpuHandle};
+            IntRect scissorPixels{};
+        };
+
+        //Several index ranges submitted against ONE shared vertex buffer, which is uploaded once.
+        //This is the entry point the ImGui backend uses: every command in an ImGui draw list
+        //indexes the same vertex buffer, so calling DrawIndexedRaw per command would re-upload
+        //those vertices once per command. bgfx's transient buffers are a fixed per-frame budget
+        //(6 MB of vertices by default), and geometry that no longer fits is dropped silently, so
+        //that quadratic cost turns into missing UI. A property-heavy editor panel reaches it
+        //easily: ImGui::Columns starts a new draw command per cell.
+        static void DrawIndexedRawBatched(const GfxVertex* vertices, std::uint32_t vertexCount,
+                                          const RawDrawRange* ranges, std::uint32_t rangeCount);
 
         //Line list: vertices are consumed in pairs.
         static void DrawLines(const GfxVertex* vertices, std::uint32_t vertexCount);

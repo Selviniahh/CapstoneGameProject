@@ -16,6 +16,7 @@
 #include "../Guns/Base/GunBase.h"
 #include "../Guns/RogueSpecial/RogueSpecial.h"
 #include "../Guns/VFX/MuzzleFlash.h"
+#include "../Guns/VFX/MagazineDrop.h"
 #include "../Guns/AK-47/AK47.h"
 #include "../Guns/Magnum/Magnum.h"
 #include "../Guns/SawedOff/SawedOff.h"
@@ -68,6 +69,8 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(ArrowComp, ComponentBase);
     TypeRegistry::RegisterType<MuzzleFlash>();
     REGISTER_BASE_CLASS(MuzzleFlash, GameObjectBase);
+    TypeRegistry::RegisterType<MagazineDrop>();
+    REGISTER_BASE_CLASS(MagazineDrop, GameObjectBase);
     TypeRegistry::RegisterType<AmmoBarUI>();
     REGISTER_BASE_CLASS(AmmoBarUI, GameObjectBase);
     TypeRegistry::RegisterType<AmmoIndicatorsUI>();

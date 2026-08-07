@@ -19,6 +19,8 @@
 
 namespace ETG
 {
+    class MagazineDrop;
+    class CollisionComponent;
     class ReloadSlider;
     class ProjectileBase;
     struct QueuedBullet;
@@ -62,6 +64,10 @@ namespace ETG
         //actually fired - a burst needs a faster muzzle flash - without naming the modifier that caused it, so a
         //second modifier producing bursts is handled for free
         ShotParams LastShot{};
+        
+        //One object reused for every reload rather than a spawn per reload: only one magazine is ever in
+        //the air, because a second reload cannot start until the first has finished
+        std::unique_ptr<MagazineDrop> Magazine;
 
         std::vector<QueuedBullet> bulletQueue; //Queue of bullets waiting to be fired
 
@@ -89,6 +95,31 @@ namespace ETG
         //off hand stays at the character's body instead; visibility belongs to the character.
         bool HasRightHandAnchor{false};
         bool HasLeftHandAnchor{false};
+
+        //An extra displacement added to where a hand is PLACED, in the same sheet pixels the anchors are
+        //measured in. A gun writes these in its own Update to act something out - the AK's hand reaching
+        //down to the magazine well and pulling - and leaves them at zero the rest of the time.
+        //
+        //NOTE: kept separate from the anchors instead of being written into them. The anchors are the
+        //authored truth about where this gun is held, and ApplyGripPin reads LeftHandAnchor to decide
+        //which pixel stands still - a gesture written into the anchor would drag the pin around with it,
+        //so the whole gun would swing every time a hand moved
+        ETG::Vector2f RightHandGesture{};
+        ETG::Vector2f LeftHandGesture{};
+
+        //Where a pixel of this gun's artwork is in the world right now. `anchor` is in the sheet's own
+        //pixels with (0,0) at the frame's top-left, exactly like the hand anchors above, so anything that
+        //has to find a part of the gun - a hand, the magazine well a clip drops out of - asks here instead
+        //of repeating the rotate-mirror-and-unslide by hand.
+        //
+        //NOTE: the anchor is turned into an offset from the CURRENT frame's Origin, which the animation
+        //rewrites every tick. That is what makes an anchor keep meaning the same pixel even when a state
+        //change swaps in a sheet of a different size
+        [[nodiscard]] ETG::Vector2f WorldPointOnGun(const ETG::Vector2f& anchor) const;
+
+        //This gun's HeldOffset with its X mirrored while it is held on the left, so a value authored
+        //against the right-held artwork keeps meaning "further back along the barrel" on both sides
+        [[nodiscard]] ETG::Vector2f MirroredHeldOffset() const;
 
         //Which side of the body this gun is held on, and therefore which way its sprite is mirrored. A half
         //angle in degrees measured from straight right: the gun stays on the right hand while the aim is
@@ -167,6 +198,17 @@ namespace ETG
         GunStateEnum CurrentGunState{GunStateEnum::Idle};
 
         bool IsReloading{};
+        
+        //Whether this reload has already thrown its magazine. Cleared in Reload(), so a reload that
+        //GunBase refused (full magazine, one already running) cannot arm a second drop
+        bool MagazineEjected{true};
+
+        //Seconds since the current reload began, and the same thing as a 0..1 fraction of ReloadTime.
+        //Anything that has to be timed against the reload - a hand gesture, a magazine falling out - reads
+        //the fraction instead of running a timer of its own, which would drift away from the one
+        //ReloadSlider is counting down and end the performance at a different moment than the reload
+        float ReloadElapsed{};
+        [[nodiscard]] float ReloadProgress() const;
 
         //Gun stats. Each one carries its own base value and whatever modifiers items have put on it.
         //
@@ -209,6 +251,9 @@ namespace ETG
 
         //Gun Animation
         std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
+        
+        std::unique_ptr<CollisionComponent> CollisionComp;
+        
 
     private:
         //Sounds

@@ -158,6 +158,12 @@ void ETG::SpriteBatch::SimpleDraw(const std::shared_ptr<ETG::Texture>& tex, cons
 
 void ETG::SpriteBatch::Draw(const GameObjectBase::DrawProperties& DrawProperties)
 {
+    //An object whose properties carry no texture draws nothing. DrawProperties holds a RAW pointer copied out
+    //of the object's shared_ptr by ComputeDrawProperties, so it is null for anything that has not published
+    //its properties since it got a texture - and dereferencing it here is a segfault inside the renderer,
+    //several frames of stack away from whichever object actually forgot to republish
+    if (!DrawProperties.Texture) return;
+
     ETG::Sprite frame;
     frame.setTexture(*DrawProperties.Texture);
     frame.setScale(DrawProperties.Scale);
