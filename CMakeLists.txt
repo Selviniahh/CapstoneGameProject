@@ -137,6 +137,8 @@ set(ENGINE_SOURCES
         src/Engine/Editor/Engine.cpp
         src/Engine/Editor/Engine.h
         src/Engine/Editor/Reflection.h
+        src/Engine/Editor/DebugPointViz.cpp
+        src/Engine/Editor/DebugPointViz.h
         src/Engine/Editor/UI/EngineUI.cpp
         src/Engine/Editor/UI/EngineUI.h
         src/Engine/Editor/UI/UIUtils.cpp
@@ -214,6 +216,8 @@ set(CHARACTERS_SOURCES
 set(GUNS_SOURCES
         src/Game/Guns/GunStates.h
         src/Game/Guns/Base/GunBase.cpp
+        src/Game/Guns/Base/HandRig.cpp
+        src/Game/Guns/Base/HandRig.h
         src/Game/Guns/Base/GunBase.h
         src/Game/Guns/RogueSpecial/RogueSpecial.cpp
         src/Game/Guns/RogueSpecial/RogueSpecial.h

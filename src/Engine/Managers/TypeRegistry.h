@@ -6,6 +6,7 @@
 #include <utility>
 #include "../Core/GameObjectBase.h"
 #include "../Editor/Reflection.h"
+#include "../Editor/DebugPointViz.h"
 #include "../Core/TypeID.h"
 
 #define REGISTER_BASE_CLASS(Derived, Base) \
@@ -58,6 +59,11 @@ namespace ETG
             if (!obj)
                 return false; // Changed from throwing exception to returning false
 
+            //Whatever members the walk below turns up, they belong to this object. The Vector2f widget reads this
+            //to know which frame an authored point is expressed in; the pop has to happen on every exit path,
+            //because ShowImGuiWidget<GameObjectBase*> recurses back into here for nested objects.
+            const OwnerScope ownerScope{dynamic_cast<GameObjectBase*>(obj)};
+
             // Try direct match first (fastest)
             const auto exactType = std::type_index(typeid(*obj));
             const auto it = RegisteredTypes.find(exactType);
@@ -88,5 +94,17 @@ namespace ETG
         };
 
         static inline std::unordered_map<std::type_index, TypeData> RegisteredTypes;
+
+    private:
+        //ProcessObject has several returns and the reflection walk in between can throw; a scope guard is what
+        //keeps the owner stack balanced without repeating the pop on each exit
+        struct OwnerScope
+        {
+            explicit OwnerScope(GameObjectBase* owner) { DebugPointViz::PushOwner(owner); }
+            ~OwnerScope() { DebugPointViz::PopOwner(); }
+
+            OwnerScope(const OwnerScope&) = delete;
+            OwnerScope& operator=(const OwnerScope&) = delete;
+        };
     };
 }

@@ -4,28 +4,28 @@
 
 namespace ETG
 {
-    //The magazine a gun throws away while it reloads. Purely cosmetic: it is dropped at the magazine
-    //well, given a shove, and from there it is only gravity, a spin and a fade - nothing collides with
-    //it and nothing reads it back.
+    // Bir silahın reload sırasında dışarı attığı magazine. Tamamen görseldir: magazine well'de bırakılıp
+    // itilmesinin ardından yalnızca gravity, spin ve fade uygulanır; hiçbir şey onunla collide olmaz
+    // ve hiçbir yer onu tekrar okumaz.
     //
-    //NOTE: deliberately NOT parented to the gun the way MuzzleFlash is. A flash is painted on the barrel
-    //and has to follow it wherever it points; a dropped magazine has left the gun, so it keeps the world
-    //position it was dropped at while the hero walks on. That difference is the whole reason this is its
-    //own class rather than another MuzzleFlash with a different sheet
+    // NOTE: Bilerek MuzzleFlash gibi silaha parent EDİLMEMİŞTİR. Flash barrel üzerine çizildiğinden baktığı
+    // her yerde onu takip etmelidir; düşen magazine ise silahtan ayrılmıştır ve hero hareket ederken bırakıldığı
+    // world position'ı korur. Farklı bir sprite sheet kullanan başka bir MuzzleFlash olmak yerine ayrı bir
+    // class olmasının temel nedeni bu farktır.
     class MagazineDrop : public GameObjectBase
     {
     public:
-        //Starts out with no texture: which magazine falls out is the owning gun's business, so the gun
-        //hands it its sprite rather than this guessing one for everybody
+        // Başlangıçta texture içermez: hangi magazine'in düşeceğine owner silah karar verir. Bu nedenle
+        // herkes için tahmin yürütmek yerine sprite'ı silah tarafından verilir.
         MagazineDrop();
         ~MagazineDrop() override = default;
 
-        //Loads the sprite and centres the origin on it, so the drop spins about its middle
+        // Sprite'ı yükleyip origin'i merkezine yerleştirir; böylece düşen nesne merkezi etrafında döner
         void SetSprite(const std::string& relativePath);
         [[nodiscard]] bool HasSprite() const { return Texture != nullptr; }
 
-        //Throws one magazine. Everything a fall needs is decided here, so a gun that reloads again before
-        //the last magazine has faded simply restarts this one instead of leaking a second object
+        // Bir magazine fırlatır. Düşüş için gereken her şey burada belirlenir; böylece son magazine fade
+        // olmadan tekrar reload yapan silah ikinci bir object sızdırmak yerine bunu yeniden başlatır.
         void Drop(const ETG::Vector2f& worldPos, float rotation, const ETG::Vector2f& velocity, float depth);
 
         void Update() override;
@@ -33,15 +33,15 @@ namespace ETG
 
         [[nodiscard]] bool IsFalling() const { return TimeLeft > 0.f; }
 
-        //Pixels per second squared. The dungeon is drawn top-down but the drop reads as a real object
-        //falling to the floor, so it accelerates straight down the screen rather than along the gun
+        // Saniyenin karesi başına pixel. Dungeon top-down çizilse de düşüş, zemine düşen gerçek bir object
+        // gibi algılanır; bu yüzden silah boyunca değil, ekranda doğrudan aşağı doğru hızlanır.
         float Gravity{260.f};
 
-        //Degrees per second. A magazine leaving a gun tumbles; without this it slides down looking pasted on
+        // Saniye başına degree. Silahtan çıkan magazine takla atar; bu olmazsa yapıştırılmış gibi aşağı kayar
         float SpinSpeed{220.f};
 
-        //How long the whole drop lasts, and how much of its tail is spent fading out. The fade is what
-        //stands in for the magazine landing - there is no floor to land on, so it leaves instead
+        // Düşüşün toplam süresi ve son kısmının ne kadarının fade ile geçeceği. Üzerine düşülecek bir zemin
+        // olmadığından magazine'in yere inişini fade temsil eder ve magazine bu şekilde kaybolur.
         float LifeTime{0.9f};
         float FadeTime{0.35f};
 

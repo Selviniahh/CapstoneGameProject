@@ -8,14 +8,14 @@ namespace ETG
     class MuzzleFlash : public GameObjectBase
     {
     public:
-        //Starts out empty: a flash belongs to a specific gun, so the owner hands it its
-        //sheet via SetAnimation instead of GunBase guessing one for everybody.
+        // Başlangıçta boştur: flash belirli bir silaha aittir. Bu nedenle GunBase herkes için tahmin
+        // yürütmek yerine owner, sprite sheet'i SetAnimation aracılığıyla verir.
         MuzzleFlash();
         ~MuzzleFlash() override = default;
 
-        //Loads the sheet and centres the origin on it. Callers that need the origin
-        //somewhere else (a multi-frame strip, where the sheet centre is meaningless)
-        //override it with SetOrigin afterwards.
+        // Sprite sheet'i yükler ve origin'i merkezine yerleştirir. Origin'e başka bir yerde ihtiyaç duyan
+        // caller'lar (sprite sheet merkezinin anlamsız olduğu multi-frame strip gibi) daha sonra
+        // SetOrigin ile override eder.
         void SetAnimation(const std::string& relativePath, const std::string& fileName, const std::string& extension, float frameSpeed = 0.10f);
         [[nodiscard]] bool HasAnimation() const { return Animation.Texture != nullptr; }
 
@@ -24,24 +24,24 @@ namespace ETG
         void Update() override;
         void Draw() override;
         
-        // Control methods
+        // Control method'ları
         void Activate();
         void Deactivate();
         void Restart();
         bool IsActive() const { return isActive; }
         bool IsFinished() const { return Animation.IsFinished(); }
         
-        // Set attachment offset (relative to parent position)
+        // Attachment offset'i ayarla (parent position'a göre)
         void SetAttachmentOffset(const ETG::Vector2f& offset) { AttachmentOffset = offset; }
         ETG::Vector2f GetAttachedOffset() const { return AttachmentOffset; }
         
-        // Set parent object to follow
+        // Takip edilecek parent object'i ayarla
         void SetParent(GameObjectBase* parent) { parentObject = parent; }
 
-        //A flash points down the barrel, so it turns with the gun. Smoke rises no matter
-        //which way the gun is aimed - and aiming left puts the gun at ~180 degrees, which
-        //would otherwise stand the smoke on its head and make it pour downwards.
-        //The attachment offset still rotates either way, so the effect stays put on the gun.
+        // Flash barrel yönüne baktığından silahla birlikte döner. Smoke, silahın nişan aldığı yönden bağımsız
+        // olarak yükselir. Sola nişan almak silahı yaklaşık 180 dereceye getirir; aksi durumda bu,
+        // smoke'u ters çevirip aşağı akmasına neden olur. Attachment offset her iki durumda da dönmeye
+        // devam ettiği için effect silah üzerindeki konumunu korur.
         void SetInheritParentRotation(const bool inherit) { InheritParentRotation = inherit; }
         
         Animation Animation;
@@ -51,7 +51,7 @@ namespace ETG
         bool InheritParentRotation = true;
         GameObjectBase* parentObject = nullptr;
         
-        // Frame speed for animation
+        // Animation için frame hızı
         float frameSpeed = 0.10f;
         ETG::Vector2f AttachmentOffset = {0.0f, 0.0f};
         

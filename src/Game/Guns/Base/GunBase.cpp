@@ -14,6 +14,7 @@
 #include "../../Items/Passive/PlatinumBullets.h"
 #include "../../../Engine/Managers/AssetManager.h"
 #include "../../Guns/VFX/MagazineDrop.h"
+#include "HandRig.h"
 
 namespace ETG
 {
@@ -30,45 +31,49 @@ namespace ETG
                      const float force,
                      const float forceDuration,
                      const float spread)
-        //NOTE: a number assigned to a Stat sets its base, so these are the gun's unmodified values. The block that
-        //used to copy every BaseX into its X down in the body is gone with the twins themselves
+        // NOTE: Stat'a atanan number onun base değerini belirler; dolayısıyla bunlar silahın modifier uygulanmamış
+        // değerleridir. Önceden body içinde her BaseX'i X'e kopyalayan block, ikiz field'larla birlikte kaldırıldı.
         : FireRate(fireRate), ShotSpeed(shotSpeed), Range(range), ReloadTime(reloadTime),
           Damage(damage), Force(force), ForceDuration(forceDuration), Spread(spread),
           MagazineSize(magazineSize), MaxAmmo(maxAmmo), Timer(timerForVelocity)
     {
-        // Initialize common position and textures
+        // Ortak position ve texture'ları initialize et
         this->Position = Position;
         this->Depth = depth;
 
-        //Both seeded from the authored depth, so the swap its holder performs every frame is a no-op until a gun
-        //actually asks to hide behind that holder's back
+        // Her ikisi de authored depth ile başlatılır. Böylece holder'ın her frame yaptığı swap, silah gerçekten
+        // holder'ın arkasında gizlenmeyi isteyene kadar no-op olur.
         HeldDepthInFront = depth;
         HeldDepthBehindBody = depth;
 
-        MagazineAmmo = MagazineSize.GetInt(); //Magazine needs to start with Magazine Ammo
+        MagazineAmmo = MagazineSize.GetInt(); // Magazine, MagazineAmmo ile başlamalıdır
 
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ProjTexture) ProjTexture = std::make_shared<ETG::Texture>();
         if (!Texture) Texture = std::make_shared<ETG::Texture>();
         if (!ArrowComp) ArrowComp = CreateGameObjectAttached<class ArrowComp>(this, AssetManager::Resolve("Projectiles/Arrow.png"));
-        //Created empty on purpose. Which sheet it plays is the individual gun's business, and
-        //it declares that in its own AnimComp::SetAnimations; GunBase::Initialize applies it.
+        // Bilerek boş oluşturulur. Hangi sprite sheet'in oynatılacağı ilgili silahın sorumluluğundadır;
+        // bunu kendi AnimComp::SetAnimations içinde belirtir ve GunBase::Initialize uygular.
         if (!MuzzleFlash) MuzzleFlash = CreateGameObjectAttached<class MuzzleFlash>(this);
         ReloadSlider = ETG::CreateGameObjectAttached<class ReloadSlider>(this);
 
-        //Built here, with the gun's other owned sub-objects, because GunBase::Update and ::Draw tick it for
-        //EVERY gun. A gun that never calls Magazine->SetSprite simply drops nothing - MagazineDrop::Drop
-        //returns early without a sprite - which is what lets the base own the object while the artwork stays
-        //the individual gun's business, exactly like MuzzleFlash above
+        // GunBase::Update ve ::Draw bunu HER silah için tick ettiğinden, silahın owner olduğu diğer sub-object'lerle
+        // birlikte burada oluşturulur. Magazine->SetSprite çağırmayan silah hiçbir şey düşürmez; MagazineDrop::Drop
+        // sprite yoksa erken döner. Böylece yukarıdaki MuzzleFlash'te olduğu gibi object base'e ait kalırken artwork
+        // ilgili silahın sorumluluğunda olur.
         if (!Magazine) Magazine = CreateGameObjectAttached<MagazineDrop>(this);
+
+        // Her silahın elleri vardır, dolayısıyla rig'i de vardır. Boş bir rig hiçbir şey yapmaz: anchor'sız eller
+        // body üzerinde kalır ve tüm hareketlerin genliği sıfırdır. Silah yalnızca istediğini author eder.
+        if (!Hands) Hands = CreateGameObjectAttached<HandRig>(this);
 
         GunBase::Initialize();
     }
 
     bool GunBase::IsHeldOnRightSide(const float aimAngle) const
     {
-        //Folded into [-180,180] so the test is symmetric about straight right and the wrap at 360 needs no
-        //second case: 350 degrees is 10 degrees above the axis, not 350 away from it
+        // [-180,180] aralığına katlanır; böylece test doğrudan sağ yönüne göre symmetric olur ve 360 wrap için
+        // ikinci case gerekmez. 350 derece axis'ten 350 derece uzakta değil, 10 derece yukarıdadır.
         const float signedAngle = aimAngle > 180.f ? aimAngle - 360.f : aimAngle;
 
         return std::abs(signedAngle) <= HandSwapAngle;
@@ -76,25 +81,26 @@ namespace ETG
 
     ETG::Vector2f GunBase::MirroredHeldOffset() const
     {
-        //Only the horizontal component mirrors, so a negative X keeps meaning "further back along the barrel"
-        //on both sides. Y means up in the artwork either way, because the sprite mirrors about the barrel
+        // Yalnızca horizontal component mirror edilir. Böylece negatif X iki tarafta da "barrel boyunca daha geride"
+        // anlamını korur. Sprite barrel ekseninde mirror edildiği için Y her iki durumda da artwork içinde yukarıdır.
         ETG::Vector2f heldOffset = HeldOffset;
         if (!IsHeldOnRightHand) heldOffset.x = -heldOffset.x;
 
         return heldOffset;
     }
 
-    ETG::Vector2f GunBase::WorldPointOnGun(const ETG::Vector2f& anchor) const
+    bool GunBase::WantsGripPinned() const
     {
-        //The anchor is measured from the sheet's top-left while the gun draws around its Origin, so their
-        //difference is the point in gun space. Feeding the gun's own scale into the rotation is what keeps
-        //it on the right pixel when the gun is mirrored to aim left
-        const ETG::Vector2f gunLocal = anchor - GetOrigin();
+        return Hands->PinsGripWhenAimingUp && IsBarrelAboveHorizontal();
+    }
 
-        //HeldOffset slides the gun artwork under stationary hands. Remove that world-space displacement here,
-        //otherwise everything anchored to the gun would drag along with the slide
+    ETG::Vector2f GunBase::WorldPointOnGun(const ETG::Vector2f& localPoint) const
+    {
+        // HeldOffset silah artwork'ünü sabit ellerin altında kaydırır. Bu world-space displacement burada kaldırılır;
+        // aksi hâlde silaha anchor edilmiş her şey kaymayla birlikte sürüklenir. Silah sola nişan almak için
+        // mirror edildiğinde local noktayı doğru tarafta tutan şey, silahın kendi scale değerinin rotation'a verilmesidir.
         return GetPosition() - MirroredHeldOffset() +
-               Math::RotateVector(GetRotation(), GetScale(), gunLocal);
+               Math::RotateVector(GetRotation(), GetScale(), localPoint);
     }
 
     float GunBase::ReloadProgress() const
@@ -104,7 +110,7 @@ namespace ETG
 
     void GunBase::RemoveAllModifiersFrom(const std::string& source)
     {
- //        Döngünün her adımında stat, sıradaki nesnenin adresini alıyor. Mantıksal olarak şuna eşdeğer:
+ //        Loop'un her adımında stat, sıradaki object'in address'ini alır. Mantıksal olarak şuna eşdeğerdir:
  //        FireRate.RemoveModifiersFrom(source);
  //        ShotSpeed.RemoveModifiersFrom(source);
  //        Range.RemoveModifiersFrom(source);
@@ -126,14 +132,13 @@ namespace ETG
 
     void GunBase::Initialize()
     {
-        Timer = FireRate + 1; //Set timer to be greater than fire rate so that we can shoot immediately
+        Timer = FireRate + 1; // Hemen ateş edebilmek için Timer'ı FireRate'ten büyük yap
 
-        //The origin manually needs to be given because when gun rotating, it has to rotate around the attachment point which is the handle point of the gun. 
+        // Silah rotate edilirken handle point olan attachment point etrafında dönmesi gerektiği için Origin elle verilmelidir
         this->Origin += OriginOffset;
         ArrowComp->SetOrigin(ArrowComp->GetOrigin() + ArrowComp->arrowOriginOffset);
 
-        // Muzzle flash sheet is the derived gun's business; it calls SetAnimation on this in
-        // its own Initialize.
+        // Muzzle flash sprite sheet derived gun'ın sorumluluğundadır; kendi Initialize'ı içinde SetAnimation çağırır
         MuzzleFlash->SetParent(this);
 
         ReloadSlider->LinkToGun(this);
@@ -145,11 +150,20 @@ namespace ETG
 
         Timer += Time::FrameTick;
 
-        //The reload's own clock. ReloadSlider owns when a reload ends (it clears IsReloading once it has run
-        //for ReloadTime), so this only has to count while one is running
+        // Reload'un kendi clock'udur. Reload'un ne zaman biteceğini ReloadSlider yönetir (ReloadTime süresince
+        // çalıştıktan sonra IsReloading'i temizler); bu nedenle yalnızca reload çalışırken sayması gerekir.
         if (IsReloading) ReloadElapsed += Time::FrameTick;
 
-        //Fire all the bullets inside bulletQueue and remove them from the vector
+        // Eller. Reload clock'undan hemen sonra çalışır çünkü reload performansını süren o değerdir; Update'in geri
+        // kalanından önce çalışır çünkü silahın shot kick'i position'ını kaydırır ve aşağıdaki arrow, muzzle flash
+        // ve draw properties'in hepsi kaymayı aynı frame içinde görmelidir.
+        //
+        // NOTE: Kayma birikmez. Holder her frame Character::PlaceHeldGun içinde silahın position'ını sıfırdan yazar;
+        // bu slide da her frame onun üzerine yeniden biner.
+        Hands->Tick(Time::FrameTick, IsReloading ? ReloadProgress() : -1.f);
+        SetPosition(GetPosition() + Math::RotateVector(Rotation, Scale, Hands->GunKickOffset()));
+
+        // BulletQueue içindeki tüm bullet'ları ateşle ve vector'den kaldır
         if (!bulletQueue.empty())
         {
             for (auto it = bulletQueue.begin(); it != bulletQueue.end();)
@@ -157,7 +171,7 @@ namespace ETG
                 it->timeToFire -= Time::FrameTick;
                 if (it->timeToFire <= 0)
                 {
-                    //Time to fie this bullet
+                    // Bu bullet'ı ateşleme zamanı
                     FireBullet(it->angle);
 
                     it = bulletQueue.erase(it);
@@ -167,9 +181,9 @@ namespace ETG
             }
         }
 
-        // Shoot runs out into Recoil, and Recoil runs out into Idle. A gun that never registered
-        // a Recoil animation drops straight back to Idle, so giving one to another gun later is
-        // just a line in its own SetAnimations - nothing to change here.
+        // Shoot bittiğinde Recoil'a, Recoil bittiğinde Idle'a geçer. Recoil Animation kaydetmemiş silah doğrudan
+        // Idle'a döner. Bu nedenle başka bir silaha sonradan Recoil eklemek yalnızca kendi SetAnimations'ına bir
+        // satır eklemeyi gerektirir; burada değişiklik gerekmez.
         if (const GunStateEnum animState = AnimationComp->CurrentState;
             (animState == GunStateEnum::Shoot || animState == GunStateEnum::Recoil) &&
             AnimationComp->AnimManagerDict[animState].IsFinished())
@@ -180,26 +194,26 @@ namespace ETG
                                   : GunStateEnum::Idle;
         }
 
-        //A reload does not end with its animation the way a shot does: ReloadSlider clears IsReloading after
-        //ReloadTime, whatever the sheet happens to be doing, so the pose has to be dropped from here.
-        //NOTE: without this the gun holds its last reload frame - on the AK, the tilted magazine-out pose -
-        //until the next shot happens to change the state
+        // Reload, shot gibi animation ile bitmez. Sprite sheet ne yapıyor olursa olsun ReloadSlider, ReloadTime
+        // sonrasında IsReloading'i temizler; bu nedenle pose buradan bırakılmalıdır.
+        // NOTE: Bu olmazsa silah, sonraki shot state'i değiştirene kadar son reload frame'ini korur. AK'de bu,
+        // tilted magazine-out pose'dur.
         if (CurrentGunState == GunStateEnum::Reload && !IsReloading)
             CurrentGunState = GunStateEnum::Idle;
 
-        // Continue with the rest of the update logic
+        // Update logic'in kalanıyla devam et
         ArrowComp->SetPosition(this->Position + Math::RotateVector(Rotation, Scale, ArrowComp->arrowOffset));
         ArrowComp->SetRotation(this->GetDrawProperties().Rotation);
         ArrowComp->Update();
 
-        // Update gun animation.
+        // Gun Animation'ını update et
         AnimationComp->Update(CurrentGunState, CurrentGunState);
         ComputeDrawProperties();
 
-        // Update muzzle flash position and animation.
+        // Muzzle flash position ve animation'ını update et
         MuzzleFlash->Update();
 
-        // Update projectiles.
+        // Projectile'ları update et
         UpdateProjectiles();
 
         ReloadSlider->Update();
@@ -209,34 +223,34 @@ namespace ETG
 
     void GunBase::Draw()
     {
-        // Draw projectiles.
+        // Projectile'ları çiz
         for (const auto& proj : projectiles)
         {
             proj->Draw();
         }
 
-        //Above the IsVisible check for the same reason the projectiles are: the magazine has already left the
-        //gun, so it keeps falling while the hero dashes and the gun itself is hidden
+        // Projectile'larla aynı nedenle IsVisible kontrolünün üzerindedir: magazine silahtan ayrılmıştır;
+        // hero dash yaparken ve silah gizliyken düşmeye devam eder.
         Magazine->Draw();
 
-        if (!IsVisible) return; //If dashing, this will be false and self gun shouldn't be drawn however projectiles should be. So we first draw projectiles then we draw self if visible
+        if (!IsVisible) return; // Dash sırasında false olur; silah çizilmemeli ancak projectile'lar çizilmelidir. Önce projectile'ları, sonra visible ise silahı çizeriz.
         GameObjectBase::Draw();
 
-        // Draw the gun.
+        // Silahı çiz
         SpriteBatch::Draw(GetDrawProperties());
 
-        // Draw the arrow representation.
+        // Arrow representation'ı çiz
         ArrowComp->Draw();
 
-        // Draw the muzzle flash.
+        // Muzzle flash'i çiz
         if (MuzzleFlash->IsVisible) MuzzleFlash->Draw();
         ReloadSlider->Draw();
         
         if (CollisionComp) 
             CollisionComp->Visualize(*ETG::RenderContext::Window);
         
-        //Outside GunBase::Draw's own IsVisible check on purpose: the magazine has already left the gun, so it
-        //keeps falling while the hero dashes and the rifle itself is hidden
+        // Bilerek GunBase::Draw içindeki IsVisible kontrolünün dışındadır: magazine silahtan ayrılmıştır;
+        // hero dash yaparken ve rifle gizliyken düşmeye devam eder.
         Magazine->Draw();
     }
 
@@ -249,10 +263,11 @@ namespace ETG
             {
                 UnregisterGameObject(it->get());
 
-                //Because initialized projectile moved to this container with std::move: "projectiles.push_back(std::move(proj));", owner of the object is this container.
-                //Simply removing the element from the vector will invoke
-                //unique_ptr's destructor because unique_ptr requires 1 owner and since owner is gone, it'll automatically call destructor right away after this erase call.
-                it = projectiles.erase(it); //After erase, set iterator to next iterator after the one removed
+                // Initialize edilmiş projectile std::move ile bu container'a taşındığından
+                // (`projectiles.push_back(std::move(proj));`) object'in owner'ı bu container'dır. Element'i vector'den
+                // kaldırmak unique_ptr destructor'ını çağırır. unique_ptr tek owner gerektirdiğinden owner ortadan
+                // kalkınca erase call sonrasında destructor otomatik olarak hemen çağrılır.
+                it = projectiles.erase(it); // Erase sonrasında iterator'ı kaldırılan element'ten sonraki iterator'a ayarla
             }
             else
             {
@@ -265,26 +280,31 @@ namespace ETG
     {
         if (Timer >= FireRate)
         {
-            //Reset firing timer
+            // Firing timer'ı reset et
             Timer = 0;
 
-            //The gun states what a plain shot looks like and lets the modifiers rewrite it. Kept in a local rather
-            //than written back onto the gun, so nothing has to be restored when a timed effect runs out.
-            //NOTE: no concrete modifier is named here on purpose. A new one that changes the shape of the shot is
-            //written on its own and picked up by this loop without this function being touched again
+            // Silah plain shot'ın nasıl göründüğünü belirtir ve modifier'ların bunu yeniden yazmasına izin verir.
+            // Silaha geri yazılmak yerine local tutulur; böylece timed effect sona erdiğinde bir şeyi restore etmek gerekmez.
+            // NOTE: Burada bilerek belirli bir modifier adı verilmez. Shot biçimini değiştiren yeni modifier bağımsız
+            // yazılır ve bu function'a tekrar dokunulmadan loop tarafından otomatik olarak alınır.
             ShotParams shot{.ShotCount = 1, .Spread = Spread};
             for (const auto& [type, modifier] : modifierManager)
                 modifier->ModifyShot(shot);
 
             LastShot = shot;
 
-            //Consume ammo only once per shot group, however many bullets the modifiers asked for
+            // Modifier'lar kaç bullet isterse istesin, her shot group için ammo'yu yalnızca bir kez harca
             MagazineAmmo--;
+
+            // Shot performansı buradan başlar: ateşleme kararının verildiği tek yer burasıdır, dolayısıyla silahın
+            // PrepareShooting'i override edip "gerçekten ateşledim mi" diye tekrar sorması gerekmez. Ammo shot group
+            // başına bir kez harcandığından burst de tek bir kick üretir.
+            Hands->OnShotFired();
 
             EnqueueProjectiles(shot.ShotCount, shot.Spread);
         }
 
-        //Handle ammo depletion
+        // Ammo tükenmesini işle
         if (MagazineAmmo == 0)
         {
             OnAmmoRunOut.Broadcast(true);
@@ -293,12 +313,12 @@ namespace ETG
 
     void GunBase::EnqueueProjectiles(const int shotCount, const float EffectiveSpread)
     {
-        //Queue any additional bullets with delay (only useful if shotCount > 1) 
+        // İlave bullet'ları delay ile queue'ya ekle (yalnızca shotCount > 1 ise kullanışlıdır)
         for (int i = 0; i < shotCount; i++)
         {
             float projectileAngle = GameObjectBase::Rotation;
 
-            //Apply spread variation
+            // Spread variation uygula
             if (EffectiveSpread > 0)
             {
                 std::mt19937 engine(std::random_device{}());
@@ -306,31 +326,32 @@ namespace ETG
                 projectileAngle += dist(engine);
             }
 
-            //Queue the bullet
+            // Bullet'ı queue'ya ekle
             bulletQueue.push_back({i * ShotDelay, projectileAngle});
         }
     }
 
     void GunBase::FireBullet(float projectileAngle)
     {
-        //Restart muzzle flash animation and shoot animation
+        // Muzzle flash ve Shoot Animation'ı yeniden başlat
         if (MuzzleFlash->IsVisible) MuzzleFlash->Restart();
         ShootSound.play();
         
-        //Set animation state
+        // Animation state'i ayarla
         CurrentGunState = GunStateEnum::Shoot;
         RestartCurrentAnimStateAnimation();
 
-        //Calculate spawn position
+        // Spawn position'ı hesapla
         const ETG::Vector2f spawnPos = ArrowComp->GetPosition();
 
-        //Calculate velocity
+        // Velocity'yi hesapla
         const float rad = Math::AngleToRadian(projectileAngle);
         const ETG::Vector2f direction = Math::RadianToDirection(rad);
         const ETG::Vector2f projVelocity = direction * ShotSpeed;
 
-        //Spawn a projectile NOTE: I decided to instead spawn projectiles attached to fired gun. That's because in collision resolution, I need to know the owner gun of the projectile and from that learn whether it's a hero's or enemy's projectile
-        //projectile.
+        // Projectile spawn et. NOTE: Projectile'ları ateşleyen silaha attach ederek spawn etmeye karar verdim.
+        // Collision resolution sırasında projectile'ın owner silahını bilmem ve buradan hero projectile'ı mı yoksa
+        // enemy projectile'ı mı olduğunu öğrenmem gerekiyor.
         std::unique_ptr<ProjectileBase> proj = CreateGameObjectAttached<ProjectileBase>(this,*ProjTexture, spawnPos, projVelocity, Range, projectileAngle, Damage, Force);
         proj->Update();
         projectiles.push_back(std::move(proj));
@@ -338,19 +359,19 @@ namespace ETG
 
     void GunBase::Reload()
     {
-        //IF already reloading or magazine is full do not invoke again
+        // Zaten reload yapılıyorsa veya magazine doluysa tekrar başlatma
         if (IsReloading || MagazineAmmo == MagazineSize.GetInt()) return;
         
-        CurrentGunState = GunStateEnum::Reload; //update animation
+        CurrentGunState = GunStateEnum::Reload; // Animation'ı update et
         RestartCurrentAnimStateAnimation();
         IsReloading = true;
-        ReloadElapsed = 0.f; //the performance the gun puts on is timed off this, so it starts with the reload
+        ReloadElapsed = 0.f; // Silah performansı buna göre zamanlandığından reload ile birlikte başlar
         ReloadSound.play();
-        OnAmmoRunOut.Broadcast(false); // Notify that we have ammo again
+        OnAmmoRunOut.Broadcast(false); // Yeniden ammo bulunduğunu bildir
         OnReloadInvoke.Broadcast(true);
         
-        //GunBase::Reload bails out when the magazine is already full or a reload is already running, so the drop
-        //is only armed when a reload genuinely began
+        // Magazine zaten doluysa veya reload çalışıyorsa GunBase::Reload işlemi iptal eder; bu nedenle düşüş
+        // yalnızca reload gerçekten başladığında hazırlanır.
         if (IsReloading) 
             MagazineEjected = false;
     }

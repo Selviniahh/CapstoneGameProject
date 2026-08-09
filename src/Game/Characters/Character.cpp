@@ -2,6 +2,7 @@
 #include <cmath>
 #include "Hero/Hand/Hand.h"
 #include "../Guns/Base/GunBase.h"
+#include "../Guns/Base/HandRig.h"
 #include "../Items/Active/ActiveItemBase.h"
 #include "../Items/Passive/PassiveItemBase.h"
 #include "../../Engine/Core/Components/BaseHealthComp.h"
@@ -137,9 +138,9 @@ namespace ETG
     void Character::ApplyGripPin() const
     {
         //A gun with no measured second grip has no pixel to pin, so there is nothing to ask it
-        if (!CurrentGun || !CurrentGun->HasLeftHandAnchor || !CurrentGun->WantsGripPinned()) return;
+        if (!CurrentGun || !CurrentGun->Hands->HasLeftHandAnchor || !CurrentGun->WantsGripPinned()) return;
 
-        const ETG::Vector2f gripLocal = CurrentGun->LeftHandAnchor - CurrentGun->GetOrigin();
+        const ETG::Vector2f gripLocal = CurrentGun->Hands->LeftHandAnchor;
         const ETG::Vector2f scale = CurrentGun->GetScale();
 
         //Sliding the gun by the difference between these two puts the grip exactly where the pinned rotation would
@@ -163,14 +164,14 @@ namespace ETG
     {
         UpdateHandDepths();
 
-        const bool gunNamesRightGrip = CurrentGun && CurrentGun->HasRightHandAnchor;
-        const bool gunNamesLeftGrip = CurrentGun && CurrentGun->HasLeftHandAnchor;
+        const bool gunNamesRightGrip = CurrentGun && CurrentGun->Hands->HasRightHandAnchor;
+        const bool gunNamesLeftGrip = CurrentGun && CurrentGun->Hands->HasLeftHandAnchor;
 
         //The gesture is added to the anchor here rather than inside the gun, so a gun that acts nothing out
         //(every one of them but the AK, so far) is placed on exactly the pixel it always was
         if (Hand)
             PlaceHand(*Hand, gunNamesRightGrip,
-                      gunNamesRightGrip ? CurrentGun->RightHandAnchor + CurrentGun->RightHandGesture : ETG::Vector2f{},
+                      gunNamesRightGrip ? CurrentGun->Hands->RightHandAnchor + CurrentGun->Hands->RightHandGesture : ETG::Vector2f{},
                       HoldPoint);
 
         //The off hand falls back to the opposite side of the body, so it stays visible on a one-handed gun
@@ -179,9 +180,14 @@ namespace ETG
         {
             const ETG::Vector2f restOffset = IsGunOnRightSide() ? HandOffsetLeft : HandOffsetRight;
 
+            //A gun can act with the off hand without holding it - the revolver's free hand rides the shot while it
+            //is still resting against the body - so the gesture has to reach the hand wherever it was placed. Adding
+            //it only inside the grip branch would leave every one-handed gun unable to move its off hand at all
+            const ETG::Vector2f offGesture = CurrentGun ? CurrentGun->Hands->LeftHandGesture : ETG::Vector2f{};
+
             PlaceHand(*OffHand, gunNamesLeftGrip,
-                      gunNamesLeftGrip ? CurrentGun->LeftHandAnchor + CurrentGun->LeftHandGesture : ETG::Vector2f{},
-                      BodyRestPosition(restOffset));
+                      gunNamesLeftGrip ? CurrentGun->Hands->LeftHandAnchor + offGesture : ETG::Vector2f{},
+                      BodyRestPosition(restOffset) + offGesture);
         }
     }
 

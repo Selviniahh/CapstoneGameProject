@@ -31,7 +31,7 @@ namespace ETG
         SawedOffAnimComp();
 
         float ShootAnimInterval = 0.15f;
-        float ReloadAnimInterval = 5 / 5.f; //Frame Count / Reload Time = Reload Time; 
+        float ReloadAnimInterval = 5 / 5.f; // Frame Count / Reload Time = Reload Time
         
         void SetAnimations() override;
         BOOST_DESCRIBE_CLASS(SawedOffAnimComp, (BaseAnimComp), (ShootAnimInterval, ReloadAnimInterval),(),());

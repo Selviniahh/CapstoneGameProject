@@ -17,13 +17,15 @@ namespace ETG
         void Draw() override;
         void Reload() override;
 
+        // Silahın el performansına dair NE VARSA HandRig üzerindedir ve Initialize içinde author edilir; burada
+        // ayrı bir alan tutulmaz. Ayarlanacak değerler ImGui'da bu silahın altındaki HandRig node'unda durur.
         BOOST_DESCRIBE_CLASS(RogueSpecial, (GunBase), (), (), ())
 
     protected:
-        //Reload VFX. `class` is required on both: GunBase's own MuzzleFlash *member*
-        //hides the type name in this scope.
-        std::unique_ptr<class MuzzleFlash> ReloadFlash; //green flash off the barrel tip
-        std::unique_ptr<class MuzzleFlash> ReloadSmoke; //smoke venting from underneath
+        // Reload VFX. Her ikisinde de `class` gereklidir: GunBase'in kendi MuzzleFlash *member'ı*
+        // bu scope içindeki type adını gizler.
+        std::unique_ptr<class MuzzleFlash> ReloadFlash; // Barrel ucundan çıkan yeşil flash
+        std::unique_ptr<class MuzzleFlash> ReloadSmoke; // Alttan dışarı çıkan smoke
     };
 
     class RogueSpecialAnimComp : public BaseAnimComp<GunStateEnum>
@@ -31,6 +33,11 @@ namespace ETG
     public:
         RogueSpecialAnimComp();
         void SetAnimations() override;
-        BOOST_DESCRIBE_CLASS(RogueSpecialAnimComp, (BaseAnimComp), (), (), ())
+
+        // Her state'in kendi authored Origin değerine eklenen ortak offset. Böylece idle/shoot/reload
+        // hizalarını birbirine göre değiştirmeden silahın ortak attachment pivot'u ayarlanabilir.
+        Vector2f AttachmentOrigin{1.f, 10.f};
+
+        BOOST_DESCRIBE_CLASS(RogueSpecialAnimComp, (BaseAnimComp), (AttachmentOrigin), (), ())
     };
 }

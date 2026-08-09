@@ -84,6 +84,13 @@ namespace ETG
         void VisualizeOrigin() const;
         void IncrementName();
 
+        // Where a described ETG::Vector2f member actually sits when the editor's Visualize toggle draws it. Points
+        // authored on a plain game object are already world positions, so the default is the identity. Objects that
+        // author points in a local frame override this - GunBase's points are Origin-relative gun space, which
+        // rotates and mirrors with the gun, so drawing the raw numbers would put the marker in the map's corner
+        // instead of on the magazine well.
+        [[nodiscard]] virtual ETG::Vector2f ResolveDebugPoint(const ETG::Vector2f& point) const { return point; }
+
         GameObjectBase* Owner = nullptr;
         bool DrawBound = false;
         bool DrawOriginPoint = false;

@@ -1,8 +1,10 @@
 #include <imgui.h>
+#include <algorithm>
 #include "EngineUI.h"
 #include "../../Core/GameObjectBase.h"
 #include "../../Managers/TypeRegistry.h"
 #include "../../Animation/Animation.h"
+#include "../DebugPointViz.h"
 #include "UIUtils.h"
 
 using namespace UIUtils;
@@ -128,7 +130,16 @@ template <>
 void ETG::ShowImGuiWidget<ETG::Vector2<float>>(const char* label, ETG::Vector2<float>& value)
 {
     BeginProperty(label);
+
+    //The toggle takes the right end of the row, so the input field gives up exactly the width the swatch and the
+    //checkbox need. BeginProperty asked for a full-width field; this replaces that request.
+    const float vizWidth = ImGui::GetFrameHeight() * 1.6f + ImGui::GetStyle().ItemSpacing.x + 3.f;
+    ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x - vizWidth, 1.f));
     ImGui::InputFloat2("##vector2", &value.x);
+
+    ImGui::SameLine();
+    DebugPointViz::Toggle(label, value, DebugPointViz::CurrentOwner());
+
     EndProperty();
 }
 

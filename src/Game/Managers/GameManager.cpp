@@ -9,6 +9,7 @@
 #include "../../Engine/Managers/Time.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
 #include "../../Engine/Core/Scene/Scene.h"
+#include "../../Engine/Editor/DebugPointViz.h"
 #include "../UI/UserInterface.h"
 #include "../Characters/Hero/Hero.h"
 #include "../Levels/SpawnInitialLevel.h"
@@ -112,8 +113,12 @@ void ETG::GameManager::Draw()
     Window->setView(RenderContext::MainView);
 
     GlobSpriteBatch.begin();
-    for (const auto& obj : WorldObjects) 
+    for (const auto& obj : WorldObjects)
         obj->Draw();
+
+    //Editor point markers go into the same batch, after the objects, so they are sorted against the world they
+    //annotate rather than against the un-zoomed UI pass below
+    DebugPointViz::DrawAll();
     GlobSpriteBatch.end(*Window);
 
     //NOTE: Switch to the default (un-zoomed) view for overlays (UI). These draws will be drawn in screen coords.

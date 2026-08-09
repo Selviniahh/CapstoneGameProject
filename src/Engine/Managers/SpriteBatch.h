@@ -28,6 +28,10 @@ namespace ETG
         //Queue a single 1x1 (green) pixel into the global batch; used for origin/point visualization
         static bool DrawSinglePixelAtLoc(const ETG::Vector2f& Loc, ETG::Vector2i scale = {1, 1}, float rotation = 0);
 
+        //Queue a small colored cross centered on Loc. The default depth sorts in front of everything, because a
+        //marker hidden behind the sprite it is annotating tells you nothing
+        static void DrawDebugCross(const ETG::Vector2f& Loc, const ETG::Color& color, float armLength = 2.f, float depth = -1000.f);
+
     private:
         struct Vertex
         {

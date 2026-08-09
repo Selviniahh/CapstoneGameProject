@@ -14,6 +14,7 @@
 #include "../Characters/Hero/Components/HeroAnimComp.h"
 #include "../Characters/Hero/Hand/Hand.h"
 #include "../Guns/Base/GunBase.h"
+#include "../Guns/Base/HandRig.h"
 #include "../Guns/RogueSpecial/RogueSpecial.h"
 #include "../Guns/VFX/MuzzleFlash.h"
 #include "../Guns/VFX/MagazineDrop.h"
@@ -57,6 +58,8 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(HeroAnimComp, BaseAnimComp<HeroStateEnum>);
     TypeRegistry::RegisterType<GunBase>();
     REGISTER_BASE_CLASS(GunBase, GameObjectBase);
+    TypeRegistry::RegisterType<HandRig>();
+    REGISTER_BASE_CLASS(HandRig, ComponentBase);
     TypeRegistry::RegisterType<RogueSpecial>();
     REGISTER_BASE_CLASS(RogueSpecial, GunBase);
     TypeRegistry::RegisterType<RogueSpecialAnimComp>();

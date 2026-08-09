@@ -16,23 +16,23 @@ namespace ETG
     {
         Texture = AssetManager::LoadTexture(relativePath);
 
-        //Centred, so SpinSpeed turns the magazine about itself instead of swinging it around a corner
+        // Merkezlenmiştir; böylece SpinSpeed magazine'i bir köşe etrafında savurmak yerine kendi etrafında döndürür
         Origin = {
             static_cast<float>(Texture->getSize().x) / 2.f,
             static_cast<float>(Texture->getSize().y) / 2.f
         };
 
-        //DrawProps caches a RAW pointer to the texture, and the copy taken in the constructor was taken while
-        //there was no texture at all. Anything that changes what this object looks like has to republish, or
-        //the next Draw submits the stale copy
+        // DrawProps, texture için RAW pointer'ı cache'ler ve constructor'da alınan copy henüz texture yokken
+        // oluşturulmuştur. Bu object'in görünümünü değiştiren her işlem yeniden publish edilmelidir; aksi hâlde
+        // sonraki Draw eski copy'yi gönderir.
         ComputeDrawProperties();
     }
 
     void MagazineDrop::Drop(const ETG::Vector2f& worldPos, const float rotation, const ETG::Vector2f& velocity,
                             const float depth)
     {
-        //A gun that never called SetSprite has nothing to throw. Silently doing nothing is right here: the
-        //gun's reload still runs, it just does not litter
+        // SetSprite çağırmamış bir silahın fırlatacağı bir şey yoktur. Burada sessizce hiçbir şey yapmamak
+        // doğrudur: silahın reload işlemi yine çalışır, yalnızca geride magazine bırakmaz.
         if (!HasSprite()) return;
 
         Position = worldPos;
@@ -40,13 +40,13 @@ namespace ETG
         Velocity = velocity;
         Depth = depth;
         TimeLeft = LifeTime;
-        Color = ETG::Color::White; //undo the fade the previous drop ended on
+        Color = ETG::Color::White; // Önceki düşüşün sonunda kalan fade'i geri al
 
-        //Published here and not left to the next Update, because there may not be one before the next Draw:
-        //the drop is triggered from the gun's Update, which for AK47 runs AFTER GunBase::Update has already
-        //ticked this object for the frame. Without this the magazine's first drawn frame uses the properties
-        //from before it was thrown - including a null texture pointer on the very first drop, which is a
-        //dereference inside SpriteBatch rather than a wrong-looking sprite
+        // Burada publish edilir ve sonraki Update'e bırakılmaz; çünkü bir sonraki Draw'dan önce Update olmayabilir.
+        // Düşüş, silahın Update'inden trigger edilir; AK47 için bu, GunBase::Update object'i o frame için tick
+        // ettikten SONRA çalışır. Bu işlem olmazsa magazine'in çizilen ilk frame'i fırlatılmadan önceki property'leri
+        // kullanır. İlk düşüşte buna null texture pointer da dahildir; bu yalnızca hatalı görünen bir sprite değil,
+        // SpriteBatch içinde bir dereference oluşturur.
         ComputeDrawProperties();
     }
 
@@ -56,16 +56,16 @@ namespace ETG
 
         const float deltaTime = Time::FrameTick;
 
-        //Plain Euler integration. A magazine is on screen for under a second and nothing depends on where it
-        //lands, so there is nothing here worth a better integrator
+        // Basit Euler integration. Magazine ekranda bir saniyeden kısa süre kalır ve hiçbir şey nereye düştüğüne
+        // bağlı değildir; bu yüzden burada daha iyi bir integrator kullanmaya değmez.
         Velocity.y += Gravity * deltaTime;
         Position += Velocity * deltaTime;
         Rotation += SpinSpeed * deltaTime;
 
         TimeLeft -= deltaTime;
 
-        //Fades over the last FadeTime seconds of the life, which is what stands in for it landing. Alpha is
-        //written into Color because ComputeDrawProperties copies it straight into the draw call
+        // LifeTime'ın son FadeTime saniyesinde fade olur; bu, yere inişi temsil eder. ComputeDrawProperties
+        // değeri doğrudan draw call'a kopyaladığı için alpha, Color içine yazılır.
         const float fade = FadeTime > 0.f ? std::min(TimeLeft / FadeTime, 1.f) : 1.f;
         Color.a = static_cast<std::uint8_t>(std::clamp(fade, 0.f, 1.f) * 255.f);
 

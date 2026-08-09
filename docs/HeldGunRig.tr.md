@@ -67,9 +67,8 @@ draw property'lere pişiyor. Sonra yazarsan bir kare gecikir — ve o bir kare, 
 Aynısı eller için de geçerli: `UpdateHandDepths()`, `PlaceHand()`'in içindeki `hand.Update()`'ten önce çağrılıyor.
 
 **b) Eller, silahların `Update()`'inden SONRA yerleştirilmeli.**
-Bir silahın `Origin`'i her karede animasyonundan yeniden yazılıyor (`BaseAnimComp::Update`). Kabza çapaları o
-`Origin`'e göre ölçüldüğü için, eller taze `Origin`'i beklemek zorunda. `UpdateHands()` bu yüzden
-`TickEquippedGuns()`'dan sonra.
+Silahın animation state'i ve reload gesture'ı kendi `Update()`'ında ilerler. Eller o frame'e ait güncel
+transform ve gesture'ı kullanmak zorunda olduğu için `UpdateHands()`, `TickEquippedGuns()`'dan sonra çalışır.
 
 ---
 
@@ -80,7 +79,7 @@ Hepsi `BOOST_DESCRIBE_CLASS` listesinde, yani editör panelinden canlı oynanabi
 | Alan | Ne yapar | Boş bırakılırsa |
 |---|---|---|
 | `HeldOffset` | Silah artwork'ünü sabit ellerin altında kaydırır. Sağ el hâli için yazılır, sol elde X'i otomatik aynalanır | `{0,0}` — kayma yok |
-| `RightHandAnchor` / `LeftHandAnchor` | Her elin silahı kavradığı piksel. Frame'in sol-üst köşesi `(0,0)` — resim editöründen okuduğun sayı | çapa yok |
+| `RightHandAnchor` / `LeftHandAnchor` | Her elin silahı kavradığı Origin-relative gun-local nokta. Editör pixel'i için `pixel - frameOrigin` kullanılır | çapa yok |
 | `HasRightHandAnchor` / `HasLeftHandAnchor` | Çapa gerçekten ölçüldü mü | `false` — el gövdede dinlenir |
 | `HandSwapAngle` | Silahın el değiştirdiği yarı-açı (sağdan itibaren derece). `90` = namlu dikeyi geçince | `-1` — gövdenin 8 yönlü facing'i karar verir (67.5°'de döner) |
 | `PinsGripWhenAimingUp` | Namlu yataydan yukarı çıkınca ön kabzayı gövdeye çiviler | `false` — kabza serbest |
@@ -106,7 +105,7 @@ Orijinal Enter the Gungeon'da sırt animasyonunda kabza gövdeye yapışık duru
 **kabzası etrafında** döner:
 
 ```cpp
-gripLocal      = LeftHandAnchor - Origin                        // silah uzayında kabza
+gripLocal      = LeftHandAnchor                                 // zaten Origin-relative
 whereTheGripIs = Rotate(GetRotation(),        scale, gripLocal)  // şu anki yeri
 whereItStays   = Rotate(PinnedGripRotation(), scale, gripLocal)  // durması gereken yer
 Position      += whereItStays - whereTheGripIs
@@ -164,8 +163,8 @@ iki değer de `GunBase`'de.
 `Initialize()` içinde, `GunBase::Initialize()` çağrısının etrafında:
 
 1. `HandSwapAngle = 90.f;` — neredeyse her zaman doğru olan değer.
-2. Çapaları resim editöründen oku. Frame'in sol-üst köşesi `(0,0)`. Tetik elini `RightHandAnchor`'a,
-   varsa ön kabzayı `LeftHandAnchor`'a yaz, `Has...` bayraklarını aç.
+2. Çapaları resim editöründen oku ve `localAnchor = pixelPoint - frameOrigin` ile gun-local uzaya çevir.
+   Tetik elini `RightHandAnchor`'a, varsa ön kabzayı `LeftHandAnchor`'a yaz, `Has...` bayraklarını aç.
 3. İki elle tutuluyorsa `PinsGripWhenAimingUp = true;`.
 4. Sırt animasyonunda gövdenin arkasına geçmesi gerekiyorsa `HeldDepthBehindBody`'ye bir sayı ver
    (hero için `1.f` çalışıyor). Tek elli/kısa silahlarda gerekmeyebilir.

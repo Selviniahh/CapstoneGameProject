@@ -78,3 +78,18 @@ public:
         }
     }
 };
+
+namespace ETG
+{
+    // Declared in EngineUI.h, defined here: the fallback widget for a described plain struct is just this walk.
+    // A gun can therefore group its tunables into small named structs and every field still reaches the panel.
+    template <typename T>
+    void PopulateDescribedStruct(const char* label, T& value)
+    {
+        if (ImGui::TreeNode(label))
+        {
+            Reflection::PopulateReflection<T>(value);
+            ImGui::TreePop();
+        }
+    }
+}

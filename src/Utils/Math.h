@@ -99,6 +99,12 @@ public:
     //Map an elapsed duration onto the 0-1 range std::lerp expects and saturate at the ends
     //Use for one shot progressions: reload, cooldown, force falloff etc. Once done, it stays done
     //elapsed gecen sure demek
+  //   Örneğin duration = 2 ise:
+  // elapsed = -1  → 0.0
+  // elapsed =  0  → 0.0
+  // elapsed =  1  → 0.5
+  // elapsed =  2  → 1.0
+  // elapsed =  3  → 1.0
     static float Progress01(const float elapsed, const float duration)
     {
         if (duration <= 0.0f) return 1.0f;
@@ -143,6 +149,14 @@ public:
     static float BellCurve(const float progress)
     {
         return std::sin(progress * std::numbers::pi);
+    }
+
+    // Smooth 0 -> 1 ramp whose slope is zero at both ends. BellCurve goes out and comes back; this one only goes,
+    // so it is what carries something from one pose to another without a corner at either end
+    static float SmoothStep(const float progress)
+    {
+        const float t = std::clamp(progress, 0.0f, 1.0f);
+        return t * t * (3.0f - 2.0f * t);
     }
 
     // Applies a bell curve force to create smooth dash movement

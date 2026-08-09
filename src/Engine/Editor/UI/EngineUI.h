@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <iostream>
 #include <memory>
+#include <boost/describe.hpp>
 #include <boost/type_index.hpp>
 #include "../../Platform/Platform.h"
 
@@ -20,6 +21,13 @@ namespace ETG
     //Base template forwards to the appropriate implementation
     template <typename T>
     void ShowImGuiWidget(const char* label, T& value);
+
+    //Walks a described plain struct under its own tree node. Defined in Reflection.h rather than here, because
+    //Reflection is built on ShowImGuiWidget - including it back would close the loop. The declaration is all this
+    //header needs; the body is only required where a described struct is actually walked, and every such point is
+    //in a translation unit that has already pulled in Reflection.h
+    template <typename T>
+    void PopulateDescribedStruct(const char* label, T& value);
 
     //GameObjectBase*
     template <>
@@ -112,11 +120,23 @@ namespace ETG
             }
         }
 
+        //A plain struct that describes its own members needs no hand written widget: walking it is exactly what
+        //the widget would have done. This is what lets a gun group its tunables into small named structs -
+        //BreathMotion, ShotKickMotion - and still have every field land in the panel under its own tree
+        if constexpr (boost::describe::has_describe_members<T>::value)
+        {
+            PopulateDescribedStruct(label, value);
+            return;
+        }
+        else
+        {
+
         const std::string ErrorMessage = "Non enum Typename: " + boost::typeindex::type_id<T>().pretty_name() + " and variable name " + label + " not found. "
             "Did you define a specialized template in EngineUI.cpp for this typename?";
         std::cerr << ErrorMessage << std::endl;
 
         ImGui::Text(ErrorMessage.c_str());
+        }
     }
 
     //default implementation for enums

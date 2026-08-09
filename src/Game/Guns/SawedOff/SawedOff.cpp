@@ -10,7 +10,7 @@
 ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            1.8f, // FireRate
                                                            100.0f, // ShotSpeed
-                                                           200.0f, // Range (should be infinite but I will just give 2000)
+                                                           200.0f, // Range (infinite olmalı ama şimdilik 2000 vereceğim)
                                                            0.0f, // timerForVelocity
                                                            3.0f, // depth
                                                            165, // MaxAmmo
@@ -19,7 +19,7 @@ ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
                                                            5.5f, // Damage
                                                            50.f, // Force
                                                            1.f,
-                                                           3.0f) // Spread (in degrees)
+                                                           3.0f) // Spread (degree cinsinden)
 {
     AnimationComp = CreateGameObjectAttached<SawedOffAnimComp>(this);
     SetShootSound(AssetManager::Resolve("Sounds/AK47Shoot.ogg"));
@@ -43,14 +43,14 @@ void ETG::SawedOff::Initialize()
 
     ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_003.png");
 
-    //For now inside the gun if it collides with hero, hero will pick it up. We can do it instead inside hero later 
+    // Şimdilik silah hero ile collide olursa hero silahı alır. Bunu daha sonra hero içinde yapabiliriz.
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         if (auto* hero = dynamic_cast<Hero*>(eventData.Other))
         {
             hero->EquipGun(this);
-            CollisionComp->SetCollisionEnabled(false); //After equip
-            this->Owner = hero; //Set the owner of the gun to the hero This is important because during projectile collision, we need to know the owner of the projectile
+            CollisionComp->SetCollisionEnabled(false); // Equip sonrasında
+            this->Owner = hero; // Silahın owner'ını hero yap. Projectile collision sırasında projectile owner'ını bilmemiz gerektiği için bu önemlidir.
 
         }
     });
@@ -73,30 +73,30 @@ void ETG::SawedOff::Draw()
     if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
 }
 
-//Because we will do something different, we need to override this function without calling base function
+// Farklı bir işlem yapacağımız için base function'ı çağırmadan bu function'ı override etmemiz gerekir
 void ETG::SawedOff::EnqueueProjectiles(const int shotCount, const float EffectiveSpread)
 {
-    //Queue any additional bullets with delay
+    // İlave bullet'ları delay ile queue'ya ekle
     for (int i = 0; i < shotCount; i++)
     {
         float projectileAngle = Rotation;
         float LastBulletSpread = 10;
-        //Apply spread variation
+        // Spread variation uygula
         if (EffectiveSpread > 0)
         {
             LastBulletSpread += Math::GenRandomNumber(-LastBulletSpreadAmount, LastBulletSpreadAmount);
         }
         
-        //Queue the bullet
+        // Bullet'ı queue'ya ekle
         bulletQueue.push_back({i * ShotDelay, projectileAngle});
         bulletQueue.push_back({i * ShotDelay, projectileAngle - 15});
         bulletQueue.push_back({i * ShotDelay, projectileAngle + 15});
 
-        //Last bullet should shoot with a bit of spread and delay
+        // Son bullet biraz spread ve delay ile ateşlenmeli
         bulletQueue.push_back({i * ShotDelay + Math::GenRandomNumber(LastBulletDelayMin,LastBulletDelayMax), projectileAngle + Math::GenRandomNumber(-LastBulletSpread, LastBulletSpread)});
     }
 
-    //Handle ammo depletion
+    // Ammo tükenmesini işle
     if (MagazineAmmo == 0)
     {
         OnAmmoRunOut.Broadcast(true);
@@ -113,17 +113,17 @@ ETG::SawedOffAnimComp::SawedOffAnimComp()
 void ETG::SawedOffAnimComp::SetAnimations()
 {
     BaseAnimComp<GunStateEnum>::SetAnimations();
-    // Idle Animation
+    // Idle Animation ayarları
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_idle_001", "png", 0.15f, false)};
     IdleAnim.Origin = {1.f, 5.f};
     AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim, true, IdleAnim.Origin);
 
-    // Shoot Animations
+    // Shoot Animation ayarları
     Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_fire_001", "png", ShootAnimInterval)};
     ShootAnim.Origin = {1.f, 5.f};
     AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim, true, ShootAnim.Origin);
 
-    // Reload Animation
+    // Reload Animation ayarları
     Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/SawedOff", "sawed_off_shotgun_reload_001", "png", ReloadAnimInterval)};
     ReloadAnim.Origin = {5.f, 5.f};
     AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim, true, ReloadAnim.Origin);  

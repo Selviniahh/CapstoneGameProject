@@ -7,12 +7,13 @@
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Managers/AssetManager.h"
 #include "../VFX/MagazineDrop.h"
+#include "../Base/HandRig.h"
 #include "../../../Utils/Math.h"
 
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     0.3f,     // FireRate
     200.0f,     // ShotSpeed
-    1000.0f,    // Range (should be infinite but I will just give 2000)
+    1000.0f,    // Range (infinite olmalı ama şimdilik 2000 vereceğim)
     0.0f,      // timerForVelocity
     -2.f,      // depth
     500,       // MaxAmmo
@@ -20,8 +21,8 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     2.0f,      // ReloadTime
     0.5f,      // Damage
     20.0f,     // Force
-    0.1f,     //force dur
-    3.0f)      // Spread (in degrees)
+    0.1f,     // Force duration
+    3.0f)      // Spread (degree cinsinden)
 {
     AnimationComp = CreateGameObjectAttached<AK47AnimComp>(this);
     SetShootSound(AssetManager::Resolve("Sounds/AK47Shoot.ogg"));
@@ -29,7 +30,7 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
 
-    // Call the common initialization
+    // Ortak initialization işlemini çağır
     AK47::Initialize();
 }
 
@@ -38,33 +39,45 @@ void ETG::AK47::Initialize()
     ArrowComp->arrowOriginOffset = {-6.f, 0.f};
     ArrowComp->arrowOffset = {15.f, -2.f};
 
-    //Read off the 27x7 idle frame with (0,0) at its top-left: the trigger hand on the grip, the other one
-    //forward on the magazine. A rifle is held with both, so both anchors are live
-    //TODO: Ayni silahi düşmanda kullanmasını isteyeceğim. O yüzden eğer owner heroysa bunu yap eğer owner'ım bulletman veya diğer düşmansa böyle yap diye devam edeceğiz
-    RightHandAnchor = {17.f, 3.f};
-    LeftHandAnchor = {7.f, 5.f};
-    HasRightHandAnchor = true;
-    HasLeftHandAnchor = true;
+    // 27x7 idle frame'de sol üstten okunan {17,3} ve {7,5} noktaları, frame'in merkez Origin'i
+    // {13.5,3.5} çıkarılarak gun-local uzayda saklanır. Trigger hand grip üzerinde, diğer el ise
+    // magazine'in önündedir. Rifle iki elle tutulduğu için iki anchor da aktiftir.
+    // TODO: Aynı silahı enemy'nin de kullanmasını isteyeceğim. Bu yüzden owner hero ise bunu yap;
+    // owner BulletMan veya başka bir enemy ise ilgili davranışla devam et.
+    Hands->RightHandAnchor = {3.5f, -0.5f};
+    Hands->LeftHandAnchor = {-6.5f, 1.5f};
+    Hands->HasRightHandAnchor = true;
+    Hands->HasLeftHandAnchor = true;
 
-    //Stays in the right hand until the barrel is straight down, instead of turning over at the 67.5 degrees the
-    //body's 8-way facing does. A rifle is the worst case for that band: it is long enough that being mirrored
-    //while still aiming to the right swings the whole barrel across the hero
+    // <---------- Reload performansı ---------->
+    // Öndeki el handguard'dan ayrılır, grip yanındaki magazine well'e uzanır, bir kez yukarı çekip geri yerleşir;
+    // trigger hand grip'ten ayrılmaz, yalnızca eğilen reload pose'unun grip'ini takip eder. Hareketin kendisi
+    // HandRig::ReloadReach içindedir; burada yalnızca AK'ye özgü noktalar ve zamanlama author edilir.
+    //
+    // İki nokta da 26x10 reload frame'inin sol üstünden okunup merkez Origin {13,5} çıkarılarak elde edilmiştir.
+    Hands->ReloadReach.Enabled = true;
+    Hands->ReloadReach.WorkingPoint = {-9.f, 2.f}; // Reload pixel {4,7} - Origin {13,5}: magazine well
+    Hands->ReloadReach.SteadyPoint = {-6.f, 2.f};  // Reload pixel {7,7} - Origin {13,5}: eğilen pose'daki grip
+
+    // Body'nin 8-way facing sisteminin döndüğü 67.5 derecede dönmek yerine barrel doğrudan aşağı bakana kadar
+    // sağ elde kalır. Rifle bu aralık için en kötü durumdur: hâlâ sağa nişan alırken mirror edilmesi, uzunluğu
+    // nedeniyle barrel'ın tamamını hero'nun üzerinden geçirir.
     HandSwapAngle = 90.f;
 
-    //Behind the hero (-1) once he turns his back, in front of him otherwise. Sits behind the hands' own back
-    //depth as well, so the rifle does not cover the fingers gripping it
+    // Hero arkasını döndüğünde onun arkasında (-1), diğer durumlarda önünde kalır. Ayrıca ellerin back depth'inin
+    // gerisinde durur; böylece rifle, onu kavrayan parmakları kapatmaz.
     HeldDepthBehindBody = 1.f;
 
-    //A rifle is held with both hands, so the forward grip is welded to the body whenever the barrel comes up
-    //above the horizontal. GunBase's default rules cover the rest; there is nothing to override
-    PinsGripWhenAimingUp = true;
+    // Rifle iki elle tutulduğundan barrel yatay çizginin üzerine çıktığında forward grip body'ye sabitlenir.
+    // Geri kalanını GunBase'in default rule'ları karşılar; override edilecek bir şey yoktur.
+    Hands->PinsGripWhenAimingUp = true;
 
     CollisionComp->Initialize();
 
-    //GunBase owns the object; all this gun has to say is which magazine falls out of it
+    // Object'in owner'ı GunBase'dir; bu silahın yalnızca hangi magazine'in düşeceğini belirtmesi gerekir
     Magazine->SetSprite("Guns/AK47/ak47_clip_001.png");
 
-    // Load the projectile texture for AK-47
+    // AK-47 için projectile texture'ını yükle
     ProjTexture = AssetManager::LoadTexture("Projectiles/AK-47/Projectile_AK-47.png");
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
@@ -72,8 +85,8 @@ void ETG::AK47::Initialize()
         if (auto* hero = dynamic_cast<Hero*>(eventData.Other))
         {
             hero->EquipGun(this);
-            CollisionComp->SetCollisionEnabled(false); //After equip
-            this->Owner = hero; //Set the owner of the gun to the hero This is important because during projectile collision, we need to know the owner of the projectile
+            CollisionComp->SetCollisionEnabled(false); // Equip sonrasında
+            this->Owner = hero; // Silahın owner'ını hero yap. Projectile collision sırasında projectile owner'ını bilmemiz gerektiği için bu önemlidir.
         }
     });
 
@@ -82,16 +95,17 @@ void ETG::AK47::Initialize()
 
 void ETG::AK47::Update()
 {
+    
     MuzzleFlash->Deactivate();
     MuzzleFlash->IsVisible = false;
     CollisionComp->Update();
     ArrowComp->Update();
     GunBase::Update();
 
-    //After GunBase::Update, never before: it advances the reload clock the performance is timed off, and it
-    //is where the animation writes the Origin every anchor below is measured against. Still early enough for
-    //this frame's hands, because the holder places those after every gun has ticked (Character::UpdateGuns)
-    UpdateReloadPerformance();
+    // Ellerin reload performansını GunBase::Update içinde HandRig çalıştırdı; geriye yalnızca performansın hangi
+    // anında magazine'in ayrılacağı kalır. El well'e ulaştığı anda ayrılır: tüm gesture bu beat üzerinden okunur,
+    // el çeker ve çektiği nesne düşerek uzaklaşır.
+    if (IsReloading && !MagazineEjected && ReloadProgress() >= Hands->ReloadReach.GrabEnd) EjectMagazine();
 }
 
 void ETG::AK47::Draw()
@@ -104,74 +118,17 @@ void ETG::AK47::Reload()
     GunBase::Reload();
 }
 
-//<---------- The reload performance ---------->
-void ETG::AK47::UpdateReloadPerformance()
-{
-    //No reload, no performance: a zero gesture is what puts both hands back on their authored anchors
-    if (!IsReloading)
-    {
-        RightHandGesture = {};
-        LeftHandGesture = {};
-        return;
-    }
-
-    const float progress = ReloadProgress();
-
-    //Where the working hand has to get to, expressed as a displacement from its own anchor. Starting and
-    //ending at zero is what keeps the hand continuous with the idle pose at both ends of the reload
-    //magazine well = şarjör yüvası           Reload başladığında çalışan el: RightHandAnchor'dan ReloadMagWellPoint'e gidecek
-    const ETG::Vector2f toWell = ReloadMagWellPoint - RightHandAnchor;
-
-    //How far the reload has taken the hands over from their idle grips: 0 at both ends, 1 across the stroke.
-    //NOTE: every beat below divides by its own length, and all three lengths are editor-tweakable. The floors
-    //are there so that a beat somebody has squeezed to nothing costs a hard cut, not a NaN sent to a hand
-    float engagement;
-    ETG::Vector2f gesture;
-
-    if (progress < ReloadGrabEnd)
-    {
-        //Reaching down. The hand comes off the handguard and travels to the magazine well
-        engagement = progress / std::max(ReloadGrabEnd, 0.001f);
-        gesture = toWell * engagement;
-    }
-    else if (progress < ReloadStrokeEnd)
-    {
-        //The stroke itself - the pull up and back down. A half sine leaves zero and returns to it, so the
-        //hand has no corner at the top of the pull the way a triangle wave would
-        const float strokeTime = (progress - ReloadGrabEnd) / std::max(ReloadStrokeEnd - ReloadGrabEnd, 0.001f);
-
-        engagement = 1.f;
-        gesture = toWell + ETG::Vector2f{0.f, -ReloadStrokeHeight * Math::BellCurve(strokeTime)};
-    }
-    else
-    {
-        //Back onto the handguard, landing exactly on the anchor as the reload ends
-        engagement = (1.f - progress) / std::max(1.f - ReloadStrokeEnd, 0.001f);
-        gesture = toWell * engagement;
-    }
-
-    RightHandGesture = gesture;
-
-    //The trigger hand never leaves the grip. All it does is follow the grip's own move into the tilted
-    //reload pose, faded on the same weight so it arrives and leaves with the hand doing the work
-    LeftHandGesture = (ReloadGripPoint - LeftHandAnchor) * engagement;
-
-    //The magazine leaves the moment the hand arrives at the well, which is the beat the whole gesture reads
-    //from: the hand pulls, and what it pulled out falls away
-    if (!MagazineEjected && progress >= ReloadGrabEnd) EjectMagazine();
-}
-
 void ETG::AK47::EjectMagazine()
 {
     MagazineEjected = true;
 
-    //Mirrored with the gun, so the magazine is always thrown out behind the rifle rather than through the
-    //hero when he aims left
+    // Silahla birlikte mirror edilir; böylece sola nişan alırken magazine hero'nun içinden değil,
+    // her zaman rifle'ın arkasından dışarı fırlatılır.
     ETG::Vector2f velocity = MagazineEjectVelocity;
     if (!IsHeldOnRightHand) velocity.x = -velocity.x;
 
-    //Dropped at the gun's own depth: it starts off exactly where the well is, so it has to sort with the
-    //rifle rather than pop in front of or behind it on the frame it appears
+    // Silahın kendi depth değerinde bırakılır. Tam olarak well'in bulunduğu yerde başladığından, göründüğü
+    // frame'de rifle'ın önüne veya arkasına sıçramak yerine onunla birlikte sort edilmelidir.
     Magazine->Drop(WorldPointOnGun(MagazineEjectPoint), Rotation, velocity, Depth);
 }
 
@@ -184,27 +141,24 @@ ETG::AK47AnimComp::AK47AnimComp()
 void ETG::AK47AnimComp::SetAnimations()
 {
     BaseAnimComp<GunStateEnum>::SetAnimations();
-
-    // Idle Animation
-    AttachmentOrigin = {0.f, 0.f};
     
-    // interval = kare başına süre, animasyonun toplam süresi değil
+    // Interval = frame başına süre; animation'ın toplam süresi değildir
     const Animation IdleAnim = {Animation::CreateSpriteSheet("Guns/AK47", "AK47_Single001", "png", 0.15f, false)};
     AddGunAnimationForState(GunStateEnum::Idle, Playback::Loop, IdleAnim);
 
-    // Shoot animations
+    // Shoot Animation ayarları
     Animation ShootAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_001", "png", ShootAnimInterval)};
     AddGunAnimationForState(GunStateEnum::Shoot, Playback::Once, ShootAnim);
 
-    // Reload Animation. One frame on purpose: the magazine-out pose, held for the whole reload.
-    //NOTE: the two-frame ak47_reload_001 sheet bakes the dropped magazine into its second frame, which would
-    //stand still under the gun next to the MagazineDrop actually falling - two magazines, one of them frozen.
-    //ak47_reload_pose_001 is that sheet's first frame on its own, so the artwork shows the gun with its
-    //magazine gone and the falling one is the object AK47::EjectMagazine throws
+    // Reload Animation. Bilerek tek frame kullanılır: magazine-out pose reload boyunca korunur.
+    // NOTE: İki frame'li ak47_reload_001 sprite sheet, düşen magazine'i ikinci frame'e gömer. Bu magazine,
+    // gerçekten düşen MagazineDrop yanında silahın altında sabit kalırdı; biri donmuş iki magazine görünürdü.
+    // ak47_reload_pose_001 bu sprite sheet'in yalnızca ilk frame'idir. Böylece artwork silahı magazine olmadan
+    // gösterir ve düşen nesne AK47::EjectMagazine tarafından fırlatılan object olur.
     Animation ReloadAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_reload_pose_001", "png", ReloadAnimInterval, false)};
     AddGunAnimationForState(GunStateEnum::Reload, Playback::Once, ReloadAnim);
     
-    // Recoil Animation. Plays once after the shoot animation, then GunBase drops back to Idle.
+    // Recoil Animation. Shoot Animation sonrasında bir kez oynar, ardından GunBase yeniden Idle'a geçer.
     Animation RecoilAnim = {Animation::CreateSpriteSheet("Guns/AK47", "ak47_shoot_recoil_001", "png", RecoilAnimInterval, false)};
     AddGunAnimationForState(GunStateEnum::Recoil, Playback::Once, RecoilAnim);
 }
@@ -218,4 +172,4 @@ void ETG::AK47AnimComp::SetAnimations()
 // │        │      │          │ toplam 0.36s     │
 // └────────┴──────┴──────────┴──────────────────┘
 
-//bizim zaten 0.4 saniye hakkimiz vardi 
+// Zaten 0.4 saniyelik süremiz vardı

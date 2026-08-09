@@ -249,3 +249,30 @@ bool ETG::SpriteBatch::DrawSinglePixelAtLoc(const ETG::Vector2f& Loc, const ETG:
     GlobSpriteBatch.Draw(frame, -1);
     return false;
 }
+
+//Sizes are in world pixels; MainView is zoomed 5x, so a 5px cross reads clearly without swamping a 27x7 gun
+void ETG::SpriteBatch::DrawDebugCross(const ETG::Vector2f& Loc, const ETG::Color& color, const float armLength, const float depth)
+{
+    static std::shared_ptr<ETG::Texture> pixelTex = GetPixelTexture();
+
+    // A cross rather than a single pixel: on a 27x7 gun sprite a lone dot disappears into the artwork, while the
+    // arms stay readable and still point at exactly one pixel - the one where they meet.
+    const float span = armLength * 2.f + 1.f;
+
+    //NOTE: Order of sprite setting should be Texture -> Origin -> Scale -> Position
+    ETG::Sprite horizontal;
+    horizontal.setTexture(*pixelTex);
+    horizontal.setOrigin(0.5f, 0.5f);
+    horizontal.setScale(span, 1.f);
+    horizontal.setPosition(Loc);
+    horizontal.setColor(color);
+    GlobSpriteBatch.Draw(horizontal, depth);
+
+    ETG::Sprite vertical;
+    vertical.setTexture(*pixelTex);
+    vertical.setOrigin(0.5f, 0.5f);
+    vertical.setScale(1.f, span);
+    vertical.setPosition(Loc);
+    vertical.setColor(color);
+    GlobSpriteBatch.Draw(vertical, depth);
+}

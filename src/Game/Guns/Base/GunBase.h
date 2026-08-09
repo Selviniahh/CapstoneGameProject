@@ -37,201 +37,179 @@ namespace ETG
         void Update() override;
         void Draw() override;
 
-        //When left click pressed from hero, this will be called. Based on the timer and fire rate, will be called to fire the bullets.
-        //NOTE: This will handle every base gun should handle. They are: Check if shooting is possible, decrement magazine size, apply modifiers, broadcast event etc. NO SHOOTING LOGIC
-        virtual void PrepareShooting(); //queue the bulletQueue
+        // Hero'dan left click geldiğinde çağrılır. Bullet'ları ateşlemek için timer ve FireRate'e göre çalışır.
+        // NOTE: Tüm base gun'ların yapması gereken işlemleri yürütür: ateş etmenin mümkün olup olmadığını kontrol etme,
+        // MagazineAmmo azaltma, modifier uygulama, event broadcast etme vb. SHOOTING LOGIC İÇERMEZ.
+        virtual void PrepareShooting(); // Bullet'ları bulletQueue içine ekle
 
-        //NOTE: This is the actual projectile firing logic. Override this without calling base in child to implement custom shooting logic
+        // NOTE: Asıl projectile firing logic budur. Custom shooting logic için child class'ta base'i çağırmadan override et
         virtual void EnqueueProjectiles(int shotCount, float EffectiveSpread);
         void RestartCurrentAnimStateAnimation();
 
-        //NOTE: EnqueueProjectiles will add projectiles to the queue, this function will fire them in tick.
-        void UpdateProjectiles(); //If projectile needs to be removed, remove and update
+        // NOTE: EnqueueProjectiles projectile'ları queue'ya ekler; bu function onları tick içinde ateşler
+        void UpdateProjectiles(); // Gerekirse projectile'ı kaldır ve update et
 
-        //Detaches everything `source` attached to any of this gun's stats. An item does not have to remember which
-        //stats it touched, which is what makes "drop the item" the exact inverse of "pick the item up"
+        // `source` tarafından silahın herhangi bir stat'ına eklenen her şeyi detach eder. Item'ın hangi stat'lara
+        // dokunduğunu hatırlaması gerekmez; böylece "item'ı bırakmak", "item'ı almak" işleminin tam tersi olur.
         void RemoveAllModifiersFrom(const std::string& source);
 
         virtual void Reload();
         void SetShootSound(const std::string& soundPath);
         void SetReloadSound(const std::string& soundPath);
-        void FireBullet(float projectileAngle); //Fire an individual bullet
-        [[nodiscard]] bool IsMagazineEmpty() const { return MagazineAmmo == 0; }; //Check if the magazine is empty
+        void FireBullet(float projectileAngle); // Tek bir bullet ateşle
+        [[nodiscard]] bool IsMagazineEmpty() const { return MagazineAmmo == 0; }; // Magazine'in boş olup olmadığını kontrol et
 
         ModifierManager<IGunModifier> modifierManager;
 
-        //The shape the last shot ended up with, after the modifiers had their say. Lets a gun react to what it
-        //actually fired - a burst needs a faster muzzle flash - without naming the modifier that caused it, so a
-        //second modifier producing bursts is handled for free
+        // Modifier'lar uygulandıktan sonra son shot'ın aldığı biçim. Silahın buna neden olan modifier'ı bilmeden
+        // gerçekten ateşlediği şeye tepki vermesini sağlar; örneğin burst daha hızlı muzzle flash gerektirir.
+        // Böylece burst üreten ikinci bir modifier da ek işlem gerektirmeden desteklenir.
         ShotParams LastShot{};
         
-        //One object reused for every reload rather than a spawn per reload: only one magazine is ever in
-        //the air, because a second reload cannot start until the first has finished
+        // Her reload için spawn etmek yerine aynı object yeniden kullanılır. İlk reload bitmeden ikincisi
+        // başlayamayacağı için havada hiçbir zaman birden fazla magazine bulunmaz.
         std::unique_ptr<MagazineDrop> Magazine;
 
-        std::vector<QueuedBullet> bulletQueue; //Queue of bullets waiting to be fired
+        std::vector<QueuedBullet> bulletQueue; // Ateşlenmeyi bekleyen bullet queue'su
 
-        //NOTE: I am writing this cuz it's been 4th time I did same mistake. This delay is only related with active item's double shooting. Unless it's activated this won't be used
-        //As best practice, I need to move this back to the Active item.  
+        // NOTE: Aynı hatayı dördüncü kez yaptığım için yazıyorum. Bu delay yalnızca active item'ın double shot
+        // özelliğiyle ilgilidir; active edilmediği sürece kullanılmaz. Best practice olarak Active item'a taşınmalıdır.
         float ShotDelay = 0.1f;
 
-        //How this particular gun artwork sits under stationary hands, on top of Hand::GunOffset. Author the value
-        //for the right-held artwork; Character::UpdateGuns mirrors X when the gun changes sides. It only affects the
-        //gun while it is held, so a gun lying on the floor is unaffected.
-        //NOTE: do NOT reach for Origin to nudge a gun. Origin is the pivot the gun rotates
-        //around to aim, so shifting it swings the gun off-target by an amount that grows with
-        //the aim angle. It is also rewritten from the animation every frame in
-        //BaseAnimComp::Update, which is what makes the OriginOffset below a no-op.
+        // Bu silahın artwork'ünün sabit eller altında Hand::GunOffset'e ek olarak nasıl durduğunu belirler.
+        // Değeri sağ elde tutulan artwork için author et; silah taraf değiştirdiğinde Character::UpdateGuns X'i
+        // mirror eder. Yalnızca silah tutulurken etkili olduğundan yerde duran silah etkilenmez.
+        // NOTE: Silahı kaydırmak için Origin'i KULLANMA. Origin, nişan alırken silahın etrafında döndüğü pivot'tur;
+        // kaydırılması, aim angle arttıkça büyüyen miktarda silahı hedeften saptırır. Ayrıca BaseAnimComp::Update
+        // içinde her frame animation tarafından yeniden yazılır; aşağıdaki OriginOffset'in etkisiz olmasının nedeni budur.
         ETG::Vector2f HeldOffset{0.f, 0.f};
 
-        //Where each hand grips this gun, in the gun sheet's own pixels with (0,0) at the frame's
-        //top-left corner - the numbers you read straight off the sprite in an image editor.
-        //Character turns them into an offset from the gun's Origin, so the grips rotate and flip
-        //with the gun for free, and a gun whose animation moves its origin still holds together.
-        ETG::Vector2f RightHandAnchor{};
-        ETG::Vector2f LeftHandAnchor{};
+        // Silahın ellerine dair ne varsa buradadır: anchor'lar, bu frame'in gesture'ları, grip pinning tercihi ve
+        // nefes / shot kick / reload reach gibi hazır hareketler. Silah bunu kendi Initialize'ında author eder;
+        // çalıştırmasını GunBase::Update üstlenir.
+        std::unique_ptr<class HandRig> Hands;
 
-        //A hand is attached to the gun only for an anchor that has actually been measured. An unmeasured
-        //off hand stays at the character's body instead; visibility belongs to the character.
-        bool HasRightHandAnchor{false};
-        bool HasLeftHandAnchor{false};
+        // Origin-relative gun-local bir noktanın şu an world içindeki konumunu verir. Böylece el veya clip'in
+        // düştüğü magazine well gibi silahın bir bölümünü bulması gereken her yer rotate-mirror-unslide
+        // işlemlerini elle tekrarlamak yerine burayı kullanır. Nokta zaten Origin'e göre olduğundan mevcut
+        // animation frame'inin Origin değeri burada tekrar çıkarılmaz.
+        [[nodiscard]] ETG::Vector2f WorldPointOnGun(const ETG::Vector2f& localPoint) const;
 
-        //An extra displacement added to where a hand is PLACED, in the same sheet pixels the anchors are
-        //measured in. A gun writes these in its own Update to act something out - the AK's hand reaching
-        //down to the magazine well and pulling - and leaves them at zero the rest of the time.
-        //
-        //NOTE: kept separate from the anchors instead of being written into them. The anchors are the
-        //authored truth about where this gun is held, and ApplyGripPin reads LeftHandAnchor to decide
-        //which pixel stands still - a gesture written into the anchor would drag the pin around with it,
-        //so the whole gun would swing every time a hand moved
-        ETG::Vector2f RightHandGesture{};
-        ETG::Vector2f LeftHandGesture{};
+        // Silah üzerinde author edilen her nokta gun-local uzaydadır. Editor'ün Visualize kutucuğu bunu okuyarak
+        // marker'ı gerçekte kullanıldığı yere çizer; tek bu override, hem anchor'ları hem her silahın kendi reload
+        // noktalarını doğru yere oturtur.
+        [[nodiscard]] ETG::Vector2f ResolveDebugPoint(const ETG::Vector2f& point) const override { return WorldPointOnGun(point); }
 
-        //Where a pixel of this gun's artwork is in the world right now. `anchor` is in the sheet's own
-        //pixels with (0,0) at the frame's top-left, exactly like the hand anchors above, so anything that
-        //has to find a part of the gun - a hand, the magazine well a clip drops out of - asks here instead
-        //of repeating the rotate-mirror-and-unslide by hand.
-        //
-        //NOTE: the anchor is turned into an offset from the CURRENT frame's Origin, which the animation
-        //rewrites every tick. That is what makes an anchor keep meaning the same pixel even when a state
-        //change swaps in a sheet of a different size
-        [[nodiscard]] ETG::Vector2f WorldPointOnGun(const ETG::Vector2f& anchor) const;
-
-        //This gun's HeldOffset with its X mirrored while it is held on the left, so a value authored
-        //against the right-held artwork keeps meaning "further back along the barrel" on both sides
+        // Silah solda tutulurken X'i mirror edilmiş HeldOffset değeridir. Böylece sağ eldeki artwork'e göre author
+        // edilen bir değer iki tarafta da "barrel boyunca daha geride" anlamını korur.
         [[nodiscard]] ETG::Vector2f MirroredHeldOffset() const;
 
-        //Which side of the body this gun is held on, and therefore which way its sprite is mirrored. A half
-        //angle in degrees measured from straight right: the gun stays on the right hand while the aim is
-        //within +-HandSwapAngle of straight right, and changes hands beyond it. 90 is the honest value - it
-        //mirrors exactly when the barrel crosses vertical.
+        // Silahın body'nin hangi tarafında tutulduğunu ve dolayısıyla sprite'ın hangi yönde mirror edileceğini belirler.
+        // Doğrudan sağ yönünden ölçülen degree cinsinden half angle'dır. Aim doğrudan sağ yönünün +-HandSwapAngle
+        // aralığındayken silah sağ elde kalır, bu aralığın dışında el değiştirir. Doğru değer 90'dır; barrel tam olarak
+        // dikey konumu geçtiğinde mirror edilir.
         //
-        //NOTE: negative means the gun has no opinion, and the character falls back to its 8-way facing the way
-        //every gun used to. That turns over at 67.5 degrees, because that is where the DownRight arc ends -
-        //which leaves a 22.5 degree band where the gun is mirrored while still aiming to the right
+        // NOTE: Negatif değer, silahın bir tercihinin olmadığını belirtir ve character eskiden tüm silahlarda olduğu
+        // gibi 8-way facing'e geri döner. DownRight arc 67.5 derecede bittiği için dönüş de orada gerçekleşir. Bu,
+        // silah hâlâ sağa nişan alırken mirror edildiği 22.5 derecelik bir aralık bırakır.
         float HandSwapAngle{-1.f};
 
         [[nodiscard]] bool DecidesOwnHandSide() const { return HandSwapAngle >= 0.f; }
 
-        //Whether the gun sits on the right hand for this aim. `aimAngle` is in [0,360), 0 straight right,
-        //growing clockwise - the same convention DirectionUtils measures in. Only meaningful when the gun
-        //decides its own side
+        // Bu aim için silahın sağ elde olup olmadığını belirtir. `aimAngle` [0,360) aralığındadır; 0 doğrudan sağı
+        // gösterir ve değer clockwise artar. DirectionUtils ile aynı convention kullanılır. Yalnızca silah kendi
+        // tarafına karar veriyorsa anlamlıdır.
         [[nodiscard]] bool IsHeldOnRightSide(float aimAngle) const;
 
-        //Which hand the holder decided this gun is in this frame, written by Character::PublishHeldSideToGun
-        //before anything reads it. A gun on the floor keeps whatever it last had, which nothing looks at.
+        // Holder'ın bu frame'de silahın hangi elde olduğuna dair kararını içerir. Herhangi bir yer okumadan önce
+        // Character::PublishHeldSideToGun tarafından yazılır. Yerdeki silah son değerini korur; bu değeri kimse okumaz.
         //
-        //NOTE: the gun does not work this out for itself even though it has HandSwapAngle to do it with, because
-        //a gun that leaves the angle negative has no opinion and the answer is then the *body's* facing - which
-        //the gun cannot see. Being told is what makes every gun agree with its holder
+        // NOTE: Silahın bunu hesaplayacak HandSwapAngle değeri olsa da sonucu kendi başına belirlemez. Angle'ı negatif
+        // bırakan silahın tercihi yoktur ve cevap silahın göremediği *body facing* olur. Sonucun bildirilmesi, her
+        // silahın holder ile aynı kararı kullanmasını sağlar.
         bool IsHeldOnRightHand{true};
 
-        //<---------- Grip pinning ---------->
-        //A two-handed gun looks broken when its forward grip swings out from under the holder while the barrel
-        //points up: the off hand ends up in mid-air, off the sprite entirely. Pinning freezes that one pixel
-        //against the body and lets the barrel swing around it - the gun still rotates, it just rotates about the
-        //grip instead of about its own Origin.
+        // <---------- Grip pinning ---------->
+        // Silahın pin isteyip istemediği HandRig::PinsGripWhenAimingUp üzerinde authored'dır. Aşağıdaki iki rule
+        // ise gun state okur (barrel yukarıda mı, pin hangi angle'da donuyor), bu yüzden burada virtual kalır.
         //
-        //Set this and the two rules below do the whole job; a gun held in one hand leaves it false.
-        //
-        //NOTE: the pin belongs on the gun, not on the off hand. Pinning only the hand froze it in mid-air while
-        //the gun carried on rotating out from under it - two locks that had to agree, and did not. The hands are
-        //placed on the gun afterwards, so one lock on the gun is a lock on everything holding it
-        bool PinsGripWhenAimingUp{false};
+        // NOTE: Pin off hand üzerinde değil, silah üzerinde olmalıdır. Yalnızca eli pin etmek, silah altından dönmeye
+        // devam ederken eli havada dondururdu; birbiriyle uyuşması gereken iki lock oluşurdu. Eller daha sonra silahın
+        // üzerine yerleştirildiğinden silah üzerindeki tek lock, onu tutan her şeyi de lock eder.
 
-        //Whether the barrel points above the horizontal, either side. That is the half of the circle where the
-        //holder is drawn from behind, and the only half where an unpinned grip leaves the sprite
+        // Barrel'ın iki taraftan birinde yatayın üzerine bakıp bakmadığını belirtir. Bu, holder'ın arkadan çizildiği
+        // circle yarısı ve pin edilmemiş grip'in sprite dışına çıktığı tek yarıdır.
         [[nodiscard]] bool IsBarrelAboveHorizontal() const { return GetRotation() > 180.f; }
 
-        //Override only for a gun whose pin follows some other rule - a boss arm welded on permanently, say.
+        // Yalnızca pin'i farklı bir rule izleyen silah için override et; örneğin kalıcı olarak bağlı bir boss arm.
         //
-        //NOTE: a pure function of the aim on purpose. This was a latch once, engaged when the barrel came up and
-        //released only when the gun changed hands. Two different angles for the two halves of one rule is what
-        //kept the grip frozen across a whole quadrant where it should have been free to ride up with the barrel
-        [[nodiscard]] virtual bool WantsGripPinned() const
-        {
-            return PinsGripWhenAimingUp && IsBarrelAboveHorizontal();
-        }
+        // NOTE: Bilerek yalnızca aim'e bağlı pure function'dır. Önceden barrel yukarı çıktığında devreye giren ve yalnızca
+        // silah el değiştirdiğinde bırakılan bir latch idi. Tek rule'un iki yarısı için iki farklı angle kullanılması,
+        // grip'i barrel ile serbestçe yükselmesi gereken bütün bir quadrant boyunca donmuş tutuyordu.
+        //
+        // NOTE: Rig'in authored tercihini okuduğu için body GunBase.cpp'dedir; HandRig burada yalnızca forward
+        // declare edilmiştir ve her silahı onun tam tanımını include etmeye zorlamanın anlamı yok.
+        [[nodiscard]] virtual bool WantsGripPinned() const;
 
-        //The angle the pinned grip is frozen at: the horizontal pose of whichever side the gun is held on. Picking
-        //the side's own horizontal is what makes the pin engage with zero displacement - the barrel crosses that
-        //exact angle on its way up, so nothing jumps at the moment the pin takes hold
+        // Pin edilmiş grip'in dondurulduğu angle: silahın tutulduğu tarafın horizontal pose'u. Tarafın kendi yatayını
+        // seçmek pin'in zero displacement ile devreye girmesini sağlar; barrel yukarı çıkarken tam bu angle'dan geçer,
+        // dolayısıyla pin devreye girdiğinde hiçbir şey sıçramaz.
         [[nodiscard]] virtual float PinnedGripRotation() const { return IsHeldOnRightHand ? 0.f : 180.f; }
 
-        //Where the gun draws while it is held, in front of its holder's body and behind it. SpriteBatch sorts
-        //greater depths first, so the larger of the two is the one behind. Both are seeded from the depth the gun
-        //was constructed with, so a gun that says nothing about it keeps drawing exactly where it always did; a
-        //gun that should disappear behind its holder's back gives HeldDepthBehindBody its own number.
+        // Silah tutulurken holder body'nin önünde ve arkasında hangi depth'te çizileceğini belirler. SpriteBatch büyük
+        // depth değerlerini önce sort eder; dolayısıyla ikisinden büyük olan arkadadır. Her ikisi de silahın construct
+        // edildiği depth ile başlatılır. Böylece özel değer vermeyen silah her zamanki yerde çizilir; holder arkasında
+        // kaybolması gereken silah HeldDepthBehindBody için kendi değerini verir.
         //
-        //NOTE: one shared "behind" value on the character cannot work, because the guns do not agree on where
-        //front is - RogueSpecial is authored at depth 3 and so is already behind a hero at -1, while the AK is at
-        //-2 and in front of him. Behind is relative to a number only the gun knows
+        // NOTE: Character üzerinde ortak bir "behind" değeri kullanılamaz; çünkü silahların front konumu aynı değildir.
+        // RogueSpecial depth 3 ile author edildiğinden depth -1 olan hero'nun zaten arkasındadır; AK ise -2 ile önündedir.
+        // Behind, yalnızca silahın bildiği bir değere göre relative'dir.
         float HeldDepthInFront{};
         float HeldDepthBehindBody{};
 
         float ForceDuration{1};
 
-        using GameObjectBase::Rotation; //Make Rotation public in Gunbase
-        using GameObjectBase::Depth; //Its holder rewrites this per frame from the two values above
+        using GameObjectBase::Rotation; // Rotation'ı GunBase içinde public yap
+        using GameObjectBase::Depth; // Holder bunu yukarıdaki iki değerden her frame yeniden yazar
 
-        //State will not contain direction. It will be idle, shoot, reload etc. 
+        // State direction içermez; Idle, Shoot, Reload vb. değerlerden oluşur
         GunStateEnum CurrentGunState{GunStateEnum::Idle};
 
         bool IsReloading{};
         
-        //Whether this reload has already thrown its magazine. Cleared in Reload(), so a reload that
-        //GunBase refused (full magazine, one already running) cannot arm a second drop
+        // Mevcut reload'un magazine'i fırlatıp fırlatmadığını belirtir. Reload() içinde temizlenir; böylece GunBase'in
+        // reddettiği reload (dolu magazine veya zaten çalışan reload) ikinci bir düşüşü hazırlayamaz.
         bool MagazineEjected{true};
 
-        //Seconds since the current reload began, and the same thing as a 0..1 fraction of ReloadTime.
-        //Anything that has to be timed against the reload - a hand gesture, a magazine falling out - reads
-        //the fraction instead of running a timer of its own, which would drift away from the one
-        //ReloadSlider is counting down and end the performance at a different moment than the reload
+        // Mevcut reload başladıktan sonra geçen saniye ve aynı değerin ReloadTime'ın 0..1 fraction'ı olarak ifadesidir.
+        // Reload'a göre zamanlanması gereken her şey (hand gesture veya düşen magazine gibi) kendi timer'ını çalıştırmak
+        // yerine bu fraction'ı okur. Aksi hâlde kendi timer'ı ReloadSlider'ın geri saydığı timer'dan sapar ve performansı
+        // reload'dan farklı bir anda bitirirdi.
         float ReloadElapsed{};
         [[nodiscard]] float ReloadProgress() const;
 
-        //Gun stats. Each one carries its own base value and whatever modifiers items have put on it.
+        // Gun stat'ları. Her biri kendi base value'sunu ve item'ların eklediği modifier'ları taşır.
         //
-        //NOTE: There used to be two fields per stat - `BaseFireRate` alongside `FireRate` and so on - kept in sync by
-        //hand in the constructor. The twin existed because an item that assigned to FireRate destroyed the only copy
-        //of the unmodified number, so it needed somewhere to read it back from; that is also why PlatinumBullets
-        //recomputed the whole stat from its base on every single Update. A Stat holds both halves, and an item never
-        //assigns to it at all - it attaches a modifier under its own name and detaches it by that same name
-        StatModifier FireRate; //Time between shots (seconds)
-        StatModifier ShotSpeed; //How fast bullets travel
-        StatModifier Range; //How far bullets travel
-        StatModifier ReloadTime; //Time to reload
-        StatModifier Damage; //Damage per bullet
-        StatModifier Force; //Knockback applied to enemies
-        StatModifier Spread; //Bullet spread angle in degrees (0 = perfect accuracy)
+        // NOTE: Önceden her stat için constructor içinde elle sync edilen iki field vardı: `BaseFireRate` ile `FireRate`
+        // gibi. Bu ikili, FireRate'e atama yapan item'ın modifier uygulanmamış değerin tek copy'sini yok etmesi nedeniyle
+        // gerekliydi; değeri geri okuyabileceği bir yer olmalıydı. PlatinumBullets'ın her Update'te tüm stat'ı base
+        // üzerinden yeniden hesaplamasının nedeni de buydu. Stat iki parçayı da tutar ve item doğrudan atama yapmaz;
+        // kendi adıyla modifier attach eder ve aynı adla detach eder.
+        StatModifier FireRate; // Shot'lar arasındaki süre (saniye)
+        StatModifier ShotSpeed; // Bullet'ların hareket hızı
+        StatModifier Range; // Bullet'ların gidebildiği mesafe
+        StatModifier ReloadTime; // Reload süresi
+        StatModifier Damage; // Bullet başına damage
+        StatModifier Force; // Enemy'lere uygulanan knockback
+        StatModifier Spread; // Degree cinsinden bullet spread angle (0 = tam isabet)
 
-        StatModifier MagazineSize; //Bullets per magazine
+        StatModifier MagazineSize; // Magazine başına bullet sayısı
 
-        //NOTE: these two are counters, not stats, so they stay plain ints. MagazineAmmo is obviously one. MaxAmmo
-        //reads like a capacity but ReloadSlider spends it (`MaxAmmo -= ...`), so it is really the reserve pool - the
-        //name is lying and an item modifying it would be modifying the player's remaining bullets, not their capacity
+        // NOTE: Bu ikisi stat değil counter'dır; bu nedenle plain int olarak kalır. MagazineAmmo açıkça counter'dır.
+        // MaxAmmo capacity gibi görünse de ReloadSlider onu harcar (`MaxAmmo -= ...`); gerçekte reserve pool'dur.
+        // Adı yanıltıcıdır ve onu değiştiren item capacity'yi değil, player'ın kalan bullet sayısını değiştirir.
         int MaxAmmo{};
-        int MagazineAmmo{}; //Current magazine ammo count (this will be subtracted and reset)
+        int MagazineAmmo{}; // Mevcut magazine ammo sayısı (azaltılır ve reset edilir)
 
         std::shared_ptr<ETG::Texture> ProjTexture;
         std::unique_ptr<ReloadSlider> ReloadSlider;
@@ -239,24 +217,24 @@ namespace ETG
         EventDelegate<bool> OnReloadInvoke;
 
     protected:
-        float Timer; //Based on tick, this will increment 
+        float Timer; // Tick'e göre artar
 
-        // Rotates an offset vector according to the gun's current rotation.
+        // Offset vector'ünü silahın mevcut rotation değerine göre döndürür
         std::vector<std::unique_ptr<ProjectileBase>> projectiles;
         std::unique_ptr<ArrowComp> ArrowComp;
         std::unique_ptr<MuzzleFlash> MuzzleFlash;
 
-        //Gun needs to have custom Origin offset cuz, it needs to be attached to Hero's hand
+        // Silahın Hero'nun eline attach edilmesi gerektiği için custom Origin offset'e ihtiyacı vardır
         ETG::Vector2f OriginOffset;
 
-        //Gun Animation
+        // Gun Animation
         std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
         
         std::unique_ptr<CollisionComponent> CollisionComp;
         
 
     private:
-        //Sounds
+        // Sound'lar
         ETG::SoundBuffer ShootSoundBuffer;
         ETG::Sound ShootSound;
 
@@ -269,13 +247,12 @@ namespace ETG
         BOOST_DESCRIBE_CLASS(GunBase, (GameObjectBase),
                              (CurrentGunState, MaxAmmo, MagazineSize, MagazineAmmo, ShotDelay, ReloadTime, IsReloading,
                                  FireRate, ShotSpeed, Range, Damage, Force, ForceDuration, Spread, HeldOffset,
-                                 RightHandAnchor, LeftHandAnchor, HasRightHandAnchor, HasLeftHandAnchor,
                                  HandSwapAngle, HeldDepthInFront, HeldDepthBehindBody),
                              (ProjTexture, OriginOffset),
                              ())
     };
 
-    //A bullet for now only has time to fire and angle.
+    // Şimdilik bullet yalnızca ateşlenme süresine ve angle değerine sahiptir
     struct QueuedBullet
     {
         float timeToFire;

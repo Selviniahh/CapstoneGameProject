@@ -3,8 +3,9 @@
 
 namespace ETG
 {
-    //NOTE: Still a flat enum. Unlike the hero, a gun has no state tree yet, and ReloadSlider - a UI object -
-    //assigns Gun->CurrentGunState directly. That is the same layering violation the hero just got rid of
+    // NOTE: Hâlâ flat enum kullanılıyor. Hero'nun aksine silahın henüz state tree'si yoktur ve bir UI object
+    // olan ReloadSlider, Gun->CurrentGunState değerini doğrudan atar. Bu, hero'da yeni kaldırılanla aynı
+    // layering violation'dır.
     enum class GunStateEnum
     {
         Idle,

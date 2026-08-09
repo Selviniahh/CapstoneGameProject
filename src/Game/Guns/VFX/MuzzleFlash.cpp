@@ -9,7 +9,7 @@ namespace ETG
 {
     MuzzleFlash::MuzzleFlash()
     {
-        isActive = false; //Make sure animation not playing at the start
+        isActive = false; // Animation'ın başlangıçta oynamadığından emin ol
         MuzzleFlash::Initialize();
     }
 
@@ -18,8 +18,8 @@ namespace ETG
         this->frameSpeed = frameSpeed;
         Animation = Animation::CreateSpriteSheet(relativePath, fileName, extension, frameSpeed);
 
-        //A flash, a puff of smoke - these fire once and are done. Update() below deactivates the
-        //whole object the moment the animation reports finished, so it must not loop round.
+        // Flash ve smoke puff bir kez oynatılır ve biter. Aşağıdaki Update(), animation'ın bittiğini
+        // bildirdiği anda tüm object'i deactivate eder; bu yüzden loop etmemelidir.
         Animation.Loops = false;
         isActive = false;
 
@@ -41,12 +41,12 @@ namespace ETG
     {
         GameObjectBase::Update();
 
-        // Update animation if active
+        // Active ise animation'ı update et
         if (isActive)
         {
             Animation.Update();
 
-            // If animation finished, deactivate
+            // Animation bittiyse deactivate et
             if (Animation.IsFinished())
             {
                 Deactivate();
@@ -60,32 +60,32 @@ namespace ETG
     {
         if (!isActive || !Animation.Texture) return;
 
-        // Draw the muzzle flash animation
+        // Muzzle flash animation'ını çiz
         Animation.Draw(Animation.Texture, Position, ETG::Color::White, Rotation, Origin, Scale, Depth);
     }
 
-    // Update position based on parent if available
+    // Parent varsa position'ı ona göre update et
     void MuzzleFlash::UpdatePosition()
     {
         if (parentObject)
         {
-            // Get parent's properties
+            // Parent property'lerini al
             const auto& parentProps = parentObject->GetDrawProperties();
             const float angle = parentProps.Rotation * (std::numbers::pi / 180.0f);
 
-            // Create a copy of the attachment offset
+            // Attachment offset'in bir copy'sini oluştur
             ETG::Vector2f offsetToUse = AttachmentOffset;
 
-            // If the parent is flipped vertically, flip the Y component of the offset
+            // Parent dikey olarak flip edilmişse offset'in Y component'ini flip et
             if (parentProps.Scale.y < 0) offsetToUse.y = -offsetToUse.y;
 
-            // Calculate rotated offset with the potentially flipped Y value
+            // Gerekirse flip edilmiş Y değeriyle rotated offset'i hesapla
             const ETG::Vector2f rotatedOffset = {
                 offsetToUse.x * std::cos(angle) - offsetToUse.y * std::sin(angle),
                 offsetToUse.x * std::sin(angle) + offsetToUse.y * std::cos(angle)
             };
 
-            // Set position relative to parent
+            // Position'ı parent'a göre ayarla
             Position = parentProps.Position + rotatedOffset;
 
             if (InheritParentRotation)
@@ -94,9 +94,9 @@ namespace ETG
             }
             else
             {
-                //Standing upright means the gun's angle can no longer tell this effect which
-                //way it is pointing, so take the facing from the parent's flip instead. Without
-                //it a plume drifts forwards when aiming right and backwards when aiming left.
+                // Dik durduğunda silahın angle'ı effect'in hangi yöne baktığını artık belirtemez;
+                // bu nedenle facing bilgisini parent'ın flip durumundan al. Bu olmazsa smoke plume,
+                // sağa nişan alırken ileriye, sola nişan alırken geriye doğru hareket eder.
                 Rotation = 0.f;
                 Scale.x = parentProps.Scale.y < 0 ? -std::abs(Scale.x) : std::abs(Scale.x);
             }
@@ -105,8 +105,8 @@ namespace ETG
 
     void MuzzleFlash::Activate()
     {
-        //A gun that never calls SetAnimation (the AK47, Magnum and SawedOff all hide their
-        //flash) has no frames, and Animation::Update would index an empty FrameRects.
+        // SetAnimation çağırmayan bir silahın (AK47, Magnum ve SawedOff flash'ı gizler) frame'i yoktur;
+        // bu durumda Animation::Update boş bir FrameRects'i index etmeye çalışır.
         if (!HasAnimation()) return;
 
         isActive = true;
