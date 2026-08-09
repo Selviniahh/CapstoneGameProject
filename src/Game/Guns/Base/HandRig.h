@@ -138,9 +138,27 @@ namespace ETG
         bool HasRightHandAnchor{false};
         bool HasLeftHandAnchor{false};
 
+        // <---------- Frame Origin kayması ---------->
+        // Bu silahın authored HER noktasının -- anchor'lar, reload noktaları, magazine eject noktası -- ölçüldüğü
+        // referans Origin'dir: silahın Idle pose'unun Origin'i. İlk frame'de bir kez otomatik yakalanır, elle
+        // vermek isteyen silah Initialize'da yazabilir.
+        //
+        // NOTE: Buna ihtiyaç duyulmasının sebebi, animation'ın her state için Origin'i yeniden yazmasıdır. AK'nin
+        // recoil frame'leri 29x9, idle frame'leri 27x7'dir; recoil oynarken Origin {13.5,3.5}'ten {14.5,4.5}'e
+        // kayar, yani artwork o kadar geriye-yukarıya sıçrar. Eller artwork'e yapışık kalmalıdır, dolayısıyla aynı
+        // kaymayı almalıdır -- ateş ederken elin silahla birlikte tepmesi tam olarak budur. Bu compensation
+        // olmadan eller sabit bir gun-local noktaya kaynaklanır ve recoil boyunca silahtan ayrılır.
+        //
+        // NOTE: Aynı düzeltme, farklı frame'lerde ölçülmüş noktaların birbiriyle konuşmasını da sağlar. AK'nin
+        // reload noktaları 26x10 reload frame'inde, anchor'ları ise 27x7 idle frame'inde okunmuştur; ikisi de
+        // AnchorOrigin'e göre yazıldığı sürece `WorkingPoint - RightHandAnchor` gibi bir çıkarma anlamlı kalır.
+        //
+        // Yazım kuralı: authored nokta = `kendi frame'inde okunan pixel - AnchorOrigin`.
+        ETG::Vector2f AnchorOrigin{};
+
         // <---------- Bu frame'in sonucu ---------->
         // Elin YERLEŞTİRİLDİĞİ konuma eklenen displacement'tır; Character bunları okur.
-        //
+
         // NOTE: Anchor'lara yazılmak yerine onlardan ayrı tutulur. Anchor'lar silahın nereden tutulduğuna ilişkin
         // authored gerçektir ve grip pinning hangi pixel'in sabit duracağını belirlemek için LeftHandAnchor'ı okur.
         // Anchor içine yazılan gesture pin'i de beraberinde sürükler ve el her hareket ettiğinde tüm silah sallanırdı.
@@ -174,6 +192,18 @@ namespace ETG
         // Her frame, GunBase::Update içinde. `reloadProgress` negatifse reload çalışmıyordur.
         void Tick(float deltaSeconds, float reloadProgress);
 
+        // Referans Origin'i ilk çağrıda yakalar, sonrakileri yok sayar. GunBase, animation Origin'i o frame için
+        // tazeledikten sonra çağırır: silah ilk frame'de Idle state'indedir, dolayısıyla gelen değer tam olarak
+        // anchor'ların okunduğu pose'un Origin'idir.
+        void CaptureAnchorOriginOnce(const ETG::Vector2f& idleOrigin);
+
+        // Authored bir noktanın, mevcut animation frame'inin Origin kayması uygulanmış gun-local karşılığı.
+        // Silahın artwork'ü kaydığında ona anchor edilmiş her şey aynı kadar kayar.
+        [[nodiscard]] ETG::Vector2f FrameAdjusted(const ETG::Vector2f& point, const ETG::Vector2f& currentOrigin) const
+        {
+            return point + AnchorOrigin - currentOrigin;
+        }
+
         // Silahın kendi position'ına uygulanacak bu frame'lik kayma. GunBase uygular.
         [[nodiscard]] ETG::Vector2f GunKickOffset() const { return ShotKick.GunOffset(); }
 
@@ -181,9 +211,13 @@ namespace ETG
         void RestHands();
 
         BOOST_DESCRIBE_CLASS(HandRig, (ComponentBase),
-                             (RightHandAnchor, LeftHandAnchor, HasRightHandAnchor, HasLeftHandAnchor,
+                             (RightHandAnchor, LeftHandAnchor, HasRightHandAnchor, HasLeftHandAnchor, AnchorOrigin,
                                  RightHandGesture, LeftHandGesture, PinsGripWhenAimingUp,
                                  OffHandBreath, ShotKick, ReloadReach),
                              (), ())
+
+    private:
+        // Referans Origin yalnızca bir kez yakalanır; sonraki frame'lerin state'e göre değişen Origin'i onu ezmemelidir
+        bool AnchorOriginCaptured{false};
     };
 }

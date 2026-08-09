@@ -18,13 +18,13 @@ namespace ETG
 
     public:
         // <---------- Magazine drop ---------->
-        // Aşağıdaki nokta Origin-relative gun-local uzaydır. Image editor'da 26x10 reload frame'inin sol üstünden
-        // okunan pixel'den frame'in merkez Origin'i {13,5} çıkarılarak elde edilir. Bu sayede idle ve reload
-        // noktaları aynı koordinat uzayında hesaplanır; frame boyutu veya Origin değişimi gizli bir offset eklemez.
+        // 26x10 reload frame'inin sol üstünden okunan pixel'den HandRig::AnchorOrigin, yani 27x7 idle frame'inin
+        // merkezi {13.5,3.5} çıkarılarak elde edilir. Silahtaki her authored nokta bu tek referansa göre yazılır;
+        // reload frame'i çizilirken oluşan Origin farkını WorldPointOnGun geri ekler.
         //
         // NOTE: Ellerin nereye uzandığı burada değil, HandRig::ReloadReach üzerinde authored'dır ve AK47::Initialize
         // içinde doldurulur. Burada yalnızca magazine'e ait olan kalır.
-        ETG::Vector2f MagazineEjectPoint{-2.f, 1.f}; // Reload pixel {11,6} - Origin {13,5}
+        ETG::Vector2f MagazineEjectPoint{-2.5f, 2.5f}; // Reload pixel {11,6} - AnchorOrigin {13.5,3.5}
 
         // Magazine'in ayrılırken aldığı itme, saniye başına pixel cinsindendir. Gravity yönünü değiştirmeden önce
         // silahtan uzaklaşması için hafifçe geriye ve yukarı gider. X silahla birlikte mirror edildiğinden hero'nun

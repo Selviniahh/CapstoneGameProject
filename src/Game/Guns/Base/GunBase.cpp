@@ -100,7 +100,7 @@ namespace ETG
         // aksi hâlde silaha anchor edilmiş her şey kaymayla birlikte sürüklenir. Silah sola nişan almak için
         // mirror edildiğinde local noktayı doğru tarafta tutan şey, silahın kendi scale değerinin rotation'a verilmesidir.
         return GetPosition() - MirroredHeldOffset() +
-               Math::RotateVector(GetRotation(), GetScale(), localPoint);
+               Math::RotateVector(GetRotation(), GetScale(), Hands->FrameAdjusted(localPoint, GetOrigin()));
     }
 
     float GunBase::ReloadProgress() const
@@ -208,6 +208,10 @@ namespace ETG
 
         // Gun Animation'ını update et
         AnimationComp->Update(CurrentGunState, CurrentGunState);
+
+        // Authored noktaların ölçüldüğü referans Origin, animation'ın ilk frame'de -- Idle pose'unda -- yazdığı
+        // Origin'dir. Animation Origin'i tazeledikten hemen sonra, bir kez yakalanır.
+        Hands->CaptureAnchorOriginOnce(GetOrigin());
         ComputeDrawProperties();
 
         // Muzzle flash position ve animation'ını update et

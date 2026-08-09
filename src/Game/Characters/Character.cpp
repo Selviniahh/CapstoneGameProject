@@ -140,7 +140,9 @@ namespace ETG
         //A gun with no measured second grip has no pixel to pin, so there is nothing to ask it
         if (!CurrentGun || !CurrentGun->Hands->HasLeftHandAnchor || !CurrentGun->WantsGripPinned()) return;
 
-        const ETG::Vector2f gripLocal = CurrentGun->Hands->LeftHandAnchor;
+        //Through the rig as well, so the pinned pixel is the one the artwork is actually showing this frame
+        const ETG::Vector2f gripLocal = CurrentGun->Hands->FrameAdjusted(CurrentGun->Hands->LeftHandAnchor,
+                                                                          CurrentGun->GetOrigin());
         const ETG::Vector2f scale = CurrentGun->GetScale();
 
         //Sliding the gun by the difference between these two puts the grip exactly where the pinned rotation would

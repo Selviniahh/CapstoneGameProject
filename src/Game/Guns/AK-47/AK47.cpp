@@ -54,10 +54,13 @@ void ETG::AK47::Initialize()
     // trigger hand grip'ten ayrılmaz, yalnızca eğilen reload pose'unun grip'ini takip eder. Hareketin kendisi
     // HandRig::ReloadReach içindedir; burada yalnızca AK'ye özgü noktalar ve zamanlama author edilir.
     //
-    // İki nokta da 26x10 reload frame'inin sol üstünden okunup merkez Origin {13,5} çıkarılarak elde edilmiştir.
+    // İki nokta da 26x10 reload frame'inin sol üstünden okunur ve HandRig::AnchorOrigin, yani 27x7 idle frame'inin
+    // merkezi {13.5,3.5} çıkarılır. Reload frame'inin kendi Origin'i DEĞİL: anchor'larla aynı referansa göre
+    // yazıldıklarında `WorkingPoint - RightHandAnchor` gibi bir çıkarma anlamlı kalır ve iki uzay karışmaz.
+    // Reload frame'i çizilirken oluşan Origin farkını WorldPointOnGun zaten geri ekler.
     Hands->ReloadReach.Enabled = true;
-    Hands->ReloadReach.WorkingPoint = {-9.f, 2.f}; // Reload pixel {4,7} - Origin {13,5}: magazine well
-    Hands->ReloadReach.SteadyPoint = {-6.f, 2.f};  // Reload pixel {7,7} - Origin {13,5}: eğilen pose'daki grip
+    Hands->ReloadReach.WorkingPoint = {-9.5f, 3.5f}; // Reload pixel {4,7} - AnchorOrigin {13.5,3.5}: magazine well
+    Hands->ReloadReach.SteadyPoint = {-6.5f, 3.5f};  // Reload pixel {7,7} - AnchorOrigin: eğilen pose'daki grip
 
     // Body'nin 8-way facing sisteminin döndüğü 67.5 derecede dönmek yerine barrel doğrudan aşağı bakana kadar
     // sağ elde kalır. Rifle bu aralık için en kötü durumdur: hâlâ sağa nişan alırken mirror edilmesi, uzunluğu

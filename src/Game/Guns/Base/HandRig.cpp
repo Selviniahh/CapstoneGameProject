@@ -123,6 +123,14 @@ namespace ETG
         IsVisible = false;
     }
 
+    void HandRig::CaptureAnchorOriginOnce(const ETG::Vector2f& idleOrigin)
+    {
+        if (AnchorOriginCaptured) return;
+
+        AnchorOrigin = idleOrigin;
+        AnchorOriginCaptured = true;
+    }
+
     void HandRig::OnShotFired()
     {
         ShotKick.Trigger();
