@@ -123,10 +123,11 @@ namespace ETG
 
         if (HasSprite())
         {
-            // Artwork ne kadarsa o kadar çizilir: scale ve tint'e dokunulmaz, aksi hâlde silahın verdiği sprite
-            // yedek yolun boyut ve rengiyle bozulurdu.
+            // Artwork olduğu gibi çizilir; yedek yolun CasingSize/CasingColor değerleri karışmaz. Component'in
+            // kendi Scale'i yine de geçer: sprite'ı yeniden çizmeden küçültüp büyütmenin yolu SetScale'dir.
             props.Texture = Texture.get();
             props.Origin = Origin;
+            props.Scale = Scale;
         }
         else
         {

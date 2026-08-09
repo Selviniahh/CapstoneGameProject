@@ -98,6 +98,18 @@ namespace ETG
         return Hands->PinsGripWhenAimingUp && IsBarrelAboveHorizontal();
     }
 
+    void GunBase::SetProjectileImpact(const std::string& relativePath, const std::string& fileName,
+                                      const std::string& extension, const float frameInterval)
+    {
+        ProjectileImpact = Animation::CreateSpriteSheet(relativePath, fileName, extension, frameInterval);
+
+        // Impact bir kez oynar ve son frame'inde durur. ProjectileBase de kopyasına aynısını uygular; burada da
+        // yapılması, silahın animation'ını ImGui'da inceleyenin loop eden bir şey görmemesi içindir.
+        ProjectileImpact.Loops = false;
+
+        HasProjectileImpact = true;
+    }
+
     ETG::Vector2f GunBase::WorldPointOnGun(const ETG::Vector2f& localPoint) const
     {
         // HeldOffset silah artwork'ünü sabit ellerin altında kaydırır. Bu world-space displacement burada kaldırılır;
@@ -144,6 +156,12 @@ namespace ETG
         // Muzzle flash sprite sheet derived gun'ın sorumluluğundadır; kendi Initialize'ı içinde SetAnimation çağırır
         MuzzleFlash->SetParent(this);
 
+        // Ortak impact. Buraya ilk giriş GunBase constructor'ından olduğu için her silah daha kendi Initialize'ı
+        // çalışmadan geçerli bir impact'e sahip olur; kendi artwork'ünü veren silahın SetProjectileImpact çağrısı
+        // sonradan bunun üzerine yazar. Kontrol, Initialize ikinci kez çalıştığında seçilmiş set'in default'a geri
+        // dönmemesi içindir.
+        if (!HasProjectileImpact) SetProjectileImpact("Projectiles/Hit/", "impact_tiny_001", "png", 0.04f);
+
         ReloadSlider->LinkToGun(this);
     }
 
@@ -187,9 +205,16 @@ namespace ETG
         // Shoot bittiğinde Recoil'a, Recoil bittiğinde Idle'a geçer. Recoil Animation kaydetmemiş silah doğrudan
         // Idle'a döner. Bu nedenle başka bir silaha sonradan Recoil eklemek yalnızca kendi SetAnimations'ına bir
         // satır eklemeyi gerektirir; burada değişiklik gerekmez.
-        if (const GunStateEnum animState = AnimationComp->CurrentState;
-            (animState == GunStateEnum::Shoot || animState == GunStateEnum::Recoil) &&
-            AnimationComp->AnimManagerDict[animState].IsFinished())
+        // NOTE: Lookup find ile yapılır, operator[] ile DEĞİL. Eskiden burada `AnimManagerDict[animState]` vardı ve
+        // bir okuma niyetiyle yazılmış bu satır, state kayıtlı değilse onu dict'e EKLİYORDU. Recoil animation'ı
+        // olmayan RogueSpecial'da tek bir kez bunun olması yetiyordu: aşağıdaki `contains(Recoil)` o andan sonra
+        // sonsuza kadar true dönüyor, her shot sonrası silah kaydı olmayan Recoil state'ine geçiyor ve texture'ı
+        // null kalıyordu. Silah görünmez oluyor, null texture'ı okuyan ilk yer (UI'daki gun frame) çöküyordu.
+        const GunStateEnum animState = AnimationComp->CurrentState;
+        const auto animStateIt = AnimationComp->AnimManagerDict.find(animState);
+
+        if ((animState == GunStateEnum::Shoot || animState == GunStateEnum::Recoil) &&
+            animStateIt != AnimationComp->AnimManagerDict.end() && animStateIt->second.IsFinished())
         {
             const bool hasRecoil = AnimationComp->AnimManagerDict.contains(GunStateEnum::Recoil);
             CurrentGunState = (animState == GunStateEnum::Shoot && hasRecoil)
@@ -370,6 +395,11 @@ namespace ETG
         // Collision resolution sırasında projectile'ın owner silahını bilmem ve buradan hero projectile'ı mı yoksa
         // enemy projectile'ı mı olduğunu öğrenmem gerekiyor.
         std::unique_ptr<ProjectileBase> proj = CreateGameObjectAttached<ProjectileBase>(this,*ProjTexture, spawnPos, projVelocity, Range, projectileAngle, Damage, Force);
+
+        // Her mermi animation'ın kendi kopyasını taşır: aynı anda havada olan iki mermi farklı frame'lerde
+        // patlayabilmelidir. Kopya ucuzdur, texture zaten sheet cache'inde paylaşılır.
+        if (HasProjectileImpact) proj->SetImpactAnimation(ProjectileImpact);
+
         proj->Update();
         projectiles.push_back(std::move(proj));
     }

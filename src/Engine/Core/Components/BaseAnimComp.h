@@ -73,7 +73,12 @@ namespace ETG
         //Animation properties
         std::unordered_map<StateEnum, AnimationManager> AnimManagerDict{};
         std::unordered_map<StateEnum, KeyResolver> KeyResolvers{};
-        StateEnum CurrentState;
+
+        //Value-initialized on purpose. Owners read this before the first Update writes it - GunBase::Update asks
+        //"is the current state's animation finished?" at the top of the frame - and an uninitialized enum answered
+        //with whatever the heap happened to hold. Zero is the first enumerator, which is the idle state in every
+        //enum this template is used with.
+        StateEnum CurrentState{};
         AnimationKey CurrentAnimStateKey;
 
     private:
@@ -97,10 +102,21 @@ namespace ETG
         //to restart animations by hand (HeroAnimComp::StartDash and its hit handler both did)
         ChangeAnimStateIfRequired(animKey);
 
-        auto& animManager = AnimManagerDict[CurrentState];
+        //A state nobody registered animations for is not played, and above all does not get CREATED here. These two
+        //lookups used to be operator[], which inserted an empty manager holding a default-constructed Animation - an
+        //Animation with no texture. That nullptr went straight into Owner->Texture below and killed the first thing
+        //that read it a frame later, as far from the cause as it gets: the crash landed in the UI's gun frame while
+        //the real mistake was a gun asking for a state it never authored.
+        const auto managerIt = AnimManagerDict.find(CurrentState);
+        if (managerIt == AnimManagerDict.end()) return;
+
+        AnimationManager& animManager = managerIt->second;
         animManager.Update(CurrentAnimStateKey);
 
-        const auto& animState = animManager.AnimationDict[CurrentAnimStateKey];
+        const auto animIt = animManager.AnimationDict.find(CurrentAnimStateKey);
+        if (animIt == animManager.AnimationDict.end()) return;
+
+        const Animation& animState = animIt->second;
         CurrTexRect = animState.CurrRect;
         CurrentTex = animState.GetCurrentFrameAsTexture();
         Owner->Texture = CurrentTex;

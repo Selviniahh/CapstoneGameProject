@@ -34,29 +34,79 @@ ETG::ProjectileBase::ProjectileBase(const ETG::Texture& texture, const ETG::Vect
         // Check if we collided with enemy. 
         const auto heroObj = dynamic_cast<Hero*>(this->Owner->Owner);
         const auto* enemyObj = dynamic_cast<EnemyBase*>(eventData.Other);
-        
+        const auto* enemy = eventData.Other->As<EnemyBase>();
+        const auto* EnemyGun = eventData.Other->As<EnemyBase>(); //M
+;        
         if (heroObj && enemyObj)
         {
-            // std::cout << "we need to play impact animation here for " << this->Owner->Owner->GetObjectName() << " 's projectile and then destroy but nevermind " << std::endl;
-
             //This is Hero's projectile that collided with an enemy
-            enemyObj->CollisionComp->OnCollisionEnter.Broadcast(CollisionEventData{this, this, eventData.OtherComp,eventData.ImpactPoint}); 
-            this->MarkForDestroy();
+            enemyObj->CollisionComp->OnCollisionEnter.Broadcast(CollisionEventData{this, this, eventData.OtherComp,eventData.ImpactPoint});
+
+            // Damage broadcast edildikten sonra mermi durur ve iki dairenin değdiği noktada patlar. Yok etme
+            // işini BeginImpact üstlenir: animation varsa bittiğinde, yoksa hemen.
+            this->BeginImpact(eventData.ImpactPoint);
         }
     });
 
     //Should we check if hero's projectile collided with enemy's projectile and then play a cool explosion VFX and then remove both projectiles?
-
-    
 }
 
 void ETG::ProjectileBase::Initialize()
 {
 }
 
+void ETG::ProjectileBase::SetImpactAnimation(const Animation& impactAnim)
+{
+    ImpactAnim = impactAnim;
+
+    // Bir kez oynayıp son frame'inde durur; IsFinished'ın "bitti" demesi yalnızca bu hâlde dürüsttür ve
+    // projectile'ın yok edileceği an odur. Silah bunu unutsa bile burada garanti altına alınır.
+    ImpactAnim.Loops = false;
+    ImpactAnim.Restart();
+
+    HasImpactAnim = true;
+}
+
+void ETG::ProjectileBase::BeginImpact(const ETG::Vector2f& impactPoint)
+{
+    // Impact animation'ı olmayan silahın mermisi eskisi gibi o frame kaybolur
+    if (!HasImpactAnim)
+    {
+        MarkForDestroy();
+        return;
+    }
+
+    // Aynı frame'de iki collision gelebilir; ilki kazanır, aksi hâlde animation kendini baştan başlatırdı
+    if (Impacting) return;
+
+    Impacting = true;
+    ImpactPos = impactPoint;
+
+    // Artık ne uçar ne bir şeye çarpar. Collision kapatılmazsa duran mermi aynı enemy'ye her frame yeniden
+    // vurur ve tek bir shot, animation süresi boyunca damage yağdırırdı.
+    ProjVelocity = {};
+    CollisionComp->SetCollisionEnabled(false);
+
+    ImpactAnim.Restart();
+
+    // İlk frame'in rect'i şimdi hesaplanır: çarpışma bu frame'in Update'i içinde olur ve arkasından gelen Draw,
+    // Animation::Update henüz CurrRect'i doldurmamışken çalışırdı.
+    ImpactAnim.Update();
+}
+
 void ETG::ProjectileBase::Update()
 {
     if (PendingDestroy) return;
+
+    // Çarpma başladıysa geriye yalnızca VFX kalmıştır: mermi hareket etmez, collision aranmaz, animation
+    // bittiğinde object gider.
+    if (Impacting)
+    {
+        ImpactAnim.Update();
+        if (ImpactAnim.IsFinished()) MarkForDestroy();
+        return;
+    }
+
     TimerComp->Update();
     CollisionComp->Update();
 
@@ -67,10 +117,10 @@ void ETG::ProjectileBase::Update()
     const float frameDistance = std::sqrt(movement.x * movement.x + movement.y * movement.y);
     DistanceTraveled += frameDistance;
 
-    //If projectile has exceeded it's range destroy
+    //If projectile has exceeded it's range play the impact where it ran out and destroy afterwards
     if (DistanceTraveled >= Range)
     {
-        MarkForDestroy();
+        BeginImpact(Position);
         return;
     }
 
@@ -80,7 +130,25 @@ void ETG::ProjectileBase::Update()
 void ETG::ProjectileBase::Draw()
 {
     IsVisible = true;
-    if (CollisionComp) CollisionComp->Visualize(*ETG::RenderContext::Window);
+    
+    if (CollisionComp) 
+        CollisionComp->Visualize(*ETG::RenderContext::Window);
+
+    if (Impacting)
+    {
+        // Impact frame'leri farklı boyutlardadır -- knav3 seti 6x6'dan 16x17'ye büyüyüp 9x8'e iner -- ve sheet'e
+        // üst kenarlarından hizalanarak dikilir. Origin bu yüzden sabit bir değer değil, o frame'in kendi
+        // merkezidir; sabit olsaydı patlama büyüdükçe yukarı sola kayardı.
+        //
+        // Rotation verilmez: impact artwork'ü dikey author edilmiştir ve merminin geliş açısıyla döndürülmesi
+        // istenmiyor.
+        const ETG::IntRect& frame = ImpactAnim.CurrRect;
+        ImpactAnim.Draw(ImpactAnim.Texture, ImpactPos, ETG::Color::White, 0.f,
+                        {static_cast<float>(frame.width) / 2.f, static_cast<float>(frame.height) / 2.f},
+                        {1.f, 1.f}, 0.f);
+        return;
+    }
+
     auto& DrawableProps = GetDrawProperties();
     ETG::Sprite frame;
     frame.setTexture(*Texture);

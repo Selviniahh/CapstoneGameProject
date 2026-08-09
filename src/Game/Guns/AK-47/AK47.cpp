@@ -20,7 +20,7 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     500,       // MaxAmmo
     30,        // MagazineSize
     2.0f,      // ReloadTime
-    0.5f,      // Damage
+    1.0f,      // Damage
     20.0f,     // Force
     0.1f,     // Force duration
     3.0f)      // Spread (degree cinsinden)
@@ -85,6 +85,8 @@ void ETG::AK47::Initialize()
     // 4x2 tüfek kovanı. Magazine'de olduğu gibi object GunBase'e aittir; buradan yalnızca hangi kovanın
     // düşeceği söylenir.
     Shells->SetSprite("Guns/AK47/AK47Shell.png");
+    Shells->SetScale({0.5f, 0.5f});
+
 
     CollisionComp->Initialize();
 

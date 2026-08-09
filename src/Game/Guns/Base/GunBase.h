@@ -226,6 +226,17 @@ namespace ETG
         int MagazineAmmo{}; // Mevcut magazine ammo sayısı (azaltılır ve reset edilir)
 
         std::shared_ptr<ETG::Texture> ProjTexture;
+
+        // Bu silahın mermisi bir şeye çarptığında veya menzili bittiğinde oynayacak impact animation'ını seçer.
+        // Silahın tek işi sheet'i göstermektir; oynatma ve ardından projectile'ın yok edilmesi ProjectileBase
+        // içindedir.
+        //
+        // Her silah GunBase::Initialize'da ortak `Projectiles/Hit/impact_tiny` set'iyle doğar, yani yeni bir silah
+        // hiçbir şey yazmadan çalışan bir impact'e sahip olur. Kendi artwork'ü olan silah bunu tek satırla ezer;
+        // örnek için RogueSpecial::Initialize.
+        void SetProjectileImpact(const std::string& relativePath, const std::string& fileName,
+                                 const std::string& extension, float frameInterval);
+
         std::unique_ptr<ReloadSlider> ReloadSlider;
         EventDelegate<bool> OnAmmoRunOut;
         EventDelegate<bool> OnReloadInvoke;
@@ -240,6 +251,12 @@ namespace ETG
 
         // Silahın Hero'nun eline attach edilmesi gerektiği için custom Origin offset'e ihtiyacı vardır
         ETG::Vector2f OriginOffset;
+
+        // Spawn edilen her projectile'a kopyalanır; projectile kendi kopyasını oynatır. Burada tutulan object hiç
+        // Update edilmez, dolayısıyla her mermi animation'ı baştan başlar. FrameInterval'ı ImGui'dan oynatmak
+        // sonraki mermileri etkiler.
+        Animation ProjectileImpact;
+        bool HasProjectileImpact{false};
 
         // Gun Animation
         std::unique_ptr<BaseAnimComp<GunStateEnum>> AnimationComp;
@@ -262,7 +279,7 @@ namespace ETG
                              (CurrentGunState, MaxAmmo, MagazineSize, MagazineAmmo, ShotDelay, ReloadTime, IsReloading,
                                  FireRate, ShotSpeed, Range, Damage, Force, ForceDuration, Spread, HeldOffset,
                                  HandSwapAngle, HeldDepthInFront, HeldDepthBehindBody),
-                             (ProjTexture, OriginOffset),
+                             (ProjTexture, OriginOffset, ProjectileImpact),
                              ())
     };
 

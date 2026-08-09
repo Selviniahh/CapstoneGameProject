@@ -78,7 +78,8 @@ void ETG::RogueSpecial::Initialize()
     // 3x2 revolver kovanı: tüfeğinkinden bir pixel kısa ve dibinde bakır kapsül var. İkisi aynı odada birikince
     // yerdeki kovanlardan hangi silahın ateşlendiği okunur.
     Shells->SetSprite("Guns/RogueSpecial/RogueSpecialShell.png");
-
+    Shells->SetScale({0.5f, 0.5f});
+    
     // Artwork'ü sabit elin altından iki pixel aşağı kaydırır. Bu bir world-space slide'dır ve Origin'e
     // dokunmadığından silahın nişan alırken döndüğü pivot da, herhangi bir aim angle'daki oryantasyonu da
     // değişmez. WorldPointOnGun bu kaymayı geri aldığı için el olduğu yerde kalır; hareket eden yalnızca sprite'tır.
@@ -115,6 +116,13 @@ void ETG::RogueSpecial::Initialize()
 
     // RogueSpecial için projectile texture'ını yükle.
     ProjTexture = AssetManager::LoadTexture("Projectiles/RogueSpecial/Projectile_RogueSpecial.png");
+
+    // Mermi bir enemy'ye değdiğinde veya menzili bittiğinde oynayan çarpma efekti. GunBase'in verdiği ortak
+    // impact_tiny'nin yerini alır; 7 frame toplamda 0.21 saniye sürer ve bittiği anda projectile yok edilir.
+    //
+    // NOTE: Set'in vertical olanı seçilir. Yanındaki Horizontal klasörü duvarın yan yüzü içindir ve duvar
+    // collision'ı girene kadar kullanılmaz.
+    SetProjectileImpact("Projectiles/RogueSpecial/Impact/Vertical/", "knav3_impact_vertical_001", "png", 0.03f);
 
 }
 
