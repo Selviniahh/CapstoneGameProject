@@ -1,10 +1,34 @@
 #pragma once
 #include <boost/describe.hpp>
 #include "../../../Engine/Core/ComponentBase.h"
+#include "../../../Engine/Core/Direction.h"
 #include "../../../Engine/Platform/Platform.h"
 
 namespace ETG
 {
+    // Facing başına bir bayrak. Alan adları Direction ile birebir aynıdır; ImGui'da sekiz isimli checkbox olarak
+    // görünür ve hangi yönün ne yaptığı listeye bakınca okunur.
+    struct DirectionFlags
+    {
+        bool Right{false};
+        bool DownRight{false};
+        bool Down{false};
+        bool DownLeft{false};
+        bool Left{false};
+        bool UpLeft{false};
+        bool Up{false};
+        bool UpRight{false};
+
+        [[nodiscard]] bool operator[](Direction direction) const;
+
+        // Üç back facing'i işaretli, kalanları boş bir set. IsFacingBack ile aynı kümedir; "gövde arkadan
+        // çizilirken sakla" isteyen silahın hiçbir şey ayarlamasına gerek kalmaması için varsayılan budur.
+        [[nodiscard]] static DirectionFlags BackFacings();
+
+        BOOST_DESCRIBE_CLASS(DirectionFlags, (),
+                             (Right, DownRight, Down, DownLeft, Left, UpLeft, Up, UpRight), (), ())
+    };
+
     // ============================== Hazır hareketler ==============================
     // Üçü de gun-local pixel cinsinden displacement üretir ve dinlenme hâlinde TAM OLARAK zero döner. Zero dönmeleri
     // tesadüf değil, sözleşmenin kendisidir: gesture'lar anchor'ın üzerine eklendiğinden, hareketsiz bir motion elin
@@ -159,6 +183,29 @@ namespace ETG
         // <---------- Bu frame'in sonucu ---------->
         // Elin YERLEŞTİRİLDİĞİ konuma eklenen displacement'tır; Character bunları okur.
 
+        // <---------- Kalıcı offset'ler ---------->
+        // Elin oturduğu noktaya her frame eklenen sabit kaymadır. Gesture'dan farkı zamanla değişmemesidir: bir
+        // hareketin parçası değil, elin duruşuna yapılmış kalıcı bir düzeltmedir.
+        //
+        // NOTE: Anchor'a yazmak yerine ayrı tutulur; sebebi gesture'larla aynıdır. Anchor, silahın hangi pixel'inden
+        // tutulduğuna dair authored gerçektir ve grip pinning hangi pixel'in sabit duracağını oradan okur.
+        //
+        // NOTE: Uzay kuralı da gesture'larla aynıdır: silahı kavrayan el için gun-local (silahla rotate ve mirror
+        // edilir), silaha attach olmayıp body üzerinde duran el için world-space. World-space durumda X, silah sola
+        // geçtiğinde mirror edilir; böylece "gövdeye doğru" diye author edilen bir değer iki tarafta da gövdeye
+        // doğru kalır.
+        ETG::Vector2f RightHandOffset{};
+        ETG::Vector2f EmptyHandOffset{};
+
+        // <---------- Boştaki elin görünürlüğü ---------->
+        // Boştaki elin hangi facing'lerde gizleneceği. Varsayılan üç back facing'dir: gövde arkadan çizildiğinde el
+        // gövdenin arkasında kalır ve artwork'ün içinden geçiyormuş gibi okunur.
+        //
+        // NOTE: Tek bir "arkadan mı çiziliyor" bool'u da olurdu ve varsayılan tam olarak onunla aynı kümedir.
+        // Facing başına tutulmasının sebebi gizlemenin depth'ten ayrı bir karar olmasıdır: bir silah elini yalnızca
+        // Up'ta saklayıp UpLeft'te göstermek isteyebilir. Ortak durum için yine de hiçbir şey ayarlanmaz.
+        DirectionFlags HideOffHandIn{DirectionFlags::BackFacings()};
+
         // NOTE: Anchor'lara yazılmak yerine onlardan ayrı tutulur. Anchor'lar silahın nereden tutulduğuna ilişkin
         // authored gerçektir ve grip pinning hangi pixel'in sabit duracağını belirlemek için LeftHandAnchor'ı okur.
         // Anchor içine yazılan gesture pin'i de beraberinde sürükler ve el her hareket ettiğinde tüm silah sallanırdı.
@@ -204,6 +251,24 @@ namespace ETG
             return point + AnchorOrigin - currentOrigin;
         }
 
+        // <---------- Character'ın okuduğu son değerler ---------->
+        // Elin bu frame'de oturacağı gun-local nokta: authored anchor + kalıcı offset + gesture. Silah bu eli
+        // kavradığında kullanılır.
+        [[nodiscard]] ETG::Vector2f RightHandGrip() const { return RightHandAnchor + RightHandOffset + RightHandGesture; }
+        [[nodiscard]] ETG::Vector2f LeftHandGrip() const { return LeftHandAnchor + EmptyHandOffset + LeftHandGesture; }
+
+        // El silaha attach değilse body rest pose'una eklenecek world-space kayma: kalıcı offset + gesture, X'i
+        // silahın tutulduğu tarafa göre mirror edilmiş.
+        [[nodiscard]] ETG::Vector2f RightHandBodyShift(bool gunOnRightSide) const
+        {
+            return MirroredForSide(RightHandOffset + RightHandGesture, gunOnRightSide);
+        }
+
+        [[nodiscard]] ETG::Vector2f LeftHandBodyShift(bool gunOnRightSide) const
+        {
+            return MirroredForSide(EmptyHandOffset + LeftHandGesture, gunOnRightSide);
+        }
+
         // Silahın kendi position'ına uygulanacak bu frame'lik kayma. GunBase uygular.
         [[nodiscard]] ETG::Vector2f GunKickOffset() const { return ShotKick.GunOffset(); }
 
@@ -212,11 +277,20 @@ namespace ETG
 
         BOOST_DESCRIBE_CLASS(HandRig, (ComponentBase),
                              (RightHandAnchor, LeftHandAnchor, HasRightHandAnchor, HasLeftHandAnchor, AnchorOrigin,
+                                 RightHandOffset, EmptyHandOffset, HideOffHandIn,
                                  RightHandGesture, LeftHandGesture, PinsGripWhenAimingUp,
                                  OffHandBreath, ShotKick, ReloadReach),
                              (), ())
 
     private:
+        // Yalnızca horizontal component mirror edilir. Değerler sağ elde tutulan pose'a göre author edildiğinden
+        // negatif X iki tarafta da aynı anlamı korur; Y ise ekran uzayında iki durumda da aşağıdır.
+        [[nodiscard]] static ETG::Vector2f MirroredForSide(ETG::Vector2f displacement, const bool gunOnRightSide)
+        {
+            if (!gunOnRightSide) displacement.x = -displacement.x;
+            return displacement;
+        }
+
         // Referans Origin yalnızca bir kez yakalanır; sonraki frame'lerin state'e göre değişen Origin'i onu ezmemelidir
         bool AnchorOriginCaptured{false};
     };

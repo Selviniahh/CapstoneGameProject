@@ -217,6 +217,8 @@ set(GUNS_SOURCES
         src/Game/Guns/GunStates.h
         src/Game/Guns/Base/GunBase.cpp
         src/Game/Guns/Base/HandRig.cpp
+        src/Game/Guns/VFX/ShellEjector.cpp
+        src/Game/Guns/VFX/ShellEjector.h
         src/Game/Guns/Base/HandRig.h
         src/Game/Guns/Base/GunBase.h
         src/Game/Guns/RogueSpecial/RogueSpecial.cpp

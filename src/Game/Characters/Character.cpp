@@ -168,28 +168,29 @@ namespace ETG
 
         const bool gunNamesRightGrip = CurrentGun && CurrentGun->Hands->HasRightHandAnchor;
         const bool gunNamesLeftGrip = CurrentGun && CurrentGun->Hands->HasLeftHandAnchor;
+        const bool gunOnRight = IsGunOnRightSide();
 
-        //The gesture is added to the anchor here rather than inside the gun, so a gun that acts nothing out
-        //(every one of them but the AK, so far) is placed on exactly the pixel it always was
+        //The rig combines the authored anchor, the standing offset and this frame's gesture; the sum arrives here
+        //already made, so a gun that authors none of them is placed on exactly the pixel it always was.
+        //
+        //A gun can also act with a hand it does not hold - the revolver's free hand rides the shot while it is
+        //still resting against the body - so both branches take the rig's displacement. Feeding it only into the
+        //grip branch would leave every one-handed gun unable to move or offset its off hand at all
         if (Hand)
             PlaceHand(*Hand, gunNamesRightGrip,
-                      gunNamesRightGrip ? CurrentGun->Hands->RightHandAnchor + CurrentGun->Hands->RightHandGesture : ETG::Vector2f{},
-                      HoldPoint);
+                      gunNamesRightGrip ? CurrentGun->Hands->RightHandGrip() : ETG::Vector2f{},
+                      HoldPoint + (CurrentGun ? CurrentGun->Hands->RightHandBodyShift(gunOnRight) : ETG::Vector2f{}));
 
         //The off hand falls back to the opposite side of the body, so it stays visible on a one-handed gun
         //instead of sitting at its construction position at world (0,0)
         if (OffHand)
         {
-            const ETG::Vector2f restOffset = IsGunOnRightSide() ? HandOffsetLeft : HandOffsetRight;
-
-            //A gun can act with the off hand without holding it - the revolver's free hand rides the shot while it
-            //is still resting against the body - so the gesture has to reach the hand wherever it was placed. Adding
-            //it only inside the grip branch would leave every one-handed gun unable to move its off hand at all
-            const ETG::Vector2f offGesture = CurrentGun ? CurrentGun->Hands->LeftHandGesture : ETG::Vector2f{};
+            const ETG::Vector2f restOffset = gunOnRight ? HandOffsetLeft : HandOffsetRight;
 
             PlaceHand(*OffHand, gunNamesLeftGrip,
-                      gunNamesLeftGrip ? CurrentGun->Hands->LeftHandAnchor + offGesture : ETG::Vector2f{},
-                      BodyRestPosition(restOffset) + offGesture);
+                      gunNamesLeftGrip ? CurrentGun->Hands->LeftHandGrip() : ETG::Vector2f{},
+                      BodyRestPosition(restOffset) +
+                      (CurrentGun ? CurrentGun->Hands->LeftHandBodyShift(gunOnRight) : ETG::Vector2f{}));
         }
     }
 
@@ -227,9 +228,17 @@ namespace ETG
     {
         const bool visible = ShouldShowHeldGun();
         if (Hand) Hand->IsVisible = visible;
-        //Both hands belong to the character and remain visible while it can hold a gun. The concrete gun only
-        //decides whether the off hand attaches to its LeftHandAnchor or rests against the body.
-        if (OffHand) OffHand->IsVisible = visible;
+
+        //Both hands belong to the character and remain visible while it can hold a gun. The concrete gun decides
+        //whether the off hand attaches to its LeftHandAnchor or rests against the body - and, through the rig,
+        //whether this facing is one where it should be out of sight entirely. From behind an unhidden free hand
+        //reads as passing through the body, which is why the rig's default set is the three back facings
+        if (OffHand)
+        {
+            const bool hiddenForThisFacing = CurrentGun && CurrentGun->Hands->HideOffHandIn[CurrentDir];
+            OffHand->IsVisible = visible && !hiddenForThisFacing;
+        }
+
         if (CurrentGun) CurrentGun->IsVisible = visible;
     }
 

@@ -89,6 +89,10 @@ namespace ETG
         // çalıştırmasını GunBase::Update üstlenir.
         std::unique_ptr<class HandRig> Hands;
 
+        // Her shot'ta dışarı atılan ve yerde kalan kovanlar. Silah yalnızca ejection port'unu ve itmeyi author
+        // eder; fırlatmayı GunBase, düşüşü ve birikmeyi ejector'ın kendisi yürütür.
+        std::unique_ptr<class ShellEjector> Shells;
+
         // Origin-relative gun-local bir noktanın şu an world içindeki konumunu verir. Böylece el veya clip'in
         // düştüğü magazine well gibi silahın bir bölümünü bulması gereken her yer rotate-mirror-unslide
         // işlemlerini elle tekrarlamak yerine burayı kullanır. Nokta zaten Origin'e göre olduğundan mevcut

@@ -36,7 +36,7 @@ namespace ETG
 
         // Her state'in kendi authored Origin değerine eklenen ortak offset. Böylece idle/shoot/reload
         // hizalarını birbirine göre değiştirmeden silahın ortak attachment pivot'u ayarlanabilir.
-        Vector2f AttachmentOrigin{1.f, 10.f};
+        Vector2f AttachmentOrigin{2.f, 9.f};
 
         BOOST_DESCRIBE_CLASS(RogueSpecialAnimComp, (BaseAnimComp), (AttachmentOrigin), (), ())
     };

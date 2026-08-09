@@ -15,6 +15,7 @@
 #include "../../../Engine/Managers/AssetManager.h"
 #include "../../Guns/VFX/MagazineDrop.h"
 #include "HandRig.h"
+#include "../VFX/ShellEjector.h"
 
 namespace ETG
 {
@@ -66,6 +67,9 @@ namespace ETG
         // Her silahın elleri vardır, dolayısıyla rig'i de vardır. Boş bir rig hiçbir şey yapmaz: anchor'sız eller
         // body üzerinde kalır ve tüm hareketlerin genliği sıfırdır. Silah yalnızca istediğini author eder.
         if (!Hands) Hands = CreateGameObjectAttached<HandRig>(this);
+
+        // Aynı gerekçeyle: kovan atmak istemeyen silah Enabled'ı kapatır, ötesinde hiçbir şey yapmaz
+        if (!Shells) Shells = CreateGameObjectAttached<ShellEjector>(this);
 
         GunBase::Initialize();
     }
@@ -223,6 +227,7 @@ namespace ETG
         ReloadSlider->Update();
         
         Magazine->Update();
+        Shells->Update();
     }
 
     void GunBase::Draw()
@@ -233,9 +238,10 @@ namespace ETG
             proj->Draw();
         }
 
-        // Projectile'larla aynı nedenle IsVisible kontrolünün üzerindedir: magazine silahtan ayrılmıştır;
-        // hero dash yaparken ve silah gizliyken düşmeye devam eder.
+        // Projectile'larla aynı nedenle IsVisible kontrolünün üzerindedir: magazine ve kovanlar silahtan
+        // ayrılmıştır; hero dash yaparken ve silah gizliyken de yerde durmaya devam ederler.
         Magazine->Draw();
+        Shells->Draw();
 
         if (!IsVisible) return; // Dash sırasında false olur; silah çizilmemeli ancak projectile'lar çizilmelidir. Önce projectile'ları, sonra visible ise silahı çizeriz.
         GameObjectBase::Draw();
@@ -304,6 +310,11 @@ namespace ETG
             // PrepareShooting'i override edip "gerçekten ateşledim mi" diye tekrar sorması gerekmez. Ammo shot group
             // başına bir kez harcandığından burst de tek bir kick üretir.
             Hands->OnShotFired();
+
+            // Kovan da buradan çıkar: ateşleme kararının verildiği tek yer burasıdır. Ammo shot group başına bir
+            // kez harcandığından burst tek kovan atar -- her mermi için bir kovan istenirse EnqueueProjectiles'a
+            // taşınmalıdır.
+            Shells->Eject(*this);
 
             EnqueueProjectiles(shot.ShotCount, shot.Spread);
         }

@@ -3,6 +3,7 @@
 #include "../../../Engine/Core/Factory.h"
 #include "../../../Engine/Managers/AssetManager.h"
 #include "../Base/HandRig.h"
+#include "../VFX/ShellEjector.h"
 
 
 
@@ -48,20 +49,36 @@ void ETG::RogueSpecial::Initialize()
     // Ateş anında kavrayışın tamamı küçük bir daire çizip yerine döner; aynı anda boştaki el nefes hattının üstüne
     // bir kez çıkıp iner. İkisi de tek bir saatle sürülür, çünkü ikisi de aynı olayın parçasıdır.
     // FireRate 0.35 olduğundan tur, sonraki shot onu kesmeden rahatça biter.
-    Hands->ShotKick.Duration = 0.16f;
+    Hands->ShotKick.Duration = 0.1f;
     Hands->ShotKick.GunCircleRadius = 1.25f; // kavrayış toplamda iki radius kadar geriye gider
     Hands->ShotKick.OffHandRise = 2.f;
 
-    // <---------- Boştaki elin nefesi ---------->
+    // <---------- Boştaki elin duruşu ---------->
     // Silahı tutmayan el body üzerinde durur ama ölü değildir: ateş edilsin edilmesin sürekli nefes alıp verir.
-    Hands->OffHandBreath.Height = 0.75f;    // rest pose'un kaç pixel altına indiği
-    Hands->OffHandBreath.Period = 2.2f;     // bir tam iniş + çıkış süresi
+    Hands->OffHandBreath.Height = 1.5f;    // rest pose'un kaç pixel altına indiği
+    Hands->OffHandBreath.Period = 0.7f;     // bir tam iniş + çıkış süresi
     Hands->OffHandBreath.FallRatio = 0.5f;  // büyütmek yavaşça indirip hızla kaldırır
+
+    // Boştaki eli gövdeye doğru içeri alır. Rest pose'u gövdenin karşı tarafında, merkezden 7-8 pixel uzaktadır ve
+    // bu değer onu içeri çeker. Sağ tarafa göre author edilir; silah sola geçtiğinde X mirror edildiğinden
+    // "gövdeye doğru" iki tarafta da gövdeye doğru kalır.
+    Hands->EmptyHandOffset = {2.5f, 0.f};
+
+    // Revolver tek elle tutulur, yani boştaki el gövdenin önünde serbest durur. Hero arkasını döndüğünde onu
+    // saklamak gerekir; varsayılan set zaten üç back facing'dir, o yüzden burada ayarlanacak bir şey yok.
+    Hands->HideOffHandIn.UpLeft = true;
+    Hands->HideOffHandIn.UpRight = true;
+
+    // <---------- Kovanlar ---------->
+    // 12x10 idle frame'inde cylinder'ın üstü, AnchorOrigin {1,10} çıkarılmış hâliyle. Gerçek bir revolver ateş
+    // ederken kovan atmaz ama istenen her shot'ta kovan düşmesi; Enabled'ı false yapmak onu kapatır.
+    Shells->EjectPoint = {4.f, -7.f}; // Idle pixel {5,3} - AnchorOrigin {1,10}
+    Shells->EjectVelocity = {-12.f, -38.f};
 
     // Artwork'ü sabit elin altından iki pixel aşağı kaydırır. Bu bir world-space slide'dır ve Origin'e
     // dokunmadığından silahın nişan alırken döndüğü pivot da, herhangi bir aim angle'daki oryantasyonu da
     // değişmez. WorldPointOnGun bu kaymayı geri aldığı için el olduğu yerde kalır; hareket eden yalnızca sprite'tır.
-    HeldOffset = {0.f, 2.f};
+    HeldOffset = {0.5f, 2.f};
 
     // El değişimini, body facing'in döndüğü 67.5 derecede değil, barrel dikey konumu geçtiği anda yapar.
     // Revolver yeterince kısa olduğundan ikisinin uyuşmadığı 22.5 derecelik aralıkta sprite'ın önceden

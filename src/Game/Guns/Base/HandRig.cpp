@@ -6,6 +6,35 @@
 
 namespace ETG
 {
+    // ============================== DirectionFlags ==============================
+    bool DirectionFlags::operator[](const Direction direction) const
+    {
+        switch (direction)
+        {
+        case Direction::Right: return Right;
+        case Direction::DownRight: return DownRight;
+        case Direction::Down: return Down;
+        case Direction::DownLeft: return DownLeft;
+        case Direction::Left: return Left;
+        case Direction::UpLeft: return UpLeft;
+        case Direction::Up: return Up;
+        case Direction::UpRight: return UpRight;
+        }
+
+        return false;
+    }
+
+    DirectionFlags DirectionFlags::BackFacings()
+    {
+        // IsFacingBack ile aynı üç arc. Predicate'i çağırmak yerine alanlar açıkça yazılır; bu bir varsayılan
+        // set'tir, kuralın kendisi değildir ve silah dilediği checkbox'ı tek tek değiştirebilir.
+        DirectionFlags flags{};
+        flags.Up = true;
+        flags.UpLeft = true;
+        flags.UpRight = true;
+        return flags;
+    }
+
     // ============================== BreathMotion ==============================
     ETG::Vector2f BreathMotion::Advance(const float deltaSeconds)
     {

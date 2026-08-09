@@ -18,6 +18,7 @@
 #include "../Guns/RogueSpecial/RogueSpecial.h"
 #include "../Guns/VFX/MuzzleFlash.h"
 #include "../Guns/VFX/MagazineDrop.h"
+#include "../Guns/VFX/ShellEjector.h"
 #include "../Guns/AK-47/AK47.h"
 #include "../Guns/Magnum/Magnum.h"
 #include "../Guns/SawedOff/SawedOff.h"
@@ -60,6 +61,8 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(GunBase, GameObjectBase);
     TypeRegistry::RegisterType<HandRig>();
     REGISTER_BASE_CLASS(HandRig, ComponentBase);
+    TypeRegistry::RegisterType<ShellEjector>();
+    REGISTER_BASE_CLASS(ShellEjector, ComponentBase);
     TypeRegistry::RegisterType<RogueSpecial>();
     REGISTER_BASE_CLASS(RogueSpecial, GunBase);
     TypeRegistry::RegisterType<RogueSpecialAnimComp>();

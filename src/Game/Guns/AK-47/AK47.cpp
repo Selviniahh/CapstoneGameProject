@@ -8,6 +8,7 @@
 #include "../../../Engine/Managers/AssetManager.h"
 #include "../VFX/MagazineDrop.h"
 #include "../Base/HandRig.h"
+#include "../VFX/ShellEjector.h"
 #include "../../../Utils/Math.h"
 
 ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
@@ -74,6 +75,12 @@ void ETG::AK47::Initialize()
     // Rifle iki elle tutulduğundan barrel yatay çizginin üzerine çıktığında forward grip body'ye sabitlenir.
     // Geri kalanını GunBase'in default rule'ları karşılar; override edilecek bir şey yoktur.
     Hands->PinsGripWhenAimingUp = true;
+
+    // <---------- Kovanlar ---------->
+    // 27x7 idle frame'inde receiver'ın üst kenarındaki ejection port'u, AnchorOrigin {13.5,3.5} çıkarılmış hâliyle.
+    // Gözle oturtmak için ImGui'da EjectPoint'in yanındaki Visualize kutucuğunu tikle.
+    Shells->EjectPoint = {-1.5f, -1.5f}; // Idle pixel {12,2} - AnchorOrigin
+    Shells->EjectVelocity = {-16.f, -44.f};
 
     CollisionComp->Initialize();
 
