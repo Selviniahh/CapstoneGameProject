@@ -79,8 +79,12 @@ void ETG::AK47::Initialize()
     // <---------- Kovanlar ---------->
     // 27x7 idle frame'inde receiver'ın üst kenarındaki ejection port'u, AnchorOrigin {13.5,3.5} çıkarılmış hâliyle.
     // Gözle oturtmak için ImGui'da EjectPoint'in yanındaki Visualize kutucuğunu tikle.
-    Shells->EjectPoint = {-1.5f, -1.5f}; // Idle pixel {12,2} - AnchorOrigin
-    Shells->EjectVelocity = {-16.f, -44.f};
+    Shells->EjectPoint = {-1.5f, -3.f}; // Idle pixel {12,2} - AnchorOrigin
+    Shells->EjectVelocity = {-45.f, -44.f};
+
+    // 4x2 tüfek kovanı. Magazine'de olduğu gibi object GunBase'e aittir; buradan yalnızca hangi kovanın
+    // düşeceği söylenir.
+    Shells->SetSprite("Guns/AK47/AK47Shell.png");
 
     CollisionComp->Initialize();
 

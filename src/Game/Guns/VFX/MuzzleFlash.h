@@ -43,7 +43,18 @@ namespace ETG
         // smoke'u ters çevirip aşağı akmasına neden olur. Attachment offset her iki durumda da dönmeye
         // devam ettiği için effect silah üzerindeki konumunu korur.
         void SetInheritParentRotation(const bool inherit) { InheritParentRotation = inherit; }
-        
+
+        // UpdatePosition, AttachmentOffset'i her frame parent'ın üzerine uygular - flash görünmese bile - ve
+        // sonucu Position'a yazar; mirror kuralı dahil hesabın tamamı oradadır. Marker o hesabı tekrarlamak
+        // yerine sonucu okur, dolayısıyla editörde değeri oynatmak marker'ı aynı frame'de taşır. Silahın
+        // gun-local uzayı burada kullanılamaz: offset silahın Origin'ine değil, doğrudan Position'ına eklenir.
+        [[nodiscard]] ETG::Vector2f ResolveDebugPoint(const char* label, const ETG::Vector2f& point) const override
+        {
+            if (DebugLabelIs(label, "AttachmentOffset")) return GetPosition();
+
+            return GameObjectBase::ResolveDebugPoint(label, point);
+        }
+
         Animation Animation;
 
     private:

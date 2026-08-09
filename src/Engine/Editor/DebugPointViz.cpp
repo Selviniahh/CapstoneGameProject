@@ -40,10 +40,15 @@ namespace ETG
         return OwnerStack.empty() ? nullptr : OwnerStack.back();
     }
 
+    bool DebugPointViz::IsPlaceLike(const char* label)
+    {
+        return !std::string_view{label}.ends_with("Velocity");
+    }
+
     void DebugPointViz::Toggle(const char* label, ETG::Vector2f& value, GameObjectBase* owner)
     {
         // Without an owner there is nothing to resolve the point against, so there is nothing worth drawing
-        if (!owner) return;
+        if (!owner || !IsPlaceLike(label)) return;
 
         const void* key = &value;
         bool enabled = Markers.contains(key);
@@ -61,7 +66,7 @@ namespace ETG
 
         if (ImGui::Checkbox("##viz", &enabled))
         {
-            if (enabled) Markers[key] = Marker{owner, &value, color};
+            if (enabled) Markers[key] = Marker{owner, &value, color, label};
             else Markers.erase(key);
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Visualize this point in the world");
@@ -83,7 +88,7 @@ namespace ETG
                 continue;
             }
 
-            SpriteBatch::DrawDebugCross(marker.Owner->ResolveDebugPoint(*marker.Value), marker.Color);
+            SpriteBatch::DrawDebugCross(marker.Owner->ResolveDebugPoint(marker.Label, *marker.Value), marker.Color);
             ++it;
         }
     }

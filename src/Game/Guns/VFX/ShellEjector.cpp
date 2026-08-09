@@ -2,6 +2,7 @@
 #include <cmath>
 #include <random>
 #include "../Base/GunBase.h"
+#include "../../../Engine/Managers/AssetManager.h"
 #include "../../../Engine/Managers/SpriteBatch.h"
 #include "../../../Engine/Managers/Time.h"
 #include "../../../Utils/TextureUtils.h"
@@ -12,6 +13,18 @@ namespace ETG
     {
         // Component'in kendi görseli yoktur; çizdiği şey sahip olduğu kovanlardır
         IsVisible = false;
+    }
+
+    void ShellEjector::SetSprite(const std::string& relativePath)
+    {
+        Texture = AssetManager::LoadTexture(relativePath);
+
+        // Merkezlenmiştir: kovan bir köşesi etrafında savrulmak yerine kendi ortası etrafında döner. Draw
+        // her kovan için bu Origin'i kullanır, dolayısıyla burada bir kez hesaplanması yeterlidir.
+        Origin = {
+            static_cast<float>(Texture->getSize().x) / 2.f,
+            static_cast<float>(Texture->getSize().y) / 2.f
+        };
     }
 
     float ShellEjector::Jitter(const float amount)
@@ -76,10 +89,14 @@ namespace ETG
 
             if (casing.Position.y < casing.GroundY) continue;
 
-            // Zemine değdi. Bounce hızın ne kadarını geri veriyorsa o kadar seker; sekme her temasta küçülür ve
+            // Zemine değdi. simdi amaç yere çarpınca kovanı yukarı sektirmek Bounce hızın ne kadarını geri veriyorsa o kadar seker; sekme her temasta küçülür ve
             // yeterince yavaşladığında kovan olduğu yerde durur.
             casing.Position.y = casing.GroundY;
 
+            //Yere çarptı hafif Yukarı sekmesi gerekiyor 
+            // casing.Velocity.y = 10.0f;
+            // Bounce = 0.5f;
+            // upwardSpeed = -10.0f * 0.5f; // -5
             const float upwardSpeed = -casing.Velocity.y * Bounce;
             if (upwardSpeed > 12.f)
             {
@@ -101,16 +118,26 @@ namespace ETG
     {
         if (Casings.empty()) return;
 
-        // Kovan sprite'ı yoktur: 1x1 beyaz pixel CasingSize'a ölçeklenip CasingColor ile tint'lenir. Böylece
-        // boyut ve renk artwork üretmeden ImGui'dan ayarlanır.
-        static std::shared_ptr<ETG::Texture> pixelTex = GetPixelTexture();
-
         GameObjectBase::DrawProperties props{};
-        props.Texture = pixelTex.get();
-        props.Origin = {0.5f, 0.5f}; // 1x1 texture'ın merkezi: kovan kendi ortası etrafında döner
-        props.Scale = CasingSize;
-        props.Color = CasingColor;
         props.Depth = Depth;
+
+        if (HasSprite())
+        {
+            // Artwork ne kadarsa o kadar çizilir: scale ve tint'e dokunulmaz, aksi hâlde silahın verdiği sprite
+            // yedek yolun boyut ve rengiyle bozulurdu.
+            props.Texture = Texture.get();
+            props.Origin = Origin;
+        }
+        else
+        {
+            // Silah kovan sprite'ı vermemiş: 1x1 beyaz pixel CasingSize'a ölçeklenip CasingColor ile tint'lenir.
+            // Böylece kovanlar artwork üretilene kadar da görünür ve boyutları ImGui'dan ayarlanır.
+            static std::shared_ptr<ETG::Texture> pixelTex = GetPixelTexture();
+            props.Texture = pixelTex.get();
+            props.Origin = {0.5f, 0.5f}; // 1x1 texture'ın merkezi: kovan kendi ortası etrafında döner
+            props.Scale = CasingSize;
+            props.Color = CasingColor;
+        }
 
         for (const ShellCasing& casing : Casings)
         {

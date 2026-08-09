@@ -101,8 +101,18 @@ namespace ETG
 
         // Silah üzerinde author edilen her nokta gun-local uzaydadır. Editor'ün Visualize kutucuğu bunu okuyarak
         // marker'ı gerçekte kullanıldığı yere çizer; tek bu override, hem anchor'ları hem her silahın kendi reload
-        // noktalarını doğru yere oturtur.
-        [[nodiscard]] ETG::Vector2f ResolveDebugPoint(const ETG::Vector2f& point) const override { return WorldPointOnGun(point); }
+        // noktalarını doğru yere oturtur. Silaha attach olan component'ler (HandRig, ShellEjector, MuzzleFlash)
+        // kendi noktalarını aynı uzayda yazdığından, GameObjectBase'in owner'a devretme kuralı onları da buraya
+        // getirir; o sınıfların tek satır yazmasına gerek kalmaz.
+        [[nodiscard]] ETG::Vector2f ResolveDebugPoint(const char* label, const ETG::Vector2f& point) const override
+        {
+            // Bu ikisi silahın üzerinde bir yer değil, artwork'ün pivot'unu tarif eder: OriginOffset pivot'u
+            // kaydırır ve sprite ters yöne gider, Origin ise zaten Position'a oturan pixel'dir.
+            if (DebugLabelIs(label, "OriginOffset")) return OriginShiftDebugPoint(point);
+            if (DebugLabelIs(label, "Origin")) return GameObjectBase::ResolveDebugPoint(label, point);
+
+            return WorldPointOnGun(point);
+        }
 
         // Silah solda tutulurken X'i mirror edilmiş HeldOffset değeridir. Böylece sağ eldeki artwork'e göre author
         // edilen bir değer iki tarafta da "barrel boyunca daha geride" anlamını korur.

@@ -75,6 +75,10 @@ void ETG::RogueSpecial::Initialize()
     Shells->EjectPoint = {4.f, -7.f}; // Idle pixel {5,3} - AnchorOrigin {1,10}
     Shells->EjectVelocity = {-12.f, -38.f};
 
+    // 3x2 revolver kovanı: tüfeğinkinden bir pixel kısa ve dibinde bakır kapsül var. İkisi aynı odada birikince
+    // yerdeki kovanlardan hangi silahın ateşlendiği okunur.
+    Shells->SetSprite("Guns/RogueSpecial/RogueSpecialShell.png");
+
     // Artwork'ü sabit elin altından iki pixel aşağı kaydırır. Bu bir world-space slide'dır ve Origin'e
     // dokunmadığından silahın nişan alırken döndüğü pivot da, herhangi bir aim angle'daki oryantasyonu da
     // değişmez. WorldPointOnGun bu kaymayı geri aldığı için el olduğu yerde kalır; hareket eden yalnızca sprite'tır.

@@ -16,6 +16,11 @@ namespace ETG
     // Markers are keyed on the address of the member itself, which is unique and stable for as long as the object
     // holding it lives. The owner is re-validated through GameClass::IsValid every frame, so a marker left on an
     // object that got destroyed drops itself instead of reading freed memory.
+    //
+    // Where a marker lands is the owner's answer, not this class's: GameObjectBase::ResolveDebugPoint takes the
+    // member's name and returns the world position it describes. Its default walks up to the Owner, so a point
+    // authored on a component (HandRig's anchors, ShellEjector's ejection port) is resolved in the frame of the
+    // thing that component is attached to, without those classes having to say anything.
     class DebugPointViz
     {
     public:
@@ -41,7 +46,16 @@ namespace ETG
             GameObjectBase* Owner;
             const ETG::Vector2f* Value;
             ETG::Color Color;
+
+            // Kept as a raw pointer on purpose: the reflection walk hands out boost::describe's member names,
+            // which are string literals and outlive every marker. The owner needs it to know which of its
+            // members the point is, since each one may be written in a different frame.
+            const char* Label;
         };
+
+        // A member whose name ends in "Velocity" is a direction and a speed, not a place. Resolving one as a
+        // point would drop a cross wherever the vector happens to reach, so no toggle is offered for it.
+        static bool IsPlaceLike(const char* label);
 
         // Same member name always yields the same color, so a cross keeps its identity across sessions and across
         // being toggled off and on again

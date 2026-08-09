@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 #include <boost/describe.hpp>
 #include "../../../Engine/Core/ComponentBase.h"
@@ -68,14 +69,24 @@ namespace ETG
         // hero'nunkinden büyük bir değer kovanı onun arkasında bırakır.
         float Depth{5.f};
 
-        // Kovanın ekrandaki boyutu (pixel) ve rengi. Kovan sprite'ı olmadığından 1x1 pixel texture'ı bu boyuta
-        // ölçeklenip bu renkle tint'lenir; yani boyut ve renk artwork gerektirmeden buradan ayarlanır.
+        // Kovanın sprite'ı yoksa çizilen yedek: 1x1 pixel texture'ı bu boyuta ölçeklenip bu renkle tint'lenir.
+        // Sprite verildiği anda ikisi de kullanılmaz; artwork ne büyüklükte ve ne renkteyse o çizilir.
         ETG::Vector2f CasingSize{2.f, 1.f};
         ETG::Color CasingColor{206, 160, 62};
 
         // Aynı anda tutulacak en fazla kovan; 0 SINIRSIZ demektir ve varsayılan odur. Sınır konursa en eski kovan
         // düşer. Kovanlar hiç kaybolmadığından bu, uzun bir oturumda biriken sayının tek freni olur.
         int MaxCasings{0};
+
+        // Kovanın görseli. MagazineDrop ile aynı sözleşme: hangi kovanın düştüğüne silah karar verir, dolayısıyla
+        // sprite'ı silah verir ve component kimse için tahmin yürütmez. Verilmezse aşağıdaki CasingSize/CasingColor
+        // yolu çalışmaya devam eder, yani kendi kovan artwork'ü olmayan silahlar eskisi gibi kalır.
+        //
+        // NOTE: Tek frame'dir. Kovan zaten SpinSpeed ile döndüğünden animasyon eklense her frame'i döndürülmüş
+        // 2 pixel olurdu; üstelik kovanlar yerde kalıcı olduğundan yüzlerce landed kovanın da kendi animation
+        // saatini taşıması gerekirdi.
+        void SetSprite(const std::string& relativePath);
+        [[nodiscard]] bool HasSprite() const { return Texture != nullptr; }
 
         // <---------- GunBase'in çağırdıkları ---------->
         // Gerçekten çıkan her shot'ta bir kovan fırlatır.

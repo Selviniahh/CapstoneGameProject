@@ -84,12 +84,30 @@ namespace ETG
         void VisualizeOrigin() const;
         void IncrementName();
 
-        // Where a described ETG::Vector2f member actually sits when the editor's Visualize toggle draws it. Points
-        // authored on a plain game object are already world positions, so the default is the identity. Objects that
-        // author points in a local frame override this - GunBase's points are Origin-relative gun space, which
-        // rotates and mirrors with the gun, so drawing the raw numbers would put the marker in the map's corner
-        // instead of on the magazine well.
-        [[nodiscard]] virtual ETG::Vector2f ResolveDebugPoint(const ETG::Vector2f& point) const { return point; }
+        // Where a described ETG::Vector2f member actually sits when the editor's Visualize toggle draws it.
+        // `label` is the member's own name, so a class can answer differently for each of its members: an
+        // authored grip point, an origin nudge and a plain world position all live in the same object.
+        //
+        // The default hands the point to the Owner. Nearly every authored offset in the game is written in the
+        // frame of the thing it is attached to - ShellEjector's ejection port, HandRig's anchors, AK47's magazine
+        // point are all gun-local - and each of those is its own scene object, so without the delegation their
+        // markers would be resolved against nothing and land in the map's corner. The chain ends at whoever owns
+        // the frame (GunBase below), or at an unowned object, whose points are world positions already.
+        [[nodiscard]] virtual ETG::Vector2f ResolveDebugPoint(const char* label, const ETG::Vector2f& point) const;
+
+        // The frames an authored ETG::Vector2f can be written in. Overrides pick one per member instead of
+        // repeating the rotate-and-mirror arithmetic:
+        //   Local        - an offset from this object's Position, turning and mirroring with it.
+        //   Texture      - a pixel read off this object's sprite sheet, in that frame's own coordinates.
+        //   OriginShift  - a nudge added to Origin. The pivot keeps landing on Position and the artwork slides
+        //                  the other way, so the marker follows the artwork: that is what the value moves.
+        [[nodiscard]] ETG::Vector2f LocalDebugPoint(const ETG::Vector2f& offset) const;
+        [[nodiscard]] ETG::Vector2f TextureDebugPoint(const ETG::Vector2f& texel) const;
+        [[nodiscard]] ETG::Vector2f OriginShiftDebugPoint(const ETG::Vector2f& shift) const;
+
+        // Labels arrive as string literals from the reflection walk, so matching one is a strcmp. Spelled out
+        // once here rather than at every branch of every override.
+        [[nodiscard]] static bool DebugLabelIs(const char* label, const char* name);
 
         GameObjectBase* Owner = nullptr;
         bool DrawBound = false;

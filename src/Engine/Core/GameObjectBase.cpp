@@ -7,6 +7,8 @@
 #include "Factory.h"
 #include "../Managers/SpriteBatch.h"
 #include "../../Utils/StrManipulateUtil.h"
+#include "../../Utils/Math.h"
+#include <cstring>
 
 
 ETG::GameObjectBase::GameObjectBase()
@@ -119,6 +121,38 @@ std::string ETG::GameObjectBase::SetObjectNameToSelfClassName()
 
 void ETG::GameObjectBase::PopulateSpecificWidgets()
 {
+}
+
+ETG::Vector2f ETG::GameObjectBase::ResolveDebugPoint(const char* label, const ETG::Vector2f& point) const
+{
+    // Origin never names a place in the world: whatever pixel it picks is the pixel that ends up drawn on
+    // Position. Handled here rather than in each override, so a component's Origin does not travel up the owner
+    // chain and get read as an offset in someone else's frame.
+    if (DebugLabelIs(label, "Origin")) return Position;
+
+    return Owner ? Owner->ResolveDebugPoint(label, point) : point;
+}
+
+ETG::Vector2f ETG::GameObjectBase::LocalDebugPoint(const ETG::Vector2f& offset) const
+{
+    return Position + Math::RotateVector(Rotation, Scale, offset);
+}
+
+ETG::Vector2f ETG::GameObjectBase::TextureDebugPoint(const ETG::Vector2f& texel) const
+{
+    // The sprite is drawn with Origin sitting on Position, so a sheet pixel is that far from the pivot
+    return Position + Math::RotateVector(Rotation, Scale, texel - Origin);
+}
+
+ETG::Vector2f ETG::GameObjectBase::OriginShiftDebugPoint(const ETG::Vector2f& shift) const
+{
+    // Minus, not plus: pushing the origin one way moves the artwork under it the other way
+    return Position - Math::RotateVector(Rotation, Scale, shift);
+}
+
+bool ETG::GameObjectBase::DebugLabelIs(const char* label, const char* name)
+{
+    return label && std::strcmp(label, name) == 0;
 }
 
 void ETG::GameObjectBase::IncrementName()

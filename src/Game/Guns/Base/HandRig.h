@@ -244,6 +244,17 @@ namespace ETG
         // anchor'ların okunduğu pose'un Origin'idir.
         void CaptureAnchorOriginOnce(const ETG::Vector2f& idleOrigin);
 
+        // AnchorOrigin dışındaki her nokta gun-local'dir ve owner'a devredilerek WorldPointOnGun'a ulaşır.
+        // AnchorOrigin ise silahın üzerinde bir yer değil, diğerlerinin ölçüldüğü referanstır: idle pose'un kendi
+        // Origin'i, sprite sheet koordinatlarında. Gun-local yoldan çizilseydi marker, adını verdiği pixel'den
+        // bir frame boyu uzağa düşerdi.
+        [[nodiscard]] ETG::Vector2f ResolveDebugPoint(const char* label, const ETG::Vector2f& point) const override
+        {
+            if (DebugLabelIs(label, "AnchorOrigin") && Owner) return Owner->TextureDebugPoint(point);
+
+            return ComponentBase::ResolveDebugPoint(label, point);
+        }
+
         // Authored bir noktanın, mevcut animation frame'inin Origin kayması uygulanmış gun-local karşılığı.
         // Silahın artwork'ü kaydığında ona anchor edilmiş her şey aynı kadar kayar.
         [[nodiscard]] ETG::Vector2f FrameAdjusted(const ETG::Vector2f& point, const ETG::Vector2f& currentOrigin) const

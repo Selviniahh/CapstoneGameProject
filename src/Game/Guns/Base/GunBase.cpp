@@ -140,7 +140,6 @@ namespace ETG
 
         // Silah rotate edilirken handle point olan attachment point etrafında dönmesi gerektiği için Origin elle verilmelidir
         this->Origin += OriginOffset;
-        ArrowComp->SetOrigin(ArrowComp->GetOrigin() + ArrowComp->arrowOriginOffset);
 
         // Muzzle flash sprite sheet derived gun'ın sorumluluğundadır; kendi Initialize'ı içinde SetAnimation çağırır
         MuzzleFlash->SetParent(this);
@@ -206,6 +205,9 @@ namespace ETG
             CurrentGunState = GunStateEnum::Idle;
 
         // Update logic'in kalanıyla devam et
+        // Origin her frame tazelenir. Initialize'da bir kez eklenseydi editörden değeri oynatmak hiçbir şey
+        // yapmazdı; ok, tick eden bir sprite değil, elle author edilen bir işaretçidir.
+        ArrowComp->SetOrigin(ArrowComp->BaseOrigin + ArrowComp->arrowOriginOffset);
         ArrowComp->SetPosition(this->Position + Math::RotateVector(Rotation, Scale, ArrowComp->arrowOffset));
         ArrowComp->SetRotation(this->GetDrawProperties().Rotation);
         ArrowComp->Update();
