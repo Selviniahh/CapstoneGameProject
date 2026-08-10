@@ -65,6 +65,7 @@ void ETG::GameObjectBase::ComputeDrawProperties()
     DrawProps.Texture = Texture.get();
     DrawProps.Color = Color;
     DrawProps.Effect = Effect;
+    DrawProps.EffectParams = EffectParams;
 }
 
 ETG::FloatRect ETG::GameObjectBase::GetBounds() const

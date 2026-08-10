@@ -15,7 +15,20 @@ namespace ETG
     enum class ShaderEffect : std::uint8_t
     {
         None = 0, //fs_sprite: texel * vertex colour
-        Grayscale //fs_sprite_grayscale: desaturated by GraphicsDevice::SetGrayscaleAmount
+        Grayscale, //fs_sprite_grayscale: desaturated by GraphicsDevice::SetGrayscaleAmount
+        Flash //fs_sprite_flash: filled with ShaderEffectParams' colour, alpha kept
+    };
+
+    //The u_effectParams vec4 a draw hands its fragment program, per draw rather than globally: two
+    //objects on the same effect can carry different values and simply end up in two batches. What
+    //the four floats mean is the effect's business - Flash reads rgb as a colour and w as how far
+    //towards it, and ShaderEffect::None ignores them entirely.
+    struct ShaderEffectParams
+    {
+        float x{0.f}, y{0.f}, z{0.f}, w{0.f};
+
+        constexpr bool operator==(const ShaderEffectParams& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w; }
+        constexpr bool operator!=(const ShaderEffectParams& rhs) const { return !(*this == rhs); }
     };
 
     //One vertex of everything the game draws. Laid out exactly like ImGui's ImDrawVert
@@ -35,6 +48,13 @@ namespace ETG
             | static_cast<std::uint32_t>(c.g) << 8
             | static_cast<std::uint32_t>(c.b) << 16
             | static_cast<std::uint32_t>(c.a) << 24;
+    }
+
+    //A colour and a strength packed the way ShaderEffect::Flash reads them: RGB normalized into
+    //0..1 (a shader has no idea what a byte is), strength untouched in w.
+    constexpr ShaderEffectParams MakeFlashParams(const Color& c, const float strength)
+    {
+        return {static_cast<float>(c.r) / 255.f, static_cast<float>(c.g) / 255.f, static_cast<float>(c.b) / 255.f, strength};
     }
 
     //bgfx's kInvalidHandle. GPU handles are passed around as plain uint16 so that bgfx.h stays
@@ -83,7 +103,8 @@ namespace ETG
         //is how untextured geometry (shapes, bounds, lines) reuses the sprite program.
         static void DrawIndexed(const GfxVertex* vertices, std::uint32_t vertexCount,
                                 const std::uint16_t* indices, std::uint32_t indexCount,
-                                const Texture* texture, ShaderEffect effect = ShaderEffect::None);
+                                const Texture* texture, ShaderEffect effect = ShaderEffect::None,
+                                const ShaderEffectParams& effectParams = {});
 
         //One piece of a batched draw: an index range into a shared vertex buffer, with its own
         //raw GPU texture handle and its own scissor rectangle in backbuffer pixels. Sampling comes

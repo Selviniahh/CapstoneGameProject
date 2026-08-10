@@ -35,6 +35,8 @@ namespace ETG
         void setColor(const Color& color) { m_color = color; }
         //Which fragment program this sprite is drawn with (see ETG::ShaderEffect)
         void setEffect(ShaderEffect effect) { m_effect = effect; }
+        //The vec4 that program is handed; what it means is the effect's business (see ShaderEffectParams)
+        void setEffectParams(const ShaderEffectParams& params) { m_effectParams = params; }
 
         [[nodiscard]] const Texture* getTexture() const { return m_texture; }
         [[nodiscard]] const IntRect& getTextureRect() const { return m_textureRect; }
@@ -44,6 +46,7 @@ namespace ETG
         [[nodiscard]] float getRotation() const { return m_rotation; }
         [[nodiscard]] const Color& getColor() const { return m_color; }
         [[nodiscard]] ShaderEffect getEffect() const { return m_effect; }
+        [[nodiscard]] const ShaderEffectParams& getEffectParams() const { return m_effectParams; }
 
     private:
         const Texture* m_texture = nullptr;
@@ -54,5 +57,6 @@ namespace ETG
         float m_rotation = 0.f;
         Color m_color = Color::White;
         ShaderEffect m_effect = ShaderEffect::None;
+        ShaderEffectParams m_effectParams{};
     };
 }

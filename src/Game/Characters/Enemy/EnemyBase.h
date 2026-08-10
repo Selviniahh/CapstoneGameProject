@@ -15,6 +15,7 @@ namespace ETG
     class BaseHealthComp;
     class CollisionComponent;
     class EnemyMoveCompBase;
+    class ShaderEffectComponent;
 
     //Everything an enemy shares with the hero (body, hand, gun inventory, item bag) now comes from Character.
     //What is left here is the enemy's own answer to "what am I doing": a flat state enum plus the flag set that
@@ -51,6 +52,16 @@ namespace ETG
         float KnockBackMagnitudeForDeath = 75;
         float KnockBackDurationForDeath = 1.0f;
 
+        //Whether a landed bullet also shoves the enemy back and puts it in its Hit animation. The flash
+        //below is what reads as "that hit"; the knockback is a separate, much heavier reaction, and an
+        //automatic weapon retriggers it on every single bullet. Turn it off per enemy type to leave the
+        //flash as the only feedback
+        bool KnockBackOnHit{true};
+
+        //Every enemy flashes when it is hit. The knobs (colour, duration, strength) live on the component
+        //and are per enemy, so a heavier enemy can hold its flash longer or wear a different colour
+        std::unique_ptr<ShaderEffectComponent> ShaderEffectComp;
+
     private:
         EnemyStateEnum EnemyState{EnemyStateEnum::Idle};
 
@@ -64,6 +75,6 @@ namespace ETG
         //away only once the enemy is dead, not while it is reeling from a hit
         [[nodiscard]] bool ShouldShowHeldGun() const override { return CanFlipAnims(); }
 
-        BOOST_DESCRIBE_CLASS(EnemyBase, (Character), (KnockBackMagnitudeForDeath, KnockBackDurationForDeath), (Hero), (EnemyState))
+        BOOST_DESCRIBE_CLASS(EnemyBase, (Character), (KnockBackMagnitudeForDeath, KnockBackDurationForDeath, KnockBackOnHit), (Hero), (EnemyState))
     };
 }

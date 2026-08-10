@@ -24,6 +24,8 @@ namespace ETG
             //Which fragment program the renderer submits this object with. Characters override it
             //to ShaderEffect::Grayscale; everything else stays on the plain sprite shader.
             ETG::ShaderEffect Effect{ETG::ShaderEffect::None};
+            //The vec4 handed to that program, per object (see ETG::ShaderEffectParams).
+            ETG::ShaderEffectParams EffectParams{};
         };
 
     public:
@@ -48,9 +50,11 @@ namespace ETG
         ETG::Color Color{ETG::Color::White};
         float Depth{};
 
-        //The shader this object's sprite goes through. Set once by whoever wants it (Character
-        //asks for grayscale in its constructor) and copied into DrawProps every frame.
+        //The shader this object's sprite goes through, and the parameters it is given. Set by whoever
+        //wants it - Character asks for grayscale in its constructor, ShaderEffectComponent swaps it
+        //for the length of a hit flash - and copied into DrawProps every frame.
         ETG::ShaderEffect Effect{ETG::ShaderEffect::None};
+        ETG::ShaderEffectParams EffectParams{};
 
         //Destroy
         bool PendingDestroy = false;
@@ -128,6 +132,16 @@ namespace ETG
         [[nodiscard]] const ETG::Vector2f& GetScale() const { return Scale; }
         [[nodiscard]] const ETG::Vector2f& GetOrigin() const { return Origin; }
         [[nodiscard]] const ETG::Color& GetColor() const { return Color; }
+
+        //The shader this object draws with. Public because it is not only the object itself that decides:
+        //ShaderEffectComponent takes it over for the length of a hit flash and puts the old one back after
+        [[nodiscard]] ETG::ShaderEffect GetEffect() const { return Effect; }
+        [[nodiscard]] const ETG::ShaderEffectParams& GetEffectParams() const { return EffectParams; }
+        void SetEffect(const ETG::ShaderEffect effect, const ETG::ShaderEffectParams& params = {})
+        {
+            Effect = effect;
+            EffectParams = params;
+        }
 
         [[nodiscard]] const ETG::Vector2f& GetRelativePosition() const { return RelativePos; }
         [[nodiscard]] const ETG::Vector2f& GetRelativeScale() const { return RelativeScale; }

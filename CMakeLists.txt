@@ -124,6 +124,8 @@ set(CORE_SOURCES
         src/Engine/Core/Components/ArrowComp.h
         src/Engine/Core/Components/CollisionComponent.cpp
         src/Engine/Core/Components/CollisionComponent.h
+        src/Engine/Core/Components/ShaderEffectComponent.cpp
+        src/Engine/Core/Components/ShaderEffectComponent.h
         src/Engine/Core/Components/TimerComponent.cpp
         src/Engine/Core/Components/TimerComponent.h
         src/Engine/Core/Events/EventDelegate.h
@@ -152,6 +154,7 @@ set(SHADER_SOURCES
         src/Engine/Shaders/vs_sprite.sc
         src/Engine/Shaders/fs_sprite.sc
         src/Engine/Shaders/fs_sprite_grayscale.sc
+        src/Engine/Shaders/fs_sprite_flash.sc
 )
 
 set(UI_SOURCES

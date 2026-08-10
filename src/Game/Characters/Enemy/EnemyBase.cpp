@@ -7,6 +7,7 @@
 #include "../../../Engine/Managers/RenderContext.h"
 #include "../../../Engine/Core/Factory.h"
 #include "../../../Engine/Core/Components/BaseHealthComp.h"
+#include "../../../Engine/Core/Components/ShaderEffectComponent.h"
 #include "../../Projectile/ProjectileBase.h"
 #include "Components/EnemyMoveCompBase.h"
 #include "../../Guns/Base/GunBase.h"
@@ -37,6 +38,8 @@ namespace ETG
         });
 
         HealthComp = ETG::CreateGameObjectAttached<BaseHealthComp>(this, 30.f);
+
+        ShaderEffectComp = ETG::CreateGameObjectAttached<ShaderEffectComponent>(this);
 
         EnemyBase::Initialize();
     }
@@ -82,12 +85,22 @@ namespace ETG
         //In the future, enemy will take damage from explosive environment %
         HealthComp->OnDamageTaken.AddListener([this](const float damage, const float forceMagnitude, const GameObjectBase* instigator)
         {
-            HandleHitForce(instigator->As<ProjectileBase>());
+            //The flash goes first and is unconditional: it is the one piece of feedback every hit gets,
+            //however the enemy reacts to it otherwise. Retriggering is the component's problem, which is
+            //what lets an automatic weapon land ten of these without them piling up
+            ShaderEffectComp->PlayHitFlash();
+
+            if (KnockBackOnHit) HandleHitForce(instigator->As<ProjectileBase>());
         });
     }
 
     void EnemyBase::Update()
     {
+        //Ahead of the collision pass on purpose. A flash started by a bullet that lands below has to
+        //survive until this object's draw properties are published at the end of this same tick, so it
+        //is only aged from the tick after the one it started in
+        ShaderEffectComp->Update();
+
         MoveComp->Update();
         HealthComp->Update();
         CollisionComp->Update();

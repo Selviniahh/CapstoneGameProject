@@ -45,6 +45,7 @@ namespace ETG
             bgfx::VertexLayout layout;
             bgfx::ProgramHandle spriteProgram = BGFX_INVALID_HANDLE;
             bgfx::ProgramHandle grayscaleProgram = BGFX_INVALID_HANDLE;
+            bgfx::ProgramHandle flashProgram = BGFX_INVALID_HANDLE;
             bgfx::UniformHandle texColorUniform = BGFX_INVALID_HANDLE;
             bgfx::UniformHandle effectParamsUniform = BGFX_INVALID_HANDLE;
             bgfx::TextureHandle whiteTexture = BGFX_INVALID_HANDLE;
@@ -169,6 +170,7 @@ namespace ETG
             d.spriteProgram = bgfx::createProgram(vs, LoadShader("fs_sprite"), true);
             //The vertex shader is shared, so it must not be destroyed with the first program.
             d.grayscaleProgram = bgfx::createProgram(LoadShader("vs_sprite"), LoadShader("fs_sprite_grayscale"), true);
+            d.flashProgram = bgfx::createProgram(LoadShader("vs_sprite"), LoadShader("fs_sprite_flash"), true);
 
             d.texColorUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
             d.effectParamsUniform = bgfx::createUniform("u_effectParams", bgfx::UniformType::Vec4);
@@ -186,11 +188,13 @@ namespace ETG
             if (bgfx::isValid(d.whiteTexture)) bgfx::destroy(d.whiteTexture);
             if (bgfx::isValid(d.effectParamsUniform)) bgfx::destroy(d.effectParamsUniform);
             if (bgfx::isValid(d.texColorUniform)) bgfx::destroy(d.texColorUniform);
+            if (bgfx::isValid(d.flashProgram)) bgfx::destroy(d.flashProgram);
             if (bgfx::isValid(d.grayscaleProgram)) bgfx::destroy(d.grayscaleProgram);
             if (bgfx::isValid(d.spriteProgram)) bgfx::destroy(d.spriteProgram);
             d.whiteTexture = BGFX_INVALID_HANDLE;
             d.effectParamsUniform = BGFX_INVALID_HANDLE;
             d.texColorUniform = BGFX_INVALID_HANDLE;
+            d.flashProgram = BGFX_INVALID_HANDLE;
             d.grayscaleProgram = BGFX_INVALID_HANDLE;
             d.spriteProgram = BGFX_INVALID_HANDLE;
         }
@@ -221,7 +225,7 @@ namespace ETG
         //Shared tail of every draw call: upload the geometry, bind, submit.
         void SubmitGeometry(const GfxVertex* vertices, std::uint32_t vertexCount,
                             const std::uint16_t* indices, std::uint32_t indexCount,
-                            bgfx::TextureHandle texture, ShaderEffect effect,
+                            bgfx::TextureHandle texture, ShaderEffect effect, const ShaderEffectParams& effectParams,
                             const IntRect* scissorPixels, std::uint64_t extraState)
         {
             DeviceState& d = Device();
@@ -258,11 +262,20 @@ namespace ETG
 
             bgfx::setState(State2D | extraState);
 
+            //Each effect names its own program and where its u_effectParams come from. Grayscale reads
+            //the one global amount (it is a whole-game look, tweaked live from the editor); everything
+            //else takes the values the draw itself carried in.
             bgfx::ProgramHandle program = d.spriteProgram;
             if (effect == ShaderEffect::Grayscale && bgfx::isValid(d.grayscaleProgram))
             {
                 program = d.grayscaleProgram;
                 const float params[4]{d.grayscaleAmount, 0.f, 0.f, 0.f};
+                bgfx::setUniform(d.effectParamsUniform, params);
+            }
+            else if (effect == ShaderEffect::Flash && bgfx::isValid(d.flashProgram))
+            {
+                program = d.flashProgram;
+                const float params[4]{effectParams.x, effectParams.y, effectParams.z, effectParams.w};
                 bgfx::setUniform(d.effectParamsUniform, params);
             }
 
@@ -438,13 +451,14 @@ namespace ETG
     //------------------------------------ Draw ------------------------------------
     void GraphicsDevice::DrawIndexed(const GfxVertex* vertices, const std::uint32_t vertexCount,
                                      const std::uint16_t* indices, const std::uint32_t indexCount,
-                                     const Texture* texture, const ShaderEffect effect)
+                                     const Texture* texture, const ShaderEffect effect,
+                                     const ShaderEffectParams& effectParams)
     {
         bgfx::TextureHandle handle = BGFX_INVALID_HANDLE;
         if (texture && texture->getNativeHandle() != InvalidGpuHandle)
             handle = bgfx::TextureHandle{texture->getNativeHandle()};
 
-        SubmitGeometry(vertices, vertexCount, indices, indexCount, handle, effect, nullptr, 0);
+        SubmitGeometry(vertices, vertexCount, indices, indexCount, handle, effect, effectParams, nullptr, 0);
     }
 
     void GraphicsDevice::DrawIndexedRawBatched(const GfxVertex* vertices, const std::uint32_t vertexCount,
@@ -501,7 +515,7 @@ namespace ETG
 
     void GraphicsDevice::DrawLines(const GfxVertex* vertices, const std::uint32_t vertexCount)
     {
-        SubmitGeometry(vertices, vertexCount, nullptr, 0, BGFX_INVALID_HANDLE, ShaderEffect::None, nullptr, BGFX_STATE_PT_LINES);
+        SubmitGeometry(vertices, vertexCount, nullptr, 0, BGFX_INVALID_HANDLE, ShaderEffect::None, {}, nullptr, BGFX_STATE_PT_LINES);
     }
 
     //------------------------------------ Effects ------------------------------------

@@ -36,7 +36,7 @@ endif()
 function(etg_compile_shaders TARGET_NAME)
     set(ALL_OUTPUTS "")
 
-    foreach(SHADER IN ITEMS vs_sprite fs_sprite fs_sprite_grayscale)
+    foreach(SHADER IN ITEMS vs_sprite fs_sprite fs_sprite_grayscale fs_sprite_flash)
         if(SHADER MATCHES "^vs_")
             set(SHADER_TYPE vertex)
         else()

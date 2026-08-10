@@ -5,6 +5,7 @@
 #include "../../Engine/Core/Components/BaseMoveComp.h"
 #include "../../Engine/Core/Components/ArrowComp.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
+#include "../../Engine/Core/Components/ShaderEffectComponent.h"
 #include "../UI/UserInterface.h"
 #include "../Characters/Character.h"
 #include "../Characters/Hero/Hero.h"
@@ -87,6 +88,8 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(ReloadSlider, GameObjectBase);
     TypeRegistry::RegisterType<CollisionComponent>();
     REGISTER_BASE_CLASS(CollisionComponent, ComponentBase);
+    TypeRegistry::RegisterType<ShaderEffectComponent>();
+    REGISTER_BASE_CLASS(ShaderEffectComponent, ComponentBase);
     TypeRegistry::RegisterType<ActiveItemBase>();
     REGISTER_BASE_CLASS(ActiveItemBase, GameObjectBase);
     TypeRegistry::RegisterType<DoubleShoot>();

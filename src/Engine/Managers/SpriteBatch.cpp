@@ -66,7 +66,7 @@ void ETG::SpriteBatch::Draw(const Sprite& sprite, const float depth)
         Vertex{transformPoint(w, 0.f), {right, top}, color},
         Vertex{transformPoint(w, h), {right, bottom}, color},
         Vertex{transformPoint(0.f, h), {left, bottom}, color},
-        texture, depth, drawCounter++, sprite.getEffect()
+        texture, depth, drawCounter++, sprite.getEffect(), sprite.getEffectParams()
     };
 
     sprites.push_back(quad);
@@ -94,13 +94,14 @@ void ETG::SpriteBatch::end(ETG::RenderWindow& window)
     //submitted sequentially, so flushing at every change keeps the sorted order intact.
     const ETG::Texture* currentTexture = sprites[0].texture;
     ETG::ShaderEffect currentEffect = sprites[0].effect;
+    ETG::ShaderEffectParams currentEffectParams = sprites[0].effectParams;
 
     const auto flush = [&]
     {
         if (vertices.empty()) return;
         ETG::GraphicsDevice::DrawIndexed(vertices.data(), static_cast<std::uint32_t>(vertices.size()),
                                          indices.data(), static_cast<std::uint32_t>(indices.size()),
-                                         currentTexture, currentEffect);
+                                         currentTexture, currentEffect, currentEffectParams);
         vertices.clear();
         indices.clear();
     };
@@ -108,11 +109,15 @@ void ETG::SpriteBatch::end(ETG::RenderWindow& window)
     for (const auto& quad : sprites)
     {
         //A batch is also capped by the 16 bit index buffer: 4 vertices per quad, so 16384 quads.
-        if (quad.texture != currentTexture || quad.effect != currentEffect || vertices.size() + 4 > 65536)
+        //The uniform is set once per submit, so quads on the same program but different parameters
+        //cannot share one: a flashing enemy is its own draw call for as long as it flashes.
+        if (quad.texture != currentTexture || quad.effect != currentEffect
+            || quad.effectParams != currentEffectParams || vertices.size() + 4 > 65536)
         {
             flush();
             currentTexture = quad.texture;
             currentEffect = quad.effect;
+            currentEffectParams = quad.effectParams;
         }
 
         const ETG::Vector2u texSize = quad.texture->getSize();
@@ -172,6 +177,7 @@ void ETG::SpriteBatch::Draw(const GameObjectBase::DrawProperties& DrawProperties
     frame.setOrigin(DrawProperties.Origin);
     frame.setColor(DrawProperties.Color);
     frame.setEffect(DrawProperties.Effect);
+    frame.setEffectParams(DrawProperties.EffectParams);
     GlobSpriteBatch.Draw(frame, DrawProperties.Depth);
 }
 

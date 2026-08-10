@@ -50,6 +50,7 @@ namespace ETG
             float depth;
             int drawOrder;
             ETG::ShaderEffect effect; //Which fragment program this quad is submitted with
+            ETG::ShaderEffectParams effectParams; //The uniform that program is given, so it can differ per quad
         };
 
         std::vector<SpriteQuad> sprites;
