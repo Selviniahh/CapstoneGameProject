@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <algorithm>
 #include "CollisionComponent.h"
 #include "../../Core/GameObjectBase.h"
 #include "../../Managers/RenderContext.h"
@@ -19,7 +20,11 @@ namespace ETG
 
         for (CollisionComponent* component : AllCollisionRegistries)
         {
-            component->CurrentCollisions.erase(this);
+            std::erase(component->CurrentCollisions, this);
+
+            //StillColliding outlives the frame now, so a component destroyed while someone else's Update is
+            //mid-loop would otherwise leave a dangling pointer to be swapped in at the end of it
+            std::erase(component->StillColliding, this);
         }
     }
 
@@ -36,8 +41,8 @@ namespace ETG
         // Update our bounds based on the owner's position and texture
         UpdateBounds();
 
-        // Track which components we're still colliding with
-        std::unordered_map<CollisionComponent*, bool> stillColliding;
+        // Track which components we're still colliding with. clear() keeps the capacity the buffer already grew to
+        StillColliding.clear();
 
         // Check for collisions with all other collision components
         for (auto* otherComp : AllCollisionRegistries)
@@ -46,12 +51,12 @@ namespace ETG
             if (otherComp == this || !otherComp->IsCollisionEnabled() || !otherComp->Owner)
                 continue;
 
-            const bool wasColliding = CurrentCollisions.contains(otherComp);
+            const bool wasColliding = std::ranges::find(CurrentCollisions, otherComp) != CurrentCollisions.end();
             const bool isColliding = CheckCollision(otherComp);
 
             if (isColliding)
             {
-                stillColliding[otherComp] = true;
+                StillColliding.push_back(otherComp);
 
                 // Handle collision events
                 if (!wasColliding)
@@ -75,9 +80,9 @@ namespace ETG
         }
 
         // Find collisions that ended
-        for (auto& [otherComp, _] : CurrentCollisions)
+        for (auto* otherComp : CurrentCollisions)
         {
-            if (!stillColliding.contains(otherComp))
+            if (std::ranges::find(StillColliding, otherComp) == StillColliding.end())
             {
                 // This collision has ended
                 if (otherComp && otherComp->Owner)
@@ -88,8 +93,10 @@ namespace ETG
             }
         }
 
-        // Update current collisions. If stillColliding is empty, it will also remove the previous element from CurrentCollisions
-        CurrentCollisions = std::move(stillColliding);
+        // swap and not move: a move would hand StillColliding's buffer away and leave it to allocate a fresh one
+        // next frame, which is the very cost this is here to avoid. Swapping hands the old CurrentCollisions
+        // buffer back for the clear() above to reuse, so the two ping-pong and neither allocates again
+        CurrentCollisions.swap(StillColliding);
     }
 
     void CollisionComponent::UpdateBounds()
@@ -157,7 +164,7 @@ namespace ETG
         window.draw(expandedRect);
 
         // Visualize current collisions
-        for (auto& [otherComp, _] : CurrentCollisions)
+        for (auto* otherComp : CurrentCollisions)
         {
             if (otherComp && otherComp->Owner)
             {
@@ -213,7 +220,7 @@ namespace ETG
         if (!enabled)
         {
             // Notify exit events for all current collisions
-            for (auto& [otherComp, _] : CurrentCollisions)
+            for (auto* otherComp : CurrentCollisions)
             {
                 if (otherComp && otherComp->Owner)
                 {

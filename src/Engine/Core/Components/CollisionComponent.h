@@ -46,8 +46,15 @@ namespace ETG
         //Cache the owner's bounds + radius
         ETG::FloatRect ExpandedBounds;
 
-        //Hold which objects we are currently colliding with
-        std::unordered_map<CollisionComponent*, bool> CurrentCollisions;
+        //Hold which objects we are currently colliding with. A vector, not a map: an object touches 0-3 things at
+        //once, and at that size a linear scan beats hashing. The two buffers ping-pong through swap() in Update,
+        //so after the first few frames neither one allocates again
+        std::vector<CollisionComponent*> CurrentCollisions;
+
+        //Scratch buffer Update fills each frame, then swaps into CurrentCollisions. A member and not a function
+        //local so its capacity survives the frame; a member and not a static because Broadcast runs inside the
+        //loop and a listener touching another component would clobber a shared one
+        std::vector<CollisionComponent*> StillColliding;
 
         //Registry of all active collision components. To see the owner of any element look at: otherComp->ComponentBase->GameObjectBase->Owner 
         static std::vector<CollisionComponent*> AllCollisionRegistries;
