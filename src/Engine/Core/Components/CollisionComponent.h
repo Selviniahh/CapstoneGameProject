@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "../ComponentBase.h"
 #include "../Events/EventDelegate.h"
 
@@ -6,6 +7,67 @@ namespace ETG
 {
     class GameObjectBase;
     class CollisionEventData;
+
+    //An object sits on exactly one layer and carries a Mask of the layers it wants to hear about. Everything else
+    //is rejected before the bounds are ever touched, which is what keeps a screen full of bullets from testing
+    //every bullet against every other one.
+    //
+    //The pairing is deliberately allowed to be one-way: a gun waiting on the floor watches for the hero, while
+    //the hero does not watch for guns, because picking it up is the gun's listener to run and nothing on the
+    //hero's side needs to know. The cost of that is the rule to remember - a listener for something your Mask
+    //does not include will never fire. Widen the Mask in the same commit that adds the listener
+    
+    //    CollisionComp->Mask = CollisionLayer::Enemy | CollisionLayer::Projectile; 
+    //dediğim zaman hem enemy hem projectile ile benim collisinım tepkiye girsin gerisi de girmesin diyoruz sağlamasını yapalım 
+    
+ //    Hero’nun ayarları:
+ //
+ // CollisionComp->Layer = CollisionLayer::Hero;
+ //
+ //    CollisionComp->Mask =
+ //        CollisionLayer::Enemy |
+ //        CollisionLayer::Projectile;
+ //    
+ //    Enemy       0010
+ //  Projectile  0100
+ //               ---- OR
+ //  Mask        0110 = 6
+ //
+ //  ## Hero, Enemy’yi kontrol ederken
+ //
+ //  Enemy’nin layer değeri:
+ //
+ //  otherComp->Layer = Enemy = 0010
+ //
+ //  Mask kontrolü:
+ //
+ //  Mask         0110
+ //  Enemy Layer  0010
+ //                ---- AND
+ //  Sonuç        0010 = 2
+ //
+ //  Yani:
+ //
+ //  Mask & otherComp->Layer
+ //
+ //  sonucu 2 olur. Sıfır olmadığı için boolean olarak true kabul edilir.
+ //    Sonucun 0 olmasi su anlama gelir: 
+ //    > “Diğer objenin layer’ı benim maskemde yok; bu objeyi collision kontrolüne dahil etme.”
+    
+    
+    namespace CollisionLayer
+    {
+        enum : uint32_t
+        {
+            None = 0, //0
+            Hero = 1u << 0, //1
+            Enemy = 1u << 1, //2
+            Projectile = 1u << 2, //4
+            Pickup = 1u << 3, //Guns and items lying in the room, waiting for someone to walk over them           //8
+            Default = 1u << 31, //Whatever never named a layer. Paired with Mask = All it behaves as before       //2147483648
+            All = ~0u, //4294967295u  //tüm bitler 1111111111111
+        };
+    }
 
     class CollisionComponent : public ComponentBase
     {
@@ -15,6 +77,14 @@ namespace ETG
 
         void Initialize() override;
         void Update() override;
+
+        //Which layer this object is. Exactly one bit
+        uint32_t Layer = CollisionLayer::Default;
+
+        //Which layers this object wants to be told about. Defaults to everything so a component that never sets
+        //it keeps the old behaviour: slower, but never silently missing a collision
+        
+        uint32_t Mask = CollisionLayer::All;
 
         //Radius to expand collision box beyond the texture boundaries
         float CollisionRadius = 1.0f;

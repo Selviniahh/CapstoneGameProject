@@ -31,6 +31,10 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
     
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
 
+    //A gun on the floor is only ever waiting for the hero to walk into it
+    CollisionComp->Layer = CollisionLayer::Pickup;
+    CollisionComp->Mask = CollisionLayer::Hero;
+
     // Ortak initialization işlemini çağır
     AK47::Initialize();
 }

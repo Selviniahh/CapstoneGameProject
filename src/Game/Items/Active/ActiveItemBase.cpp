@@ -38,6 +38,11 @@ ETG::ActiveItemBase::ActiveItemBase(const std::string& resourcePath)
     
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 15.f;
+
+    //Enemy as well as Hero: the pickup listener casts to Character, so a BulletMan walking over this takes it
+    CollisionComp->Layer = CollisionLayer::Pickup;
+    CollisionComp->Mask = CollisionLayer::Hero | CollisionLayer::Enemy;
+
     CollisionComp->SetCollisionEnabled(true);
     Origin = Vector2f{(float)Texture->getSize().x / 2, (float)Texture->getSize().y / 2};
     

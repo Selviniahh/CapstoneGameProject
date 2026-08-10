@@ -27,6 +27,12 @@ ETG::Magnum::Magnum(const ETG::Vector2f& pos) : GunBase(pos,
 
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
+
+    //A gun on the floor is only ever waiting for the hero to walk into it. Enemies are left out because the
+    //pickup listener casts to Hero and would reject them anyway
+    CollisionComp->Layer = CollisionLayer::Pickup;
+    CollisionComp->Mask = CollisionLayer::Hero;
+
     CollisionComp->SetCollisionEnabled(true);
 
     Magnum::Initialize();

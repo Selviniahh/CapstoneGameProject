@@ -15,6 +15,11 @@ ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("
     ModifierSource = "PlatinumBullets"; //Every modifier this item attaches is filed - and removed - under this name
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 15.f;
+
+    //Enemy as well as Hero: the pickup listener casts to Character, so any character can carry this
+    CollisionComp->Layer = CollisionLayer::Pickup;
+    CollisionComp->Mask = CollisionLayer::Hero | CollisionLayer::Enemy;
+
     CollisionComp->SetCollisionEnabled(true);
     Position = {100, +30};
 

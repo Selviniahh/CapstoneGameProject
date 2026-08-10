@@ -48,6 +48,12 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     //Collision comp:
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
+
+    //Enemies for body contact, projectiles to be shot. Guns and items are absent on purpose: walking over one is
+    //picked up by that object's own listener, so nothing here would run
+    CollisionComp->Layer = CollisionLayer::Hero;
+    CollisionComp->Mask = CollisionLayer::Enemy | CollisionLayer::Projectile;
+
     CollisionComp->SetCollisionEnabled(true);
 
     //Hero's default gun is RogueSpecial. EquipGun files it in the inventory and points the reload UI at it

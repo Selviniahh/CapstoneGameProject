@@ -27,6 +27,11 @@ ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
 
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
+
+    //A gun on the floor is only ever waiting for the hero to walk into it
+    CollisionComp->Layer = CollisionLayer::Pickup;
+    CollisionComp->Mask = CollisionLayer::Hero;
+
     CollisionComp->SetCollisionEnabled(true);
 
     SawedOff::Initialize();

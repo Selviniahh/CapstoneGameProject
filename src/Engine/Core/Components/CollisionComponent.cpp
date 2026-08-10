@@ -47,8 +47,12 @@ namespace ETG
         // Check for collisions with all other collision components
         for (auto* otherComp : AllCollisionRegistries)
         {
-            //Skip the unappropriated ones
-            if (otherComp == this || !otherComp->IsCollisionEnabled() || !otherComp->Owner)
+            //Skip the unappropriated ones. The layer test comes early because it is by far the most selective and
+            //costs one load and one and, where everything past it reads both objects' bounds
+            
+            // Bitwise işlemin sonucunun 0 olması:
+            //> “Bu collider’ın Mask değeri, diğer collider’ın Layer bitini içermiyor.”
+            if (otherComp == this || !(Mask & otherComp->Layer) || !otherComp->IsCollisionEnabled() || !otherComp->Owner)
                 continue;
 
             const bool wasColliding = std::ranges::find(CurrentCollisions, otherComp) != CurrentCollisions.end();

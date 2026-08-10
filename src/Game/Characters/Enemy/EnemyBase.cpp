@@ -19,6 +19,12 @@ namespace ETG
         CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
         CollisionComp->CollisionRadius = 4.f;
         CollisionComp->CollisionVisualizationColor = ETG::Color::Magenta;
+
+        //Only projectiles. The hero watches for us rather than the other way round, and items waiting on the
+        //floor watch for us, so an enemy that walks over one still picks it up
+        CollisionComp->Layer = CollisionLayer::Enemy;
+        CollisionComp->Mask = CollisionLayer::Projectile;
+
         CollisionComp->SetCollisionEnabled(true);
 
         MoveComp = ETG::CreateGameObjectAttached<EnemyMoveCompBase>(this);

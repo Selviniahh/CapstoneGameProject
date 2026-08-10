@@ -27,6 +27,12 @@ ETG::ProjectileBase::ProjectileBase(const ETG::Texture& texture, const ETG::Vect
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.0f;
     CollisionComp->CollisionVisualizationColor = ETG::Color::Blue;
+
+    //The two things a bullet can hit. Leaving Projectile out of the mask is where most of the saving is: a screen
+    //full of bullets used to test every bullet against every other one, and none of those pairs ever mattered
+    CollisionComp->Layer = CollisionLayer::Projectile;
+    CollisionComp->Mask = CollisionLayer::Hero | CollisionLayer::Enemy;
+
     CollisionComp->SetCollisionEnabled(true);
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
