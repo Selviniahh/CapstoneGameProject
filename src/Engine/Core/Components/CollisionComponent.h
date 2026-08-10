@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "../ComponentBase.h"
+#include "../SafeRegistry.h"
 #include "../Events/EventDelegate.h"
 
 namespace ETG
@@ -107,7 +108,7 @@ namespace ETG
         void Visualize(ETG::RenderWindow& window);
 
         //Get collision registry (all active collision components)
-        static std::vector<CollisionComponent*>& GetRegistry();
+        static SafeRegistry<CollisionComponent>& GetRegistry();
 
         void SetCollisionEnabled(bool enabled);
         bool IsCollisionEnabled() const { return CollisionEnabled; }
@@ -116,18 +117,18 @@ namespace ETG
         //Cache the owner's bounds + radius
         ETG::FloatRect ExpandedBounds;
 
-        //Hold which objects we are currently colliding with. A vector, not a map: an object touches 0-3 things at
-        //once, and at that size a linear scan beats hashing. The two buffers ping-pong through swap() in Update,
-        //so after the first few frames neither one allocates again
-        std::vector<CollisionComponent*> CurrentCollisions;
+        //Hold which objects we are currently colliding with. A list, not a map: an object touches 0-3 things at
+        //once, and at that size a linear scan beats hashing. The two lists trade buffers through SwapWith in
+        //Update, so after the first few frames neither one allocates again
+        SafeRegistry<CollisionComponent> CurrentCollisions;
 
-        //Scratch buffer Update fills each frame, then swaps into CurrentCollisions. A member and not a function
+        //Scratch list Update fills each frame, then swaps into CurrentCollisions. A member and not a function
         //local so its capacity survives the frame; a member and not a static because Broadcast runs inside the
-        //loop and a listener touching another component would clobber a shared one
-        std::vector<CollisionComponent*> StillColliding;
+        //walk and a listener touching another component would clobber a shared one
+        SafeRegistry<CollisionComponent> StillColliding;
 
-        //Registry of all active collision components. To see the owner of any element look at: otherComp->ComponentBase->GameObjectBase->Owner 
-        static std::vector<CollisionComponent*> AllCollisionRegistries;
+        //Registry of all active collision components. To see the owner of any element look at: otherComp->ComponentBase->GameObjectBase->Owner
+        static SafeRegistry<CollisionComponent> AllCollisionRegistries;
 
         //Whether this collision component is active
         bool CollisionEnabled{true};
@@ -137,8 +138,14 @@ namespace ETG
         //In Update before starting collision check, update the Owner's bounds including CollisionRadius
         void UpdateBounds();
 
-        //Check colision with another component
-        bool CheckCollision(const CollisionComponent* other) const;
+        //Check colision with another component. Hands back the overlapping region too, because Rect::intersects
+        //works it out either way and the caller wants its centre for the impact point. Only filled when it
+        //returns true; on false the overlap is zeroed
+        bool CheckCollision(const CollisionComponent* other, ETG::FloatRect& outOverlap) const;
+
+        //Centre of the overlap with another component, recomputed from scratch. Update does not use this - it
+        //already has the overlap from CheckCollision - so this is left for the two callers that hold no overlap
+        //of their own: the debug visualiser and SetCollisionEnabled
         ETG::Vector2f CalculateImpactPoint(const CollisionComponent* other) const;
         void DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const;
 

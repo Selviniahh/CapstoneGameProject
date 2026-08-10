@@ -1,5 +1,4 @@
 #include <imgui.h>
-#include <algorithm>
 #include "CollisionComponent.h"
 #include "../../Core/GameObjectBase.h"
 #include "../../Managers/RenderContext.h"
@@ -7,25 +6,38 @@
 
 namespace ETG
 {
-    std::vector<CollisionComponent*> CollisionComponent::AllCollisionRegistries;
+    namespace
+    {
+        //Where two bounds meet, reported as the middle of the region they share
+        ETG::Vector2f CentreOf(const ETG::FloatRect& rect)
+        {
+            return {
+                rect.left + rect.width / 2.0f, //x
+                rect.top + rect.height / 2.0f //y
+            };
+        }
+
+    }
+
+    SafeRegistry<CollisionComponent> CollisionComponent::AllCollisionRegistries;
 
     CollisionComponent::CollisionComponent()
     {
-        AllCollisionRegistries.push_back(this);
+        AllCollisionRegistries.Add(this);
     }
 
     CollisionComponent::~CollisionComponent()
     {
-        std::erase(AllCollisionRegistries, this);
+        AllCollisionRegistries.Remove(this);
 
-        for (CollisionComponent* component : AllCollisionRegistries)
+        //Anyone still holding us as a contact has to let go: next frame they would be reading bounds out of freed
+        //memory. SafeRegistry decides on its own whether it is safe to really erase or has to blank the slot,
+        //which matters here because this destructor often runs from inside somebody else's walk
+        AllCollisionRegistries.ForEach([this](CollisionComponent* component)
         {
-            std::erase(component->CurrentCollisions, this);
-
-            //StillColliding outlives the frame now, so a component destroyed while someone else's Update is
-            //mid-loop would otherwise leave a dangling pointer to be swapped in at the end of it
-            std::erase(component->StillColliding, this);
-        }
+            component->CurrentCollisions.Remove(this);
+            component->StillColliding.Remove(this);
+        });
     }
 
     void CollisionComponent::Initialize()
@@ -41,66 +53,55 @@ namespace ETG
         // Update our bounds based on the owner's position and texture
         UpdateBounds();
 
-        // Track which components we're still colliding with. clear() keeps the capacity the buffer already grew to
-        StillColliding.clear();
+        // This frame's contacts get collected here, then become CurrentCollisions at the end
+        StillColliding.Clear();
 
-        // Check for collisions with all other collision components
-        for (auto* otherComp : AllCollisionRegistries)
+        // Who are we touching right now?
+        AllCollisionRegistries.ForEach([this](CollisionComponent* otherComp)
         {
             //Skip the unappropriated ones. The layer test comes early because it is by far the most selective and
             //costs one load and one and, where everything past it reads both objects' bounds
-            
+
             // Bitwise işlemin sonucunun 0 olması:
             //> “Bu collider’ın Mask değeri, diğer collider’ın Layer bitini içermiyor.”
             if (otherComp == this || !(Mask & otherComp->Layer) || !otherComp->IsCollisionEnabled() || !otherComp->Owner)
-                continue;
+                return;
 
-            const bool wasColliding = std::ranges::find(CurrentCollisions, otherComp) != CurrentCollisions.end();
-            const bool isColliding = CheckCollision(otherComp);
+            //The overlap comes back from the same test that decided whether there is one, so the impact point
+            //below is four arithmetic ops on a rect already in hand instead of a second full intersection
+            ETG::FloatRect overlap;
+            if (!CheckCollision(otherComp, overlap)) return;
 
-            if (isColliding)
-            {
-                StillColliding.push_back(otherComp);
+            const bool wasTouchingLastFrame = CurrentCollisions.Contains(otherComp);
 
-                // Handle collision events
-                if (!wasColliding)
-                {
-                    CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
-                    OnCollisionEnter.Broadcast(eventData);
-                }
-                else
-                {
-                    // Last tick collided, now still colliding
-                    CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
-                    OnCollisionStay.Broadcast(eventData);
-                }
-            }
-            else if (wasColliding)
-            {
-                // Collision ended
-                CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
-                OnCollisionExit.Broadcast(eventData);
-            }
-        }
+            StillColliding.Add(otherComp);
 
-        // Find collisions that ended
-        for (auto* otherComp : CurrentCollisions)
+            const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CentreOf(overlap));
+
+            if (!wasTouchingLastFrame)
+                OnCollisionEnter.Broadcast(eventData);
+            else
+                OnCollisionStay.Broadcast(eventData);
+
+            //No exit is raised here on purpose. The sweep below already reports everything that left
+            //CurrentCollisions and it catches strictly more: a component that stopped intersecting, but equally
+            //one that was skipped this frame because it disabled its collision or fell out of the Mask. Raising
+            //it in both places is how this used to fire OnCollisionExit twice for a single separation
+        });
+
+        // Who were we touching last frame but are not any more?
+        CurrentCollisions.ForEach([this](CollisionComponent* otherComp)
         {
-            if (std::ranges::find(StillColliding, otherComp) == StillColliding.end())
-            {
-                // This collision has ended
-                if (otherComp && otherComp->Owner)
-                {
-                    CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
-                    OnCollisionExit.Broadcast(eventData);
-                }
-            }
-        }
+            if (!otherComp->Owner || StillColliding.Contains(otherComp)) return;
 
-        // swap and not move: a move would hand StillColliding's buffer away and leave it to allocate a fresh one
-        // next frame, which is the very cost this is here to avoid. Swapping hands the old CurrentCollisions
-        // buffer back for the clear() above to reuse, so the two ping-pong and neither allocates again
-        CurrentCollisions.swap(StillColliding);
+            // The two no longer overlap, so there is no impact point to report
+            const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, ETG::Vector2f{0, 0});
+            OnCollisionExit.Broadcast(eventData);
+        });
+
+        // This frame's contacts become the record to compare against next frame. A swap and not a copy: the two
+        // lists hand buffers back and forth, so neither allocates again after the first few frames
+        CurrentCollisions.SwapWith(StillColliding);
     }
 
     void CollisionComponent::UpdateBounds()
@@ -119,25 +120,22 @@ namespace ETG
         );
     }
 
-    bool CollisionComponent::CheckCollision(const CollisionComponent* other) const
+    bool CollisionComponent::CheckCollision(const CollisionComponent* other, ETG::FloatRect& outOverlap) const
     {
-        if (!other) throw std::runtime_error("The object: " + other->GetOwner()->ObjectName + " not found");
-        //Thankfully at least I am not have to implement intersection this time myself. 
-        return ExpandedBounds.intersects(other->GetCollisionBounds());
+        //The message used to be built by dereferencing the very pointer it was checking for null
+        if (!other) throw std::runtime_error("CheckCollision on " + Owner->ObjectName + " was given a null component");
+
+        //Thankfully at least I am not have to implement intersection this time myself. The two argument overload
+        //is what the plain one calls anyway, discarding the overlap into a dummy - so keeping it is free
+        return ExpandedBounds.intersects(other->GetCollisionBounds(), outOverlap);
     }
 
     ETG::Vector2f CollisionComponent::CalculateImpactPoint(const CollisionComponent* other) const
     {
         ETG::FloatRect intersection;
-        ETG::FloatRect otherObjBounds = other->GetCollisionBounds();
 
-        if (ExpandedBounds.intersects(otherObjBounds, intersection))
-        {
-            return {
-                intersection.left + intersection.width / 2.0f, //x
-                intersection.top + intersection.height / 2.0f //y
-            };
-        }
+        if (ExpandedBounds.intersects(other->GetCollisionBounds(), intersection))
+            return CentreOf(intersection);
 
         return {0, 0};
     }
@@ -168,27 +166,26 @@ namespace ETG
         window.draw(expandedRect);
 
         // Visualize current collisions
-        for (auto* otherComp : CurrentCollisions)
+        CurrentCollisions.ForEach([this, &window](const CollisionComponent* otherComp)
         {
-            if (otherComp && otherComp->Owner)
-            {
-                if (DrawCollisionLineBetweenCenters)
-                {
-                    DrawCollisionLineBetweenCenter(window, otherComp);
-                }
+            if (!otherComp->Owner) return;
 
-                if (DrawImpactPoint)
-                {
-                    ETG::CircleShape circle;
-                    circle.setOrigin(5.0f, 5.0f);
-                    circle.setRadius(5);
-                    circle.setPosition(CalculateImpactPoint(otherComp));
-                    circle.setFillColor(ETG::Color::Green);
-                    if (circle.getPosition() != ETG::Vector2f{0, 0})
-                        RenderContext::Window->draw(circle);
-                }
+            if (DrawCollisionLineBetweenCenters)
+            {
+                DrawCollisionLineBetweenCenter(window, otherComp);
             }
-        }
+
+            if (DrawImpactPoint)
+            {
+                ETG::CircleShape circle;
+                circle.setOrigin(5.0f, 5.0f);
+                circle.setRadius(5);
+                circle.setPosition(CalculateImpactPoint(otherComp));
+                circle.setFillColor(ETG::Color::Green);
+                if (circle.getPosition() != ETG::Vector2f{0, 0})
+                    RenderContext::Window->draw(circle);
+            }
+        });
     }
 
     void CollisionComponent::DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const
@@ -208,7 +205,7 @@ namespace ETG
         window.drawLine(selfCenter, otherCenter, ETG::Color::Red);
     }
 
-    std::vector<CollisionComponent*>& CollisionComponent::GetRegistry()
+    SafeRegistry<CollisionComponent>& CollisionComponent::GetRegistry()
     {
         return AllCollisionRegistries;
     }
@@ -223,17 +220,17 @@ namespace ETG
         // Clear current collisions if disabling
         if (!enabled)
         {
-            // Notify exit events for all current collisions
-            for (auto* otherComp : CurrentCollisions)
+            // Notify exit events for all current collisions. Unlike Update's sweep the two objects are still
+            // overlapping here - we are switching off, not moving apart - so there is a real impact point to give
+            CurrentCollisions.ForEach([this](CollisionComponent* otherComp)
             {
-                if (otherComp && otherComp->Owner)
-                {
-                    const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
-                    OnCollisionExit.Broadcast(eventData);
-                }
-            }
+                if (!otherComp->Owner) return;
 
-            CurrentCollisions.clear();
+                const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CalculateImpactPoint(otherComp));
+                OnCollisionExit.Broadcast(eventData);
+            });
+
+            CurrentCollisions.Clear();
         }
     }
 }
