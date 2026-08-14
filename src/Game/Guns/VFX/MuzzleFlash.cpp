@@ -61,7 +61,7 @@ namespace ETG
         if (!isActive || !Animation.Texture) return;
 
         // Muzzle flash animation'ını çiz
-        Animation.Draw(Animation.Texture, Position, ETG::Color::White, Rotation, Origin, Scale, Depth);
+        Animation.Draw(Position, ETG::Color::White, Rotation, Origin, Scale, Depth);
     }
 
     // Parent varsa position'ı ona göre update et

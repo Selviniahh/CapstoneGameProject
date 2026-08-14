@@ -57,7 +57,9 @@ public:
     /// \brief decrement `AnimTimeLeft` If AnimTimeLeft is 0, increment CurrentFrame, restart CurrentFrame counter
     void Update();
     void Draw(ETG::Vector2f position, float layerDepth, float rotation = 0) const;
-    void Draw(const std::shared_ptr<ETG::Texture>& texture, ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, const float depth) const;
+    //Texture parametresi yoktur ve olmamalıdır: bu overload her zaman animation'ın kendi Texture'ını bind eder.
+    //Eskiden bir texture alıp onu tamamen yok sayıyordu, yani caller'ın verdiği texture sessizce çöpe gidiyordu
+    void Draw(ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, float depth) const;
 
     /// Restart the animation. Set `CurrentFrame` = 0, `AnimTimeLeft` = `EachFrameSpeed`
     void Restart();

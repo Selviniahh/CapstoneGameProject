@@ -1,6 +1,5 @@
 #pragma once
 #include "../Platform/Platform.h"
-#include "../Platform/Platform.h"
 #include <memory>
 #include <boost/describe.hpp>
 #include "GameClass.h"

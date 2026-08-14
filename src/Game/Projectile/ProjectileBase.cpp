@@ -158,7 +158,7 @@ void ETG::ProjectileBase::Draw()
         // Rotation verilmez: impact artwork'ü dikey author edilmiştir ve merminin geliş açısıyla döndürülmesi
         // istenmiyor.
         const ETG::IntRect& frame = ImpactAnim.CurrRect;
-        ImpactAnim.Draw(ImpactAnim.Texture, ImpactPos, ETG::Color::White, 0.f,
+        ImpactAnim.Draw(ImpactPos, ETG::Color::White, 0.f,
                         {static_cast<float>(frame.width) / 2.f, static_cast<float>(frame.height) / 2.f},
                         {1.f, 1.f}, 0.f);
         return;

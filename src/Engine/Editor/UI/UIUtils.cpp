@@ -59,10 +59,9 @@ void UIUtils::DisplayIntRectangle(ETG::IntRect& rect)
     EndProperty();
 
     BeginProperty("Position");
-    int pos[2] = {rect.top, rect.height};
+    int pos[2] = {rect.left, rect.top};
     if (ImGui::InputInt2("##Position", pos))
     {
-        // Prevent negative dimensions
         rect.left = pos[0];
         rect.top = pos[1];
     }

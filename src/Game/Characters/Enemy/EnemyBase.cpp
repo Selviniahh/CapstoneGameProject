@@ -102,8 +102,6 @@ namespace ETG
             else 
                 knockbackDir = Math::Normalize(Position - instigator->GetPosition());
             
-            std::cout << "During Death: " << knockbackDir.x << " " << knockbackDir.y << std::endl;
-
             MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
         });
 
@@ -162,8 +160,6 @@ namespace ETG
         // Calculate force direction (from projectile to enemy)
         // "A'dan B'ye giden vektör" = B - A.
         const ETG::Vector2f  forceDirection = Math::RadianToDirection(Math::AngleToRadian(projectile->GetRotation()));
-
-        std::cout << forceDirection.x << " " << forceDirection.y << std::endl;
 
         // Get force from projectile
         const float forceMagnitude = projectile->Force;

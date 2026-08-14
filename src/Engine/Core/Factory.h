@@ -51,6 +51,7 @@ namespace ETG
     //For now this function is only for updating hierarchy tab for removed game objects.
     inline void UnregisterGameObject(GameObjectBase* obj)
     {
+        if (!Scene::Get()) return; //not always 
         std::erase(Scene::Get()->SceneObjs, obj);
     }
 

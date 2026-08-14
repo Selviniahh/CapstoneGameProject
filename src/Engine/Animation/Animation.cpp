@@ -85,7 +85,7 @@ void Animation::Draw(const ETG::Vector2f position, const float layerDepth, const
     ETG::GlobSpriteBatch.Draw(frame, layerDepth);
 }
 
-void Animation::Draw(const std::shared_ptr<ETG::Texture>& texture, const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth) const
+void Animation::Draw(const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth) const
 {
     if (!Active || !Texture) return;
 
@@ -195,10 +195,16 @@ namespace
         if (!std::filesystem::exists(filePath))
             throw std::runtime_error("File not found at: " + filePath);
 
+        //Tek frame'lik sheet'in yolu yeniden kurulmaz, yukarıda zaten kurulup varlığı doğrulanan yol kullanılır.
+        //Eskiden `basePath + "." += extension` yazıyordu: isim rakamla bittiğinde basePath'in son hanesi yukarıda
+        //pop_back ile atılmış oluyor, bu ifade de onu geri koymadığı için var olmayan bir dosya adı üretiyordu.
+        //Loop ilk turda kırılır, sıfır frame döner ve Animation constructor'ı frameX'e bölerken patlardı
+        const std::string singleSpritePath = filePath;
+
         while (true)
         {
             filePath = isSingleSprite
-                           ? basePath + "." += extension
+                           ? singleSpritePath
                            : basePath + std::to_string(counter) + "." + extension;
             if (!std::filesystem::exists(filePath)) break;
 

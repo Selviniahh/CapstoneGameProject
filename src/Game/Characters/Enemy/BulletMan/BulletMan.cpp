@@ -104,6 +104,12 @@ void ETG::BulletMan::UpdateShooting()
         attackCooldownTimer -= Time::FrameTick;
     }
 
+    // Enemy'nin R tuşu yoktur, dolayısıyla reload kararını burada verir: bu, hero'nun input'unun karşılığıdır.
+    // Olmadığı sürece BulletMan magazine'ini boşalttıktan sonra bir daha hiç ateş edemezdi - GunBase::PrepareShooting
+    // artık boş magazine ile ateş etmeyi reddediyor. Reload'un kendisini bitiren ve ammo'yu dolduran şey
+    // ReloadSlider'dır ve o her silah için GunBase::Update'ten tick'lenir, hero'nun silahı olsun olmasın.
+    if (Gun->IsMagazineEmpty() && !Gun->IsReloading) Gun->Reload();
+
     // Make actual shooting happen
     if (GetState() == EnemyStateEnum::Shooting)
     {

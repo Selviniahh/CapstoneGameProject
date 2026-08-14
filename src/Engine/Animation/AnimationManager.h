@@ -70,7 +70,7 @@ public:
     // void Draw(ETG::Vector2f position, float layerDepth);
 
     // Overloaded draw for more complex parameters
-    void Draw(const std::shared_ptr<ETG::Texture>& texture, ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, float depth);
+    void Draw(ETG::Vector2f position, ETG::Color color, float rotation, ETG::Vector2f origin, ETG::Vector2f scale, float depth);
 
     // Optionally set origin
     template <typename T>
@@ -118,12 +118,12 @@ void AnimationManager::Update(T key)
     }
 }
 
-inline void AnimationManager::Draw(const std::shared_ptr<ETG::Texture>& texture, const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth)
+inline void AnimationManager::Draw(const ETG::Vector2f position, const ETG::Color color, const float rotation, const ETG::Vector2f origin, const ETG::Vector2f scale, const float depth)
 {
     auto it = AnimationDict.find(LastKey);
     if (it != AnimationDict.end())
     {
-        it->second.Draw(texture, position, color, rotation, origin, scale, depth);
+        it->second.Draw(position, color, rotation, origin, scale, depth);
     }
 }
 

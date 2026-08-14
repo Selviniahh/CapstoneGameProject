@@ -76,7 +76,10 @@ namespace ETG
         {
             LastDashDirection = Direction::DownLeft;
 
-            return HeroDashEnum::Dash_Right;
+            //Down-diagonals reuse the horizontal dash sheet, so the left one has to name the left enum. It named
+            //Dash_Right before - a copy of the D+S branch below - and stayed invisible only because Dash_Left and
+            //Dash_Right load the same sheet (HeroAnimComp.cpp:53-54) and the mirror comes off LastDashDirection
+            return HeroDashEnum::Dash_Left;
         }
         if (ETG::Keyboard::isKeyPressed(ETG::Keyboard::D) && ETG::Keyboard::isKeyPressed(ETG::Keyboard::S))
         {

@@ -294,9 +294,6 @@ namespace ETG
         if (CollisionComp) 
             CollisionComp->Visualize(*ETG::RenderContext::Window);
         
-        // Bilerek GunBase::Draw içindeki IsVisible kontrolünün dışındadır: magazine silahtan ayrılmıştır;
-        // hero dash yaparken ve rifle gizliyken düşmeye devam eder.
-        Magazine->Draw();
     }
 
     void GunBase::UpdateProjectiles()
@@ -323,6 +320,11 @@ namespace ETG
 
     void GunBase::PrepareShooting()
     {
+        // Silahın kendi invariant'ı, çağıranın değil. Bu test eskiden yalnızca Hero::HandleShooting'de duruyordu;
+        // BulletMan aynı testi yapmadığı için enemy'nin MagazineAmmo'su sıfırın altına doğru saymaya devam ediyor,
+        // eşitlik kontrolüne dayanan OnAmmoRunOut ise ömrü boyunca yalnızca bir kez atıyordu.
+        if (IsReloading || MagazineAmmo <= 0) return;
+
         if (Timer >= FireRate)
         {
             // Firing timer'ı reset et
@@ -354,7 +356,8 @@ namespace ETG
             EnqueueProjectiles(shot.ShotCount, shot.Spread);
         }
 
-        // Ammo tükenmesini işle
+        // Ammo tükenmesini işle. Yukarıdaki guard sayesinde buraya yalnızca gerçekten ateş edilen çağrıda
+        // gelinir, dolayısıyla bu artık bir state değil bir transition'dır: magazine'i boşaltan atışta bir kez atar.
         if (MagazineAmmo == 0)
         {
             OnAmmoRunOut.Broadcast(true);

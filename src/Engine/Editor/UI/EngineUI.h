@@ -5,7 +5,6 @@
 #include <memory>
 #include <boost/describe.hpp>
 #include <boost/type_index.hpp>
-#include "../../Platform/Platform.h"
 
 #include "UIUtils.h"
 #include "../../../Utils/StrManipulateUtil.h"

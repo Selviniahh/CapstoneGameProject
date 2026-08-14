@@ -52,6 +52,12 @@ void ETG::ReloadSlider::Draw()
     // Only draw when animating
     if (!IsAnimating) return;
 
+    // Bar hero'nun UI'ıdır: konumu her frame Hero'nun tepesine yazılır. Enemy'ler de artık kendi silahlarını
+    // reload ettiği için (BulletMan::UpdateShooting), bu kontrol olmasaydı enemy'nin reload'u hero'nun başının
+    // üstünde sahipsiz bir bar olarak belirirdi. Update tarafı gate'lenmez - reload'u bitirip ammo'yu dolduran
+    // FinishAnimation oradan çalışır ve enemy için de çalışmak zorundadır.
+    if (!Gun || !Gun->Owner || !Gun->Owner->IsA<class Hero>()) return;
+
     SpriteBatch::Draw(SliderBarPros);
     SpriteBatch::Draw(SliderValProps);
 }
