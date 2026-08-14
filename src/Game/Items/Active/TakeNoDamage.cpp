@@ -23,11 +23,18 @@ ETG::TakeNoDamage::TakeNoDamage() : ActiveItemBase(AssetManager::Resolve("Items/
     TotalConsumeTime = 10.0f;
 
     TakeNoDamage::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    TakeNoDamage::BindEvents();
 }
 
 void ETG::TakeNoDamage::Initialize()
 {
     ActiveItemBase::Initialize();
+}
+
+void ETG::TakeNoDamage::BindEvents()
+{
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //Picked up by any character, same as every other active item

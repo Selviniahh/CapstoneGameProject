@@ -16,6 +16,12 @@ namespace ETG
         ~PlatinumBullets() override = default;
 
         void Initialize() override;
+
+    protected:
+        //Called from PlatinumBullets's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
+    public:
         void Update() override;
         void Draw() override;
 

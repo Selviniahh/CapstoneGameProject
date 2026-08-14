@@ -24,12 +24,18 @@ ETG::PlatinumBullets::PlatinumBullets(): PassiveItemBase(AssetManager::Resolve("
     Position = {100, +30};
 
     PlatinumBullets::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    PlatinumBullets::BindEvents();
 }
 
 void ETG::PlatinumBullets::Initialize()
 {
     PassiveItemBase::Initialize();
+}
 
+void ETG::PlatinumBullets::BindEvents()
+{
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //Any character can carry this, not only the hero

@@ -36,6 +36,9 @@ ETG::Magnum::Magnum(const ETG::Vector2f& pos) : GunBase(pos,
     CollisionComp->SetCollisionEnabled(true);
 
     Magnum::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    Magnum::BindEvents();
 }
 
 void ETG::Magnum::Initialize()
@@ -46,7 +49,10 @@ void ETG::Magnum::Initialize()
     CollisionComp->Initialize();
 
     ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_003.png");
+}
 
+void ETG::Magnum::BindEvents()
+{
     // Şimdilik silah hero ile collide olursa hero silahı alır. Bunu daha sonra hero içinde yapabiliriz.
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {

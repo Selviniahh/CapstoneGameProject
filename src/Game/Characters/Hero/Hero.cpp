@@ -60,13 +60,18 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     EquipGun(RogueSpecial.get());
 
     Hero::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    Hero::BindEvents();
 }
 
 void ETG::Hero::Initialize()
 {
     GameObjectBase::Initialize();
+}
 
-
+void ETG::Hero::BindEvents()
+{
     //NOTE: Hero overlapped by something
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {

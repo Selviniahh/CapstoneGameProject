@@ -29,19 +29,6 @@ namespace ETG
         MoveComp = ETG::CreateGameObjectAttached<EnemyMoveCompBase>(this);
         MoveComp->Initialize();
 
-        // Register force event handlers for the move component
-        MoveComp->OnForceStart.AddListener([this]()
-        {
-            this->SetState(EnemyStateEnum::Hit);
-        });
-
-        MoveComp->OnForceEnd.AddListener([this]()
-        {
-            // Reset to idle state when force ends
-            if (GetState() == EnemyStateEnum::Hit)
-                SetState(EnemyStateEnum::Idle);
-        });
-
         HealthComp = ETG::CreateGameObjectAttached<BaseHealthComp>(this, 30.f);
 
         ShaderEffectComp = ETG::CreateGameObjectAttached<ShaderEffectComponent>(this);
@@ -63,6 +50,19 @@ namespace ETG
 
     void EnemyBase::BindEvents()
     {
+        // Register force event handlers for the move component
+        MoveComp->OnForceStart.AddListener([this]()
+        {
+            this->SetState(EnemyStateEnum::Hit);
+        });
+
+        MoveComp->OnForceEnd.AddListener([this]()
+        {
+            // Reset to idle state when force ends
+            if (GetState() == EnemyStateEnum::Hit)
+                SetState(EnemyStateEnum::Idle);
+        });
+
         CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
         {
             // Check if we collided with a projectile

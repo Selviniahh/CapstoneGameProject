@@ -44,6 +44,10 @@ namespace ETG
 
         [[nodiscard]] bool IsImpacting() const { return Impacting; }
 
+    protected:
+        //Called from ProjectileBase's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
     private:
         float DistanceTraveled = 0.0f; //Track the total distance traveled
 

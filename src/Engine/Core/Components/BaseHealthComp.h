@@ -51,6 +51,9 @@ namespace ETG
         float DamagedVisualFeedbackDuration = 0.2f;
         
     private:
+        //Called from BaseHealthComp's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
         std::unique_ptr<TimerComponent> DamageFeedbackTimer;
         std::unique_ptr<TimerComponent> InvulnerabilityTimer;
         bool IsDamaged = false;

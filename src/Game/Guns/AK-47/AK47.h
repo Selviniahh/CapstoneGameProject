@@ -16,6 +16,10 @@ namespace ETG
         void Draw() override;
         void Reload() override;
 
+    protected:
+        //Called from AK47's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
     public:
         // <---------- Magazine drop ---------->
         // 26x10 reload frame'inin sol üstünden okunan pixel'den HandRig::AnchorOrigin, yani 27x7 idle frame'inin

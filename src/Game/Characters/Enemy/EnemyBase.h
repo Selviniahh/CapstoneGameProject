@@ -63,11 +63,11 @@ namespace ETG
         std::unique_ptr<ShaderEffectComponent> ShaderEffectComp;
 
     private:
-        //Called from the constructor and from nowhere else, which is the whole point: Initialize is called once by
-        //this class' own constructor and again by every concrete enemy's, and EventDelegate::AddListener does not
-        //reject a repeat - so binding from there registered every listener twice. One landed bullet then ran
-        //ApplyDamage twice and OnDeath fired twice for a single death
-        void BindEvents();
+        //Called from this class' constructor and from nowhere else - see GameObjectBase::BindEvents and
+        //docs/InitializationRules.tr.md. These used to live in Initialize(), which every concrete enemy's
+        //constructor calls a second time, so one landed bullet ran ApplyDamage twice and one death broadcast
+        //OnDeath twice
+        void BindEvents() override;
 
         EnemyStateEnum EnemyState{EnemyStateEnum::Idle};
 

@@ -72,6 +72,16 @@ namespace ETG
         if (!Shells) Shells = CreateGameObjectAttached<ShellEjector>(this);
 
         GunBase::Initialize();
+
+        //Last statement, and the constructor's alone: see GameObjectBase::BindEvents. It matters here more than
+        //anywhere - GunBase::Initialize runs twice for every gun, once from this line and once from the derived
+        //gun's own Initialize, so the reload slider used to be listening to the same weapon twice
+        GunBase::BindEvents();
+    }
+
+    void GunBase::BindEvents()
+    {
+        ReloadSlider->LinkToGun(this);
     }
 
     bool GunBase::IsHeldOnRightSide(const float aimAngle) const
@@ -161,8 +171,6 @@ namespace ETG
         // sonradan bunun üzerine yazar. Kontrol, Initialize ikinci kez çalıştığında seçilmiş set'in default'a geri
         // dönmemesi içindir.
         if (!HasProjectileImpact) SetProjectileImpact("Projectiles/Hit/", "impact_tiny_001", "png", 0.04f);
-
-        ReloadSlider->LinkToGun(this);
     }
 
     void GunBase::Update()

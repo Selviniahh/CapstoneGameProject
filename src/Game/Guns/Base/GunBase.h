@@ -242,6 +242,9 @@ namespace ETG
         EventDelegate<bool> OnReloadInvoke;
 
     protected:
+        //Called from GunBase's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
         float Timer; // Tick'e göre artar
 
         // Offset vector'ünü silahın mevcut rotation değerine göre döndürür

@@ -11,6 +11,12 @@ namespace ETG
         ~SawedOff() override = default;
 
         void Initialize() override;
+
+    protected:
+        //Called from SawedOff's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
+    public:
         void Update() override;
         void Draw() override;
         void EnqueueProjectiles(int shotCount, float EffectiveSpread) override;

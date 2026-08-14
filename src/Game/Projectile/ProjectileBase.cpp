@@ -35,6 +35,12 @@ ETG::ProjectileBase::ProjectileBase(const ETG::Texture& texture, const ETG::Vect
 
     CollisionComp->SetCollisionEnabled(true);
 
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    ProjectileBase::BindEvents();
+}
+
+void ETG::ProjectileBase::BindEvents()
+{
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         // Check if we collided with enemy.

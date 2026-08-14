@@ -40,6 +40,25 @@ namespace ETG
         GameObjectBase();
         // TypeID::IDType SetTypeID();
 
+        //Where every AddListener call in the game belongs. The rule, in full, is in docs/InitializationRules.tr.md;
+        //the short version is three lines:
+        //
+        //  1. A class binds its OWN listeners here and nothing else's.
+        //  2. Its OWN constructor calls its OWN qualified version - Hero::BindEvents() from Hero's constructor -
+        //     as the last statement. A constructor runs exactly once per object, which is the entire point.
+        //  3. An override NEVER calls Base::BindEvents(). The base constructor already ran its own, so chaining
+        //     would bind it a second time.
+        //
+        //Initialize() is the wrong place and used to be the place: it is called by the class' own constructor AND
+        //again by every derived constructor, and EventDelegate::AddListener happily takes the same lambda twice.
+        //EnemyBase paid for that with two ApplyDamage calls per bullet and two OnDeath broadcasts per death.
+        //
+        //Deliberately never called through a base pointer either: dispatching would reach only the most derived
+        //override and silently skip every base class' bindings
+        virtual void BindEvents()
+        {
+        }
+
         //Base position of GameObjects
         //Inherited Objects such as Gun's position will be attached to hand pos in tick. After the object manipulations are completed, the relative offsets needs given in UI needs to be applied
         //and result will be stored in FinalPos, FinalRot etc. Final properties will be drawn.    

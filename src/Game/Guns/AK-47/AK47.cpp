@@ -37,6 +37,9 @@ ETG::AK47::AK47(const ETG::Vector2f& pos) : GunBase(pos,
 
     // Ortak initialization işlemini çağır
     AK47::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    AK47::BindEvents();
 }
 
 void ETG::AK47::Initialize()
@@ -100,6 +103,11 @@ void ETG::AK47::Initialize()
     // AK-47 için projectile texture'ını yükle
     ProjTexture = AssetManager::LoadTexture("Projectiles/AK-47/Projectile_AK-47.png");
 
+    GunBase::Initialize();
+}
+
+void ETG::AK47::BindEvents()
+{
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         if (auto* hero = dynamic_cast<Hero*>(eventData.Other))
@@ -109,8 +117,6 @@ void ETG::AK47::Initialize()
             this->Owner = hero; // Silahın owner'ını hero yap. Projectile collision sırasında projectile owner'ını bilmemiz gerektiği için bu önemlidir.
         }
     });
-
-    GunBase::Initialize();
 }
 
 void ETG::AK47::Update()

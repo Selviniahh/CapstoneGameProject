@@ -17,6 +17,12 @@ namespace ETG
         void RequestUsage() override;
 
         void Initialize() override;
+
+    protected:
+        //Called from DoubleShoot's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
+    public:
         void Update() override;
         void Draw() override;
 

@@ -108,5 +108,8 @@ namespace ETG
     protected:
         //The reload UI follows whichever gun is in hand
         void OnGunChanged(GunBase* gun) override;
+
+        //Called from Hero's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
     };
 }

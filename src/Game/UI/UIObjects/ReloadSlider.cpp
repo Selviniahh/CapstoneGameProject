@@ -131,6 +131,11 @@ void ETG::ReloadSlider::LinkToGun(GunBase* gun)
     if (!gun) throw std::runtime_error("Gun not found");
     Gun = gun;
 
+    //Cleared first, the way ReloadText::LinkToGun does it. This is a re-link point, not a construction one: it
+    //runs again whenever the same gun is linked a second time, and without this each pass left another live
+    //listener on that gun's OnReloadInvoke. Clearing is safe because this slider is the only thing listening
+    gun->OnReloadInvoke.Clear();
+
     // Register for reload start events
     gun->OnReloadInvoke.AddListener([this](const bool isReloading)
     {

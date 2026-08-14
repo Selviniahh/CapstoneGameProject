@@ -16,11 +16,18 @@ ETG::DoubleShoot::DoubleShoot() : ActiveItemBase(AssetManager::Resolve("Items/Ac
     TotalConsumeTime = 10.0f;
 
     DoubleShoot::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    DoubleShoot::BindEvents();
 }
 
 void ETG::DoubleShoot::Initialize()
 {
     ActiveItemBase::Initialize();
+}
+
+void ETG::DoubleShoot::BindEvents()
+{
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
         //Anyone who can carry a gun can carry this: the hero, or a BulletMan that happened to walk over it

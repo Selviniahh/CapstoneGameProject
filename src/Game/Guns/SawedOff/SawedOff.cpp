@@ -35,6 +35,9 @@ ETG::SawedOff::SawedOff(const ETG::Vector2f& pos) : GunBase(pos,
     CollisionComp->SetCollisionEnabled(true);
 
     SawedOff::Initialize();
+
+    //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+    SawedOff::BindEvents();
 }
 
 
@@ -47,7 +50,10 @@ void ETG::SawedOff::Initialize()
     CollisionComp->Initialize();
 
     ProjTexture = AssetManager::LoadTexture("Projectiles/bullet_variant_003.png");
+}
 
+void ETG::SawedOff::BindEvents()
+{
     // Şimdilik silah hero ile collide olursa hero silahı alır. Bunu daha sonra hero içinde yapabiliriz.
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
@@ -59,8 +65,6 @@ void ETG::SawedOff::Initialize()
 
         }
     });
-
-    GunBase::Initialize();
 }
 
 void ETG::SawedOff::Update()

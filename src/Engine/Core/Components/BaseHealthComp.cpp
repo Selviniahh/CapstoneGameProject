@@ -8,20 +8,28 @@ namespace ETG
     BaseHealthComp::BaseHealthComp(const float maxHealth)
         : ComponentBase(), CurrentHealth(maxHealth), MaxHealth(maxHealth), IsDamaged(false)
     {
+        //Sub-objects are the constructor's to build, not Initialize's: Initialize is allowed to run again, and a
+        //second run used to replace both timers with fresh ones - taking the listeners below down with them
+        DamageFeedbackTimer = ETG::CreateGameObjectAttached<TimerComponent>(this, DamagedVisualFeedbackDuration);
+        InvulnerabilityTimer = ETG::CreateGameObjectAttached<TimerComponent>(this, InvulnerabilityDuration);
+
         BaseHealthComp::Initialize();
+
+        //Last statement, and the constructor's alone: see GameObjectBase::BindEvents
+        BaseHealthComp::BindEvents();
     }
 
     BaseHealthComp::~BaseHealthComp() = default;
 
+    //Only what is safe to run twice: this resets the component to full health, nothing more
     void BaseHealthComp::Initialize()
     {
         ComponentBase::Initialize();
         CurrentHealth = MaxHealth;
+    }
 
-        // Create the damage feedback timer
-        DamageFeedbackTimer = ETG::CreateGameObjectAttached<TimerComponent>(this, DamagedVisualFeedbackDuration);
-        InvulnerabilityTimer = ETG::CreateGameObjectAttached<TimerComponent>(this, InvulnerabilityDuration);
-
+    void BaseHealthComp::BindEvents()
+    {
         InvulnerabilityTimer->OnTimerFinished.AddListener([this]()
         {
             InvulnerabilityEnabled = false;

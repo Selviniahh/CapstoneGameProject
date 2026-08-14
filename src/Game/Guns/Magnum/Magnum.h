@@ -16,6 +16,12 @@ namespace ETG
         void EnqueueProjectiles(int shotCount, float EffectiveSpread) override;
         
         std::unique_ptr<CollisionComponent> CollisionComp;
+
+    protected:
+        //Called from Magnum's constructor only - see GameObjectBase::BindEvents
+        void BindEvents() override;
+
+    public:
         BOOST_DESCRIBE_CLASS(Magnum, (GunBase), (), (), ());
     };
 
