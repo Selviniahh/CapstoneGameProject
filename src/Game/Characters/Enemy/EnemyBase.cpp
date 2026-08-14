@@ -95,7 +95,13 @@ namespace ETG
             // Set enemy state to die
             SetState(EnemyStateEnum::Die);
             Depth = std::numeric_limits<float>::max(); //set depth to max value so that it will be drawn bottom of everything
-            const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
+            ETG::Vector2f knockbackDir;
+            
+            if (const auto* proj = instigator->As<ProjectileBase>())
+                knockbackDir = Math::RadianToDirection(Math::AngleToRadian(proj->GetRotation()));
+            else 
+                knockbackDir = Math::Normalize(Position - instigator->GetPosition());
+            
             std::cout << "During Death: " << knockbackDir.x << " " << knockbackDir.y << std::endl;
 
             MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
@@ -152,12 +158,11 @@ namespace ETG
 
     void EnemyBase::HandleHitForce(const ProjectileBase* projectile)
     {
-        const auto* projectileOwnerGun = projectile->Owner->As<GunBase>();
-
         // Check if this is a hero projectile
         // Calculate force direction (from projectile to enemy)
         // "A'dan B'ye giden vektör" = B - A.
-        const ETG::Vector2f forceDirection = Math::Normalize(this->Position - projectile->GetPosition());
+        const ETG::Vector2f  forceDirection = Math::RadianToDirection(Math::AngleToRadian(projectile->GetRotation()));
+
         std::cout << forceDirection.x << " " << forceDirection.y << std::endl;
 
         // Get force from projectile
