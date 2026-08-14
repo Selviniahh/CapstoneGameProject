@@ -37,19 +37,22 @@ ETG::ProjectileBase::ProjectileBase(const ETG::Texture& texture, const ETG::Vect
 
     CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
     {
-        // Check if we collided with enemy. 
-        const auto heroObj = dynamic_cast<Hero*>(this->Owner->Owner);
+        // Check if we collided with enemy.
+        const auto* heroObj = dynamic_cast<Hero*>(this->Owner->Owner);
         const auto* enemyObj = dynamic_cast<EnemyBase*>(eventData.Other);
-        const auto* enemy = eventData.Other->As<EnemyBase>();
-        const auto* EnemyGun = eventData.Other->As<EnemyBase>(); //M
-;        
+
         if (heroObj && enemyObj)
         {
-            //This is Hero's projectile that collided with an enemy
-            enemyObj->CollisionComp->OnCollisionEnter.Broadcast(CollisionEventData{this, this, eventData.OtherComp,eventData.ImpactPoint});
-
-            // Damage broadcast edildikten sonra mermi durur ve iki dairenin değdiği noktada patlar. Yok etme
-            // işini BeginImpact üstlenir: animation varsa bittiğinde, yoksa hemen.
+            //Damage is the enemy's own listener to run, and it is already running: one overlap is detected once
+            //and both sides are handed their own event out of it (CollisionSystem::DetectContacts). This used to
+            //broadcast the enemy's OnCollisionEnter by hand, from right here, because back when every collider ran
+            //its own pass inside its owner's Update there was no saying whether the enemy would find this bullet
+            //itself, or on which frame. It always did find it - so the hand-made event was a second one on top,
+            //and EnemyBase's listener spent one shot's damage twice. It also arrived without the "is this contact
+            //new?" test that Enter is gated on, since Broadcast is the delegate, not the pass that decides
+            //
+            //Mermi burada yalnızca kendi işini yapar: durur ve iki dairenin değdiği noktada patlar. Yok etme işini
+            //BeginImpact üstlenir: animation varsa bittiğinde, yoksa hemen.
             this->BeginImpact(eventData.ImpactPoint);
         }
     });
@@ -104,8 +107,9 @@ void ETG::ProjectileBase::Update()
 {
     if (PendingDestroy) return;
 
-    // Çarpma başladıysa geriye yalnızca VFX kalmıştır: mermi hareket etmez, collision aranmaz, animation
-    // bittiğinde object gider.
+    // Çarpma başladıysa geriye yalnızca VFX kalmıştır: mermi hareket etmez, animation bittiğinde object gider.
+    // Collision'ı burada atlamak yetmez, çünkü taramayı artık CollisionSystem yapıyor ve o bu return'ü görmez;
+    // aranmamasını sağlayan şey BeginImpact'in collision'ı kapatması.
     if (Impacting)
     {
         ImpactAnim.Update();
@@ -114,7 +118,6 @@ void ETG::ProjectileBase::Update()
     }
 
     TimerComp->Update();
-    CollisionComp->Update();
 
     const ETG::Vector2f movement = Time::FrameTick * ProjVelocity;
     Position += movement;

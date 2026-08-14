@@ -1,24 +1,12 @@
 #include <imgui.h>
 #include "CollisionComponent.h"
 #include "../../Core/GameObjectBase.h"
+#include "../../Core/Systems/CollisionSystem.h"
 #include "../../Managers/RenderContext.h"
 #include "../../Managers/SpriteBatch.h"
 
 namespace ETG
 {
-    namespace
-    {
-        //Where two bounds meet, reported as the middle of the region they share
-        ETG::Vector2f CentreOf(const ETG::FloatRect& rect)
-        {
-            return {
-                rect.left + rect.width / 2.0f, //x
-                rect.top + rect.height / 2.0f //y
-            };
-        }
-
-    }
-
     SafeRegistry<CollisionComponent> CollisionComponent::AllCollisionRegistries;
 
     CollisionComponent::CollisionComponent()
@@ -38,6 +26,10 @@ namespace ETG
             component->CurrentCollisions.Remove(this);
             component->StillColliding.Remove(this);
         });
+
+        //And the sweep in progress has to let go too. Its contact list is built before any event goes out, so a
+        //listener that destroys us leaves our pointer sitting in contacts that have not been dispatched yet
+        CollisionSystem::ForgetComponent(this);
     }
 
     void CollisionComponent::Initialize()
@@ -46,62 +38,11 @@ namespace ETG
         UpdateBounds();
     }
 
+    //Empty on purpose - see the declaration. The sweep that used to live here is CollisionSystem::Update, which
+    //runs once for every collider after the world has finished moving. A collider testing the world from inside
+    //its owner's Update is precisely the thing that made the result depend on who was updated first
     void CollisionComponent::Update()
     {
-        if (!CollisionEnabled || !Owner) return;
-
-        // Update our bounds based on the owner's position and texture
-        UpdateBounds();
-
-        // This frame's contacts get collected here, then become CurrentCollisions at the end
-        StillColliding.Clear();
-
-        // Who are we touching right now?
-        AllCollisionRegistries.ForEach([this](CollisionComponent* otherComp)
-        {
-            //Skip the unappropriated ones. The layer test comes early because it is by far the most selective and
-            //costs one load and one and, where everything past it reads both objects' bounds
-
-            // Bitwise işlemin sonucunun 0 olması:
-            //> “Bu collider’ın Mask değeri, diğer collider’ın Layer bitini içermiyor.”
-            if (otherComp == this || !(Mask & otherComp->Layer) || !otherComp->IsCollisionEnabled() || !otherComp->Owner)
-                return;
-
-            //The overlap comes back from the same test that decided whether there is one, so the impact point
-            //below is four arithmetic ops on a rect already in hand instead of a second full intersection
-            ETG::FloatRect overlap;
-            if (!CheckCollision(otherComp, overlap)) return;
-
-            const bool wasTouchingLastFrame = CurrentCollisions.Contains(otherComp);
-
-            StillColliding.Add(otherComp);
-
-            const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, CentreOf(overlap));
-
-            if (!wasTouchingLastFrame)
-                OnCollisionEnter.Broadcast(eventData);
-            else
-                OnCollisionStay.Broadcast(eventData);
-
-            //No exit is raised here on purpose. The sweep below already reports everything that left
-            //CurrentCollisions and it catches strictly more: a component that stopped intersecting, but equally
-            //one that was skipped this frame because it disabled its collision or fell out of the Mask. Raising
-            //it in both places is how this used to fire OnCollisionExit twice for a single separation
-        });
-
-        // Who were we touching last frame but are not any more?
-        CurrentCollisions.ForEach([this](CollisionComponent* otherComp)
-        {
-            if (!otherComp->Owner || StillColliding.Contains(otherComp)) return;
-
-            // The two no longer overlap, so there is no impact point to report
-            const CollisionEventData eventData(Owner, otherComp->Owner, otherComp, ETG::Vector2f{0, 0});
-            OnCollisionExit.Broadcast(eventData);
-        });
-
-        // This frame's contacts become the record to compare against next frame. A swap and not a copy: the two
-        // lists hand buffers back and forth, so neither allocates again after the first few frames
-        CurrentCollisions.SwapWith(StillColliding);
     }
 
     void CollisionComponent::UpdateBounds()
@@ -135,7 +76,7 @@ namespace ETG
         ETG::FloatRect intersection;
 
         if (ExpandedBounds.intersects(other->GetCollisionBounds(), intersection))
-            return CentreOf(intersection);
+            return intersection.getCenter();
 
         return {0, 0};
     }
@@ -203,11 +144,6 @@ namespace ETG
         );
 
         window.drawLine(selfCenter, otherCenter, ETG::Color::Red);
-    }
-
-    SafeRegistry<CollisionComponent>& CollisionComponent::GetRegistry()
-    {
-        return AllCollisionRegistries;
     }
 
     //TODO: I am not sure if I should remove this function. For now let's put it bottom of this class to ignore easier 

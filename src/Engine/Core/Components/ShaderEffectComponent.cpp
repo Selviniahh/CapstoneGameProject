@@ -55,5 +55,10 @@ namespace ETG
     {
         if (!Owner) return;
         Owner->SetEffect(effect, params);
+
+        //The owner may well have published its draw properties for this frame already: a flash is started by the
+        //collision pass, and that runs once for everybody after every Update has finished. See RepublishEffect -
+        //without it the flash would land one frame late, and a sub-frame flash would never be drawn at all
+        Owner->RepublishEffect();
     }
 }

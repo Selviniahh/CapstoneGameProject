@@ -56,7 +56,6 @@ void ETG::PlatinumBullets::Initialize()
 void ETG::PlatinumBullets::Update()
 {
     PassiveItemBase::Update();
-    CollisionComp->Update();
 
     //Check if the FireRateIncreasePerc has changed (with only through UI).
     //NOTE: gated on IsPickedUp. Without it, dragging the percentage in the editor buffs a gun the player has not

@@ -128,6 +128,8 @@ set(CORE_SOURCES
         src/Engine/Core/Components/ShaderEffectComponent.h
         src/Engine/Core/Components/TimerComponent.cpp
         src/Engine/Core/Components/TimerComponent.h
+        src/Engine/Core/Systems/CollisionSystem.cpp
+        src/Engine/Core/Systems/CollisionSystem.h
         src/Engine/Core/Events/EventDelegate.h
         src/Engine/Core/StateMachine/StateNode.h
         src/Engine/Core/StateMachine/HierarchicalStateMachine.h

@@ -18,11 +18,16 @@ namespace ETG
     //    in the same tick it started and never reach the screen. MinFramesShown keeps it alive for at
     //    least one drawn frame, which is what a "one frame flash" means in the first place.
     //
-    //Where the owner ticks this matters, and there is one right answer: BEFORE whatever can trigger a
-    //flash (the collision pass) and therefore before the owner publishes its draw properties at the end
-    //of its own Update. A flash started this tick is then drawn this tick, and only starts being aged
-    //on the next one. Ticking it last would let a sub-frame flash be started and expire between two
-    //draws. EnemyBase::Update is the worked example.
+    //Where the owner ticks this matters: it ages a running flash, so it has to run BEFORE anything that
+    //can start one. The trigger is the collision pass, and that is CollisionSystem::Update - one sweep
+    //for every collider, after every object's Update has finished - so ticking this anywhere inside the
+    //owner's own Update satisfies that. EnemyBase::Update ticks it first.
+    //
+    //The other half of the rule used to be "and therefore before the owner publishes its draw properties",
+    //which no longer holds on its own: the flash is now started after every object has published. Play
+    //deals with it by pushing the effect into the already-published properties itself, through
+    //GameObjectBase::RepublishEffect. A flash started this tick is still drawn this tick, and only starts
+    //being aged on the next one - which is what MinFramesShown below is counting on.
     class ShaderEffectComponent : public ComponentBase
     {
     public:

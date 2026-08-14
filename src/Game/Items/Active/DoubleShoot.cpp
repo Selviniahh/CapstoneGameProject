@@ -41,7 +41,6 @@ void ETG::DoubleShoot::Initialize()
 void ETG::DoubleShoot::Update()
 {
     ActiveItemBase::Update();
-    CollisionComp->Update();
 
     //Watching the state LEAVE Consuming rather than testing for Cooldown: the removal has to happen exactly once,
     //and the item stays in Cooldown long after the effect ended

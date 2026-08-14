@@ -102,14 +102,14 @@ namespace ETG
 
     void EnemyBase::Update()
     {
-        //Ahead of the collision pass on purpose. A flash started by a bullet that lands below has to
-        //survive until this object's draw properties are published at the end of this same tick, so it
-        //is only aged from the tick after the one it started in
+        //Ahead of everything else on purpose. A flash started by a bullet that landed in the collision pass -
+        //which is CollisionSystem's, at the end of the frame, after every object's Update has run - has to
+        //survive until this object's draw properties are published, so it is only aged from the tick after the
+        //one it started in
         ShaderEffectComp->Update();
 
         MoveComp->Update();
         HealthComp->Update();
-        CollisionComp->Update();
 
         GameObjectBase::Update();
     }

@@ -8,6 +8,7 @@ namespace ETG
 {
     class GameObjectBase;
     class CollisionEventData;
+    class CollisionSystem;
 
     //An object sits on exactly one layer and carries a Mask of the layers it wants to hear about. Everything else
     //is rejected before the bounds are ever touched, which is what keeps a screen full of bullets from testing
@@ -77,6 +78,11 @@ namespace ETG
         ~CollisionComponent() override;
 
         void Initialize() override;
+
+        //Deliberately does nothing. Collision is not something a collider does to the world on its own schedule
+        //any more - CollisionSystem::Update resolves every collider at once, from GameManager::Update, after
+        //everything has finished moving. Left in place, and left empty, so that an owner still calling this out of
+        //habit is harmless rather than a second sweep running at the wrong moment
         void Update() override;
 
         //Which layer this object is. Exactly one bit
@@ -108,12 +114,17 @@ namespace ETG
         void Visualize(ETG::RenderWindow& window);
 
         //Get collision registry (all active collision components)
-        static SafeRegistry<CollisionComponent>& GetRegistry();
+        static SafeRegistry<CollisionComponent>& GetRegistry() {return AllCollisionRegistries;}
 
         void SetCollisionEnabled(bool enabled);
         bool IsCollisionEnabled() const { return CollisionEnabled; }
 
     private:
+        //The sweep lives there now, and it needs the two contact lists, the bounds and the narrow-phase test that
+        //used to be this class's own business. A friend rather than a set of public getters on purpose: this is
+        //not state anybody else has any reason to touch, and naming the one exception says so
+        friend class CollisionSystem;
+
         //Cache the owner's bounds + radius
         ETG::FloatRect ExpandedBounds;
 

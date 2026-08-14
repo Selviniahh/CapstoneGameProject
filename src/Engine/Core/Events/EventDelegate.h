@@ -10,20 +10,18 @@ namespace ETG
     class EventDelegate
     {
     public:
-        using Callback = std::function<void(Args...)>;
-        using ListenerHandle = size_t;
-        constexpr static ListenerHandle InvalidHandle = -1;
+        constexpr static size_t InvalidHandle = -1;
 
         // Add a listener and return a handle
-        ListenerHandle AddListener(Callback callBack)
+        size_t AddListener(std::function<void(Args...)> callBack)
         {
-            ListenerHandle handle = nextHandle++;
+            size_t handle = nextHandle++;
             Listeners.emplace(handle, std::move(callBack));
             return handle;
         }
 
         // Remove a specific listener using its handle
-        void RemoveListener(ListenerHandle handle)
+        void RemoveListener(size_t handle)
         {
             Listeners.erase(handle);
         }
@@ -44,7 +42,7 @@ namespace ETG
         }
 
     private:
-        std::map<ListenerHandle, Callback> Listeners;
-        ListenerHandle nextHandle = 0;
+        std::map<size_t, std::function<void(Args...)>> Listeners;
+        size_t nextHandle = 0;
     };
 }

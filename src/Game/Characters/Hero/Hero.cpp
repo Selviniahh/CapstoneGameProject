@@ -127,7 +127,6 @@ ETG::HeroMoveComp* ETG::Hero::GetMoveComp() const
 
 void ETG::Hero::UpdateComponents()
 {
-    CollisionComp->Update();
     InputComp->Update(*this);
     MoveComp->Update();
     HealthComp->Update();

@@ -143,6 +143,24 @@ namespace ETG
             EffectParams = params;
         }
 
+        //Pushes the current effect into draw properties that were already published this frame.
+        //
+        //Every other field is copied across once per frame, in ComputeDrawProperties, from inside the owner's own
+        //Update - which is fine for anything the owner decides for itself. The effect is not always one of those:
+        //a hit flash is started by the collision pass, and collision runs after every object's Update has finished
+        //(see CollisionSystem). Without this, an effect switched on by a collision would miss the draw it belongs
+        //to and only appear on the following frame - and a flash shorter than a frame would be aged out before it
+        //was ever drawn, which is the exact case ShaderEffectComponent::MinFramesShown exists to rule out.
+        //
+        //Deliberately only the two effect fields, not a full ComputeDrawProperties: republishing everything would
+        //also pull in a position the object has moved to since it published, and objects do not agree on where in
+        //their Update they publish
+        void RepublishEffect()
+        {
+            DrawProps.Effect = Effect;
+            DrawProps.EffectParams = EffectParams;
+        }
+
         [[nodiscard]] const ETG::Vector2f& GetRelativePosition() const { return RelativePos; }
         [[nodiscard]] const ETG::Vector2f& GetRelativeScale() const { return RelativeScale; }
         [[nodiscard]] const ETG::Vector2f& GetRelativeOrigin() const { return RelativeOrigin; }

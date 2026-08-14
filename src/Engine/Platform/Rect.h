@@ -27,6 +27,13 @@ namespace ETG
         [[nodiscard]] constexpr Vector2<T> getPosition() const { return {left, top}; }
         [[nodiscard]] constexpr Vector2<T> getSize() const { return {width, height}; }
 
+        //Middle of the rectangle. Collision reports an impact point as the centre of the region the two bounds
+        //share, and intersects() hands that region back as a rect, so this is the second half of that answer
+        [[nodiscard]] constexpr Vector2<T> getCenter() const
+        {
+            return {static_cast<T>(left + width / 2), static_cast<T>(top + height / 2)};
+        }
+
         constexpr bool operator==(const Rect& rhs) const
         {
             return left == rhs.left && top == rhs.top && width == rhs.width && height == rhs.height;

@@ -65,7 +65,6 @@ void ETG::ActiveItemBase::RequestUsage()
 void ETG::ActiveItemBase::Update()
 {
     GameObjectBase::Update();
-    CollisionComp->Update();
     
 
     //Just increment the corresponding timer normally first

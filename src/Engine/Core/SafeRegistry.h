@@ -29,11 +29,22 @@ namespace ETG
     //
     //A counter rather than a flag, because walks nest: an event fired from inside one walk can start another.
     //Only the outermost one leaving means it is safe to move things again.
+    
+ // - Sadece elemanın alanları değişiyor → normal for
+ // - Container hiç değişmiyor → normal for
+ // - Başka, ilgisiz bir container değişiyor → normal for
+ // - Dolaşılan container’a eleman ekleniyor/siliniyor → SafeRegistry
+ // - Callback/event çağrılıyor ve ne yapabileceği belirsiz → SafeRegistry kullanmak mantıklı
+ // - Nesneler kendilerini destructor’da registry’den çıkarıyorsa ve döngü sırasında yok
+ //   edilebiliyorsa → SafeRegistry
     template <typename T>
     class SafeRegistry
     {
     public:
-        void Add(T* item) { Items.push_back(item); }
+        void Add(T* item)
+        {
+            Items.push_back(item);
+        }
 
         void Remove(T* item)
         {
@@ -76,9 +87,11 @@ namespace ETG
         //Inside body you may remove from this list, add to it, or destroy something that removes itself - all of
         //it is safe. What you may not do is expect a removal to take effect immediately: it becomes a blank now
         //and is really gone once the walk ends
+        
         template <typename Body>
         void ForEach(Body&& body)
         {
+            //Birşey nullptr sa SweepBlanks den temizle ki sonra iterator bir başladığında bozulmasın
             SweepBlanks();
 
             const WalkScope scope;
@@ -97,12 +110,13 @@ namespace ETG
             }
         }
 
-        static bool WalkInProgress() { return WalkDepth > 0; }
+        static bool WalkInProgress() { return WalkDepth > 0; } //walkin dolaşım demek 
 
     private:
         //Only ever called with no walk running, so the erase is free to move things
         void SweepBlanks()
         {
+            //Sadece Blank varsa devam et ve nullptr olanları kaldır 
             if (!HasBlanks || WalkInProgress()) return;
 
             std::erase(Items, nullptr);
@@ -125,6 +139,7 @@ namespace ETG
         std::vector<T*> Items;
 
         //Whether this list is carrying blanks left by a removal during a walk
+        //blank, listeden bir eleman silindiğinde onun yerinde kalan boş yuva/boşluk
         bool HasBlanks = false;
 
         //Shared by every SafeRegistry<T>. See WHY THE DEPTH IS SHARED above

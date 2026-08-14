@@ -8,6 +8,7 @@
 #include "../../Engine/Managers/RenderContext.h"
 #include "../../Engine/Managers/Time.h"
 #include "../../Engine/Core/Components/CollisionComponent.h"
+#include "../../Engine/Core/Systems/CollisionSystem.h"
 #include "../../Engine/Core/Scene/Scene.h"
 #include "../../Engine/Editor/DebugPointViz.h"
 #include "../UI/UserInterface.h"
@@ -96,6 +97,12 @@ void ETG::GameManager::Update()
     for (const auto& obj : WorldObjects)
         obj->Update();
 
+    //Every collider has finished moving by now, so this is the first moment in the frame where the world holds one
+    //consistent set of positions. Collision is resolved once, here, for everybody at the same instant - which is
+    //what stops the answer depending on where in the loop above each object happened to sit. See CollisionSystem
+    CollisionSystem::Update();
+
+    //After collision, because the HUD reads health and collision is what spends it
     if (UI) UI->Update();
 
     //Deallocate everything marked with MarkForDestroy during this frame

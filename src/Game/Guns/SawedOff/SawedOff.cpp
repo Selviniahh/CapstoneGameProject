@@ -67,7 +67,6 @@ void ETG::SawedOff::Update()
 {
     MuzzleFlash->Deactivate();
     MuzzleFlash->IsVisible = false;
-    CollisionComp->Update();
     ArrowComp->Update();
     GunBase::Update();
 }
