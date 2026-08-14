@@ -149,15 +149,6 @@ void ETG::BulletMan::HandleHitForce(const ProjectileBase* projectile)
 
 void ETG::BulletMan::Draw()
 {
-    if (!IsVisible) return;
     EnemyBase::Draw();
-    SpriteBatch::Draw(GetDrawProperties());
-    if (CollisionComp) CollisionComp->Visualize(*RenderContext::Window);
-
-    //Draw every equipped gun (the holstered ones only draw their projectiles), same as the hero
-    for (GunBase* gun : EquippedGuns)
-        if (gun) gun->Draw();
-
-    Hand->Draw();
-    OffHand->Draw();
+    
 }

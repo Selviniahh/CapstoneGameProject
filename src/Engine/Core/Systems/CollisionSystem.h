@@ -2,6 +2,16 @@
 #include <vector>
 #include "../../Platform/Vector2.h"
 
+// Eskiden her collider kendi taramasını sahibinin Update()'i içinden yapıyordu (CollisionComponent::Update → tüm registry'yi gez,
+// herkesin bounds'unu oku, kendi event'lerini at). Sorun şu ki nesneler aynı anda hareket etmiyor — her biri kendi Update'inde hareket ediyor.
+// Üstelik kendi içlerinde bile sıraları tutarlı değildi: Yani tek bir çift için bir taraf çakışmayı görürken diğeri aynı frame'de görmeyebiliyordu; sonuç kimin önce çalıştığına,
+// o da nesnelerin spawn sırasına bağlıydı. Kimsenin verdiği bir karar değildi.
+
+// Çözüm: frame'i ikiye bölmek
+//
+// GameManager::Update'te önce herkes hareket eder, sonra CollisionSystem::Update() bir kez çalışır. Yaptığı her test pozisyonları aynı tek andan okur —
+// kimse "erken" ya da "geç" olamaz, çünkü artık kimse kendi adına test yapmıyor.
+
 namespace ETG
 {
     class CollisionComponent;

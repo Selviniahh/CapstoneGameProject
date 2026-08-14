@@ -17,7 +17,6 @@ namespace ETG
     EnemyBase::EnemyBase() : Hero(Hero::Get())
     {
         CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
-        CollisionComp->CollisionRadius = 4.f;
         CollisionComp->CollisionVisualizationColor = ETG::Color::Magenta;
 
         //Only projectiles. The hero watches for us rather than the other way round, and items waiting on the
@@ -47,12 +46,22 @@ namespace ETG
 
         ShaderEffectComp = ETG::CreateGameObjectAttached<ShaderEffectComponent>(this);
 
-        EnemyBase::Initialize();
+        //Not Initialize(): that one runs again from every concrete enemy's constructor, and binding from there
+        //registered a second copy of every listener. A constructor runs exactly once per object, so binding here
+        //cannot be duplicated no matter how many times Initialize is called
+        BindEvents();
     }
 
     EnemyBase::~EnemyBase() = default;
 
+    //Deliberately empty. Everything that used to live here is event binding, which is now the constructor's job -
+    //see BindEvents. What belongs here is per-type tuning that is safe to re-run, the way BulletMan::Initialize
+    //sets its movement numbers
     void EnemyBase::Initialize()
+    {
+    }
+
+    void EnemyBase::BindEvents()
     {
         CollisionComp->OnCollisionEnter.AddListener([this](const CollisionEventData& eventData)
         {
@@ -75,17 +84,21 @@ namespace ETG
             // If dead, ignore the damage
             if (GetState() == EnemyStateEnum::Die) return;
 
-            // Set enemy state to die
-            SetState(EnemyStateEnum::Die);
-            Depth = std::numeric_limits<float>::max(); //set depth to max value so that it will be drawn bottom of everything
-            const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
-            MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
-
-            //Clear the delegates to not let any interaction
+            //Cleared before the force below and not after it, which is the order this used to be in: ApplyForce
+            //broadcasts OnForceStart, whose listener sets the state to Hit, so the death force was undoing the
+            //SetState(Die) two lines above it and the guard at the top of this listener had nothing to catch
             MoveComp->OnForceStart.Clear();
             MoveComp->OnForceEnd.Clear();
             HealthComp->OnDamageTaken.Clear();
             CollisionComp->SetCollisionEnabled(false);
+
+            // Set enemy state to die
+            SetState(EnemyStateEnum::Die);
+            Depth = std::numeric_limits<float>::max(); //set depth to max value so that it will be drawn bottom of everything
+            const ETG::Vector2f knockbackDir = Math::Normalize(Position - instigator->GetPosition());
+            std::cout << "During Death: " << knockbackDir.x << " " << knockbackDir.y << std::endl;
+
+            MoveComp->ApplyForce(knockbackDir, KnockBackMagnitudeForDeath, KnockBackDurationForDeath);
         });
 
         //In the future, enemy will take damage from explosive environment %
@@ -96,7 +109,8 @@ namespace ETG
             //what lets an automatic weapon land ten of these without them piling up
             ShaderEffectComp->PlayHitFlash();
 
-            if (KnockBackOnHit) HandleHitForce(instigator->As<ProjectileBase>());
+            if (KnockBackOnHit)
+                HandleHitForce(instigator->As<ProjectileBase>());
         });
     }
 
@@ -112,11 +126,6 @@ namespace ETG
         HealthComp->Update();
 
         GameObjectBase::Update();
-    }
-
-    void EnemyBase::Draw()
-    {
-        GameObjectBase::Draw();
     }
 
     void EnemyBase::SetState(const EnemyStateEnum& state)
@@ -140,13 +149,16 @@ namespace ETG
     }
 
     //Before calling this function, we already ensured that the projectile is not owned by any enemy
+
     void EnemyBase::HandleHitForce(const ProjectileBase* projectile)
     {
         const auto* projectileOwnerGun = projectile->Owner->As<GunBase>();
 
         // Check if this is a hero projectile
         // Calculate force direction (from projectile to enemy)
+        // "A'dan B'ye giden vektör" = B - A.
         const ETG::Vector2f forceDirection = Math::Normalize(this->Position - projectile->GetPosition());
+        std::cout << forceDirection.x << " " << forceDirection.y << std::endl;
 
         // Get force from projectile
         const float forceMagnitude = projectile->Force;
@@ -155,5 +167,22 @@ namespace ETG
         
         // Apply the force
         MoveComp->ApplyForce(forceDirection, forceMagnitude,  Gun->ForceDuration);
+    }
+
+    void EnemyBase::Draw()
+    {
+        GameObjectBase::Draw();
+        
+        if (!IsVisible) return;
+        
+        SpriteBatch::Draw(GetDrawProperties());
+        if (CollisionComp) CollisionComp->Visualize(*RenderContext::Window);
+
+        //Draw every equipped gun (the holstered ones only draw their projectiles), same as the hero
+        for (GunBase* gun : EquippedGuns)
+            if (gun) gun->Draw();
+
+        Hand->Draw();
+        OffHand->Draw();
     }
 }

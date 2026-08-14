@@ -94,7 +94,23 @@ namespace ETG
         uint32_t Mask = CollisionLayer::All;
 
         //Radius to expand collision box beyond the texture boundaries
-        float CollisionRadius = 1.0f;
+        float CollisionRadius = 0.0f;
+
+        //Bounds normally come off whatever the owner is drawing - its current animation frame, or its texture.
+        //That is the right answer for most things and wrong for the rest: a sprite carrying a lot of empty pixels
+        //around it, or artwork drawn much bigger than the part that should actually be hittable. Switching this on
+        //ignores the artwork entirely and uses ManualBoundsSize instead, centred on the owner's Position - which is
+        //the point its Origin is pinned to, so the box sits on the pivot no matter where the sprite ended up
+        //around it.
+        //
+        //CollisionRadius still expands the result, manual or not, because everything downstream expects the one
+        //pipeline. Set it to 0 if the numbers below are meant to be the final box. With ShowCollisionBounds on the
+        //white outline is what this produced and the coloured one is after the radius, so the two are visible apart
+        bool UseManualBounds = false;
+
+        //Full width and height of the manual box, not half extents. Only read while UseManualBounds is set, and
+        //clamped at zero on the way out - a negative size would be a box nothing can ever intersect
+        ETG::Vector2f ManualBoundsSize{16.f, 16.f};
 
         //Whether to show collision bounds for debugging
         bool ShowCollisionBounds = false;
@@ -146,6 +162,11 @@ namespace ETG
         bool DrawCollisionLineBetweenCenters{};
         bool DrawImpactPoint{true};
 
+        //The box before CollisionRadius is applied: the owner's drawn bounds, or the manual one when
+        //UseManualBounds is set. Both places that used to ask Owner->GetBounds() directly go through here, so the
+        //visualiser cannot end up drawing a different rectangle from the one the sweep is testing
+        [[nodiscard]] ETG::FloatRect GetBaseBounds() const;
+
         //In Update before starting collision check, update the Owner's bounds including CollisionRadius
         void UpdateBounds();
 
@@ -160,7 +181,7 @@ namespace ETG
         ETG::Vector2f CalculateImpactPoint(const CollisionComponent* other) const;
         void DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const;
 
-        BOOST_DESCRIBE_CLASS(CollisionComponent, (ComponentBase), (CollisionEnabled, ShowCollisionBounds, CollisionRadius,DrawImpactPoint,DrawCollisionLineBetweenCenters, CollisionVisualizationColor), (), ())
+        BOOST_DESCRIBE_CLASS(CollisionComponent, (ComponentBase), (CollisionEnabled, ShowCollisionBounds, CollisionRadius, UseManualBounds, ManualBoundsSize, DrawImpactPoint,DrawCollisionLineBetweenCenters, CollisionVisualizationColor), (), ())
     };
 
     struct CollisionEventData

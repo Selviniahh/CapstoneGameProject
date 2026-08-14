@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <imgui.h>
 #include "CollisionComponent.h"
 #include "../../Core/GameObjectBase.h"
@@ -45,12 +46,30 @@ namespace ETG
     {
     }
 
+    ETG::FloatRect CollisionComponent::GetBaseBounds() const
+    {
+        if (!Owner) return {};
+
+        if (!UseManualBounds) return Owner->GetBounds();
+
+        //Position is where the owner's Origin lands, so centring on it puts the box on the pivot rather than on
+        //wherever the artwork happens to sit around that pivot - which is the whole reason to type a size by hand
+        const ETG::Vector2f& center = Owner->GetPosition();
+
+        //Clamped because a negative size reads as inverted to Rect::intersects, and an inverted rect silently
+        //never collides. Zero is the same "never collides" but at least it draws as nothing rather than as junk
+        const float width = std::max(ManualBoundsSize.x, 0.f);
+        const float height = std::max(ManualBoundsSize.y, 0.f);
+
+        return {center.x - width / 2.f, center.y - height / 2.f, width, height};
+    }
+
     void CollisionComponent::UpdateBounds()
     {
         if (!Owner) return;
 
-        // Get basic bounds from owner that not expanded yet. 
-        const ETG::FloatRect baseBounds = Owner->GetBounds();
+        // Get basic bounds from owner that not expanded yet.
+        const ETG::FloatRect baseBounds = GetBaseBounds();
 
         // Expand by radius
         ExpandedBounds = ETG::FloatRect(
@@ -85,8 +104,10 @@ namespace ETG
     {
         if (!ShowCollisionBounds || !CollisionEnabled || !Owner || !Owner->IsVisible) return;
 
-        // Draw the original bounds and expanded bounds
-        ETG::FloatRect baseBounds = Owner->GetBounds();
+        // Draw the original bounds and expanded bounds. The base one comes from GetBaseBounds and not from the
+        // owner, so that with UseManualBounds on the white outline is the hand typed box rather than the artwork
+        // it is standing in for
+        const ETG::FloatRect baseBounds = GetBaseBounds();
 
         // Original bounds in white
         ETG::RectangleShape baseRect;

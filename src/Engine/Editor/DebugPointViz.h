@@ -53,8 +53,9 @@ namespace ETG
             const char* Label;
         };
 
-        // A member whose name ends in "Velocity" is a direction and a speed, not a place. Resolving one as a
-        // point would drop a cross wherever the vector happens to reach, so no toggle is offered for it.
+        // A member whose name ends in "Velocity" is a direction and a speed, and one ending in "Size" is a width
+        // and a height. Neither is a place. Resolving one as a point would drop a cross wherever the vector
+        // happens to reach, so no toggle is offered for either.
         static bool IsPlaceLike(const char* label);
 
         // Same member name always yields the same color, so a cross keeps its identity across sessions and across

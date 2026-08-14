@@ -42,7 +42,11 @@ namespace ETG
 
     bool DebugPointViz::IsPlaceLike(const char* label)
     {
-        return !std::string_view{label}.ends_with("Velocity");
+        const std::string_view name{label};
+
+        //A direction and a speed, or a width and a height. Neither names a place, and resolving one as a point
+        //drops a cross wherever the vector happens to reach - measured from an origin that means nothing to it
+        return !name.ends_with("Velocity") && !name.ends_with("Size");
     }
 
     void DebugPointViz::Toggle(const char* label, ETG::Vector2f& value, GameObjectBase* owner)
