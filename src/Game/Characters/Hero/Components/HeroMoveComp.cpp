@@ -54,7 +54,12 @@ namespace ETG
         //Use bell curve to get velocity
         const ETG::Vector2f dashVelocity = Math::ApplyBellCurveForce(dashProgress, DashDirection, DashAmount, Time::FrameTick);
 
-        HeroPtr->SetPosition(HeroPtr->GetPosition() + dashVelocity);
+        //Yurumeyle ayni kapidan geciyor, ve sebebi soylenmeye deger: dash, hero'nun yaptigi en hizli sey; yani
+        //"pozisyona direkt ekle" deseydik, kimse fark etmeden onu duvarin ucte birine kadar sokabilecek tek
+        //hareket bu olurdu. Duvara takildiginda ise dash'in kalanini duvar boyunca kayarak geciriyor
+        ETG::Vector2f position = HeroPtr->GetPosition();
+        MoveAndSlide(position, dashVelocity);
+        HeroPtr->SetPosition(position);
 
         //Override normal velocity during dash
         Velocity = {0, 0};

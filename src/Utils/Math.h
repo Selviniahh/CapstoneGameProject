@@ -181,6 +181,38 @@ public:
         return RadiansToDegrees(angleRadians);
     }
 
+    //NOTE:------------------------Projeksiyon (izdusum)-----------------------------------------------
+
+    //Dot product (nokta carpimi). Geometrik olarak |a||b|cos(aci), ama akilda tutulmasi gereken kismi
+    //ISARETI: ikisi ayni yone bakiyorsa pozitif, TAM DIK ise sifir, ters yone bakiyorsa negatif.
+    //Asagidaki her sey bu tek gercegin uzerine kurulu
+    static float Dot(const ETG::Vector2f& a, const ETG::Vector2f& b)
+    {
+        return a.x * b.x + a.y * b.y;
+    }
+
+    //v_kayma = v - (v . A)A       (A = yuzeyin birim normali)
+    //
+    //A duvarin birim normali, yani duvardan disari dogru bakan yon. (v . A) ise v'nin ne kadarinin o normal
+    //boyunca gittigini soyler; baska bir deyisle hareketin ne kadari duvarin ICINE giriyor (negatif), ne kadari
+    //duvardan uzaklasiyor (pozitif). Bu skaleri tekrar A ile carpinca o kisim yeniden vektor haline gelir,
+    //cikarinca da v'den tam olarak o kadari silinir. Geriye kalan sey artik ne duvarin icine ne de disina
+    //bakabilir - sadece duvar BOYUNCA gidebilir. Iste o artik kisim kaymanin ta kendisi.
+    //
+    //  A = (0, -1)  (ustunde bir duvar var, normali sana dogru asagi bakiyor)     v = (100, -140)
+    //  v . A      = 140                -> hareketin 140'i yukari, duvarin icine gidiyor
+    //  (v . A)A   = (0, -140)
+    //  v - (v.A)A = (100, 0)           -> yanlamasina giden 100 kaliyor, yukari giden 140 siliniyor
+    //
+    //A'nin uzunlugu 1 OLMAK ZORUNDA. Formul A.A == 1 varsayimina dayaniyor; daha uzun bir vektor verirsen
+    //olandan fazlasini cikarir ve sonuc duvar boyunca degil, duvardan disari bakar hale gelir. Ayni anda iki
+    //duvar (yani kose) demek, her biri tek birim normalle IKI AYRI cagri demek - asla ikisini toplayip tek
+    //cagri degil
+    static ETG::Vector2f SlideAlongSurface(const ETG::Vector2f& velocity, const ETG::Vector2f& surfaceNormal)
+    {
+        return velocity - surfaceNormal * Dot(velocity, surfaceNormal);
+    }
+
     //-----------------------------Transformations-----------------------------------------------------
 
     [[nodiscard]] static ETG::Vector2f RotateVector(const float rotation, const ETG::Vector2f scale, const ETG::Vector2f& offset)

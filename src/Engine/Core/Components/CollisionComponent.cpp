@@ -24,7 +24,7 @@ namespace ETG
         //which matters here because this destructor often runs from inside somebody else's walk
         AllCollisionRegistries.ForEach([this](CollisionComponent* component)
         {
-            component->CurrentCollisions.Remove(this);
+            component->PrevFrameCollisions.Remove(this);
             component->StillColliding.Remove(this);
         });
 
@@ -39,12 +39,7 @@ namespace ETG
         UpdateBounds();
     }
 
-    //Empty on purpose - see the declaration. The sweep that used to live here is CollisionSystem::Update, which
-    //runs once for every collider after the world has finished moving. A collider testing the world from inside
-    //its owner's Update is precisely the thing that made the result depend on who was updated first
-    void CollisionComponent::Update()
-    {
-    }
+    
 
     ETG::FloatRect CollisionComponent::GetBaseBounds() const
     {
@@ -128,7 +123,7 @@ namespace ETG
         window.draw(expandedRect);
 
         // Visualize current collisions
-        CurrentCollisions.ForEach([this, &window](const CollisionComponent* otherComp)
+        PrevFrameCollisions.ForEach([this, &window](const CollisionComponent* otherComp)
         {
             if (!otherComp->Owner) return;
 
@@ -179,7 +174,7 @@ namespace ETG
         {
             // Notify exit events for all current collisions. Unlike Update's sweep the two objects are still
             // overlapping here - we are switching off, not moving apart - so there is a real impact point to give
-            CurrentCollisions.ForEach([this](CollisionComponent* otherComp)
+            PrevFrameCollisions.ForEach([this](CollisionComponent* otherComp)
             {
                 if (!otherComp->Owner) return;
 
@@ -187,7 +182,7 @@ namespace ETG
                 OnCollisionExit.Broadcast(eventData);
             });
 
-            CurrentCollisions.Clear();
+            PrevFrameCollisions.Clear();
         }
     }
 }

@@ -33,6 +33,7 @@
 #include "../Characters/Enemy/BulletMan/BulletMan.h"
 #include "../Characters/Enemy/BulletMan/Components/BulletManAnimComp.h"
 #include "Game/Items/Active/TakeNoDamage.h"
+#include "../Levels/Block.h"
 
 void ETG::RegisterGameTypes()
 {
@@ -116,4 +117,6 @@ void ETG::RegisterGameTypes()
     REGISTER_BASE_CLASS(EnemyMoveCompBase, BaseMoveComp);
     TypeRegistry::RegisterType<TakeNoDamage>();
     REGISTER_BASE_CLASS(TakeNoDamage, ActiveItemBase);
+    TypeRegistry::RegisterType<Block>();
+    REGISTER_BASE_CLASS(Block, GameObjectBase);
 }

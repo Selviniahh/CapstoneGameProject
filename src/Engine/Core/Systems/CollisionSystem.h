@@ -1,5 +1,7 @@
 #pragma once
+#include <cstdint>
 #include <vector>
+#include "../../Platform/Rect.h"
 #include "../../Platform/Vector2.h"
 
 // Eskiden her collider kendi taramasını sahibinin Update()'i içinden yapıyordu (CollisionComponent::Update → tüm registry'yi gez,
@@ -60,6 +62,43 @@ namespace ETG
         //scrub it already does of everybody's contact lists
         static void ForgetComponent(const CollisionComponent* component);
 
+        //<---------- KATI GEOMETRI: collision'in oteki yarisi ---------->
+        //
+        //Bu satirin ustundeki her sey collision'in RAPOR EDEN hali: frame bitti, su ikisi cakisti, al sana event,
+        //bununla ne yapilacagi da oyun kodunun isi. Merminin vucuda carpmasi icin dogru sekil bu - carpma
+        //gercekten oldu ve cevabi hasar, geometri degil.
+        //
+        //Ama duvar icin yanlis sekil. Duvarin cevabi "o cakisma zaten hic yasanmamaliydi" olmali; event'in bunu
+        //soyleyebilecegi ana geldigimizde ise mover coktan duvarin icinde duruyor: pozisyon yazilmis, draw
+        //properties o pozisyondan yayinlanmis, sonradan geri itmek de oyuncunun GOREBILECEGI bir duzeltme olur.
+        //Bu yuzden duvarlar frame'in oteki ucundan cozuluyor - mover daha nereye gidecegine karar verirken - ve
+        //cozme yontemi de gidecegi yolu kisaltmak.
+        struct SlideResult
+        {
+            //Govde gercekte ne kadar gidebildi. Onune hicbir sey cikmadiysa istenen delta'nin aynisi
+            ETG::Vector2f Delta{};
+
+            //Verilen velocity'nin, duvara giren kismi silinmis hali (Math::SlideAlongSurface ile). Bunu mover'a
+            //geri yaz: yazmazsan ivme her frame duvarin sildigi bileseni yeniden kurar, ve HAYATTA KALAN hiz -
+            //yani duvar boyunca giden - hicbir zaman maksimuma ulasamaz, cunku bosa harcanan yari hala ona
+            //karsi sayiliyor olur
+            ETG::Vector2f Velocity{};
+
+            //Hareketi durduran bir sey oldu mu
+            bool Blocked = false;
+        };
+
+        //`body`'nin kutusunu `delta` kadar hareket ettirir; Layer'i body->BlockingMask icinde gecen her collider
+        //bu hareketi durdurabilir.
+        //@delta: bu frame'de gitmek istenen yer değiştirme, genelde velocity delta time ile carpildigindan duvara degince delta X ve Y si  en fazla 1.5 civari oluyor 
+        //
+        //Bilerek bir faz degil, bir SORGU: mover'in kendi Update'inin icinden, her hareket icin bir kez cagriliyor;
+        //herkes icin frame'de bir kez degil. Ustteki bes fazin orada guvenli OLMAMA sebebi burada yok - bu fonksiyon
+        //sadece kati geometriyi okuyor ve hicbir event atmiyor, dolayisiyla ortasinda oyun kodu calismiyor ve
+        //kimsenin bagimli olabilecegi bir sira olusmuyor. Frame'in farkli anlarinda calisan iki mover, ayni
+        //duvarlardan ayni cevabi alir
+        static SlideResult MoveAndSlide(CollisionComponent* body, const ETG::Vector2f& delta, const ETG::Vector2f& velocity);
+
     private:
         //One side of one overlap: the event that Self is about to be told about. Masks may be one-way (a gun on
         //the floor watches for the hero, the hero does not watch for guns - see CollisionComponent.h), so a pair
@@ -71,7 +110,10 @@ namespace ETG
             ETG::Vector2f ImpactPoint;
         };
 
+        //Collision açık ve owner’ı bulunan bütün component’lar toplanır:
         static void CollectActive();
+
+        //Önce Mask/Layer ile kimlerin kontrol edileceği seçilir, sonra CheckCollision() çalışır; çakışma varsa Contacts listesine eklenir.
         static void DetectContacts();
         static void DispatchEnterAndStay();
         static void DispatchExits();
@@ -82,5 +124,15 @@ namespace ETG
         //rather than erased from, so an index a phase is holding never stops meaning what it meant
         static inline std::vector<CollisionComponent*> Active{};
         static inline std::vector<Contact> Contacts{};
+
+
+        //MoveAndSlide'in cizim tahtasi. Ustteki iki buffer'la ayni sebepten kapasitesi korunuyor: her mover'in
+        //her hareketinde yeniden dolduruluyor, dolayisiyla her seferinde yeni bir vector demek her karakter icin
+        //her frame bir allocation demek olurdu. Paylasimli, o yuzden sadece tek bir MoveAndSlide cagrisi boyunca
+        //gecerli - ki zaten omrunun tamami o kadar, cunku o fonksiyonun yaptigi hicbir sey bir digerini cagiramaz
+        static inline std::vector<ETG::FloatRect> Solids{};
+
+        //`solidMask` uzerindeki, bounds'u `area`'ya deger her collider'i Solids'e doldurur; `ignore` haric
+        static void CollectSolids(const ETG::FloatRect& area, uint32_t solidMask, const CollisionComponent* ignore);
     };
 }

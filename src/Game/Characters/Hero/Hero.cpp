@@ -48,13 +48,39 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     //Collision comp:
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
     CollisionComp->CollisionRadius = 1.f;
+    CollisionComp->Name = "Hero";
 
-    //Enemies for body contact, projectiles to be shot. Guns and items are absent on purpose: walking over one is
-    //picked up by that object's own listener, so nothing here would run
+    //Frame'ler 23x24, ama icine cizilmis rogue yaklasik 15x21 - her iki yanda dorder sutun bos piksel var.
+    //Yani sanattan alinan bounds her iki yonde dort piksel fazla genis, ve duvar soz konusu oldugunda bu
+    //gormezden gelinebilecek bir yuvarlama hatasi degil: hero, tasla arasinda GOZLE GORULUR bir bosluk birakarak
+    //duruyor. Elle yazilan kutu, cizildigi frame yerine govdenin kendisini temsil ediyor; UseManualBounds zaten
+    //tam olarak bu durum icin var. Iki sayi da editorde canli, yani his surukleyerek ayarlaniyor, rebuild ile degil.
+    //
+    //NOTE: bu kutu SADECE duvarlar icin degil, HER SEY icin gecerli - dusmanin sana degmek icin ulasmasi gereken
+    //ve merminin isabet etmek icin ulasmasi gereken kutu da bu. Onlar da bununla birazcik daraldi; ki bu ayni
+    //duzeltmenin parcasi: oncesinde dort piksellik hicligi vuruyorlardi
+    CollisionComp->UseManualBounds = true;
+    CollisionComp->ManualBoundsSize = {12.f, 18.f}; //CollisionRadius genislettikten sonra 14x20 - 16'lik tile'in altinda, yani tek hucrelik bosluktan gecilebiliyor
+
+    //Vucut temasi icin dusmanlar, vurulmak icin mermiler. Silahlar ve itemlar bilerek yok: uzerlerinden gecince
+    //alinmalari o objenin kendi listener'inin isi, dolayisiyla burada calisacak bir sey olmazdi
     CollisionComp->Layer = CollisionLayer::Hero;
     CollisionComp->Mask = CollisionLayer::Enemy | CollisionLayer::Projectile;
 
+    //Obstacle yukaridaki Mask'ta DEGIL, ve ikisinden hicbirine de ait degil: duvar, icine yurudukten sonra haber
+    //verilecek bir sey degil. Onun yerine burada isimlendiriliyor - hareket pasinin, yuruyus gerceklesmeden ONCE
+    //okudugu yerde
+    CollisionComp->BlockingMask = CollisionLayer::Obstacle;
+
     CollisionComp->SetCollisionEnabled(true);
+
+    //Bounds ilk collision pasinin sonunda degil, simdi hazir olsun - hareket sorgusu onlari frame'in ortasindan
+    //okuyor, ve ilk frame'de bu, pas hic calismadan onceki an demek
+    CollisionComp->Initialize();
+
+    //Ve isin oteki yarisi: mover'a, dunyanin durdurmasina izin verilen kutunun hangisi oldugu soylenmeli. Burada
+    //set ediliyor, HeroMoveComp'un constructor'inda degil; cunku o noktada collider henuz yok
+    MoveComp->BodyCollider = CollisionComp.get();
 
     //Hero's default gun is RogueSpecial. EquipGun files it in the inventory and points the reload UI at it
     EquipGun(RogueSpecial.get());

@@ -10,16 +10,31 @@ namespace ETG
     class CollisionEventData;
     class CollisionSystem;
 
-    //An object sits on exactly one layer and carries a Mask of the layers it wants to hear about. Everything else
-    //is rejected before the bounds are ever touched, which is what keeps a screen full of bullets from testing
-    //every bullet against every other one.
-    //
-    //The pairing is deliberately allowed to be one-way: a gun waiting on the floor watches for the hero, while
-    //the hero does not watch for guns, because picking it up is the gun's listener to run and nothing on the
-    //hero's side needs to know. The cost of that is the rule to remember - a listener for something your Mask
-    //does not include will never fire. Widen the Mask in the same commit that adds the listener
+ // - CollisionComponent: Her objenin collision ile ilgili verisini taşır.
+ // - CollisionSystem: Bütün collider’ları merkezi olarak kontrol eder ve sonucu üretir.
+//Yani component “Benim kutum, layer’ım ve maskem ne?” der; system ise “Kim kiminle çarpıştı ve hangi event çalışmalı?” sorusunu çözer.
     
-    //    CollisionComp->Mask = CollisionLayer::Enemy | CollisionLayer::Projectile; 
+  // Eskiden her obje kendi Update() fonksiyonunda collision kontrolü yapsaydı şu problem oluşurdu:
+  //
+  // 1. Hero hareket eder ve Enemy’nin eski pozisyonuna bakar.
+  // 2. Enemy daha sonra hareket eder ve Hero’nun yeni pozisyonuna bakar.
+  // 3. Aynı frame’de Hero “çarpışmadık”, Enemy “çarpıştık” diyebilir.
+  //
+  // Sonuç, objelerin update/spawn sırasına bağlı olurdu.
+  //
+  // GameManager'da tüm objeler'in Update'i çalışıyor ardından collision sistemi yalnızca bir kere çalışıyor:
+  //
+  // for (const auto& obj : WorldObjects)
+  //     obj->Update();
+  //
+  //   CollisionSystem::Update();
+  //
+  //   Böylece bütün collision testleri aynı andaki pozisyonları kullanıyor
+  // 
+    
+    
+    
+    //CollisionComp->Mask = CollisionLayer::Enemy | CollisionLayer::Projectile; 
     //dediğim zaman hem enemy hem projectile ile benim collisinım tepkiye girsin gerisi de girmesin diyoruz sağlamasını yapalım 
     
  //    Hero’nun ayarları:
@@ -55,8 +70,6 @@ namespace ETG
  //  sonucu 2 olur. Sıfır olmadığı için boolean olarak true kabul edilir.
  //    Sonucun 0 olmasi su anlama gelir: 
  //    > “Diğer objenin layer’ı benim maskemde yok; bu objeyi collision kontrolüne dahil etme.”
-    
-    
     namespace CollisionLayer
     {
         enum : uint32_t
@@ -66,6 +79,12 @@ namespace ETG
             Enemy = 1u << 1, //2
             Projectile = 1u << 2, //4
             Pickup = 1u << 3, //Guns and items lying in the room, waiting for someone to walk over them           //8
+
+            //Odanin kendisi: duvarlar ve levelin insa edildigi her sey. Kimsenin Mask'ina konulmamasi BILEREK
+            //boyle - duvar, olup bittikten sonra tepki verilecek bir event degil; zaten hicbir zaman icine
+            //giremedigin bir yer. Onun yerine BlockingMask'ta isimlendiriliyor, onu da hareket pasi okuyor
+            Obstacle = 1u << 4, //16
+
             Default = 1u << 31, //Whatever never named a layer. Paired with Mask = All it behaves as before       //2147483648
             All = ~0u, //4294967295u  //tüm bitler 1111111111111
         };
@@ -79,19 +98,22 @@ namespace ETG
 
         void Initialize() override;
 
-        //Deliberately does nothing. Collision is not something a collider does to the world on its own schedule
-        //any more - CollisionSystem::Update resolves every collider at once, from GameManager::Update, after
-        //everything has finished moving. Left in place, and left empty, so that an owner still calling this out of
-        //habit is harmless rather than a second sweep running at the wrong moment
-        void Update() override;
-
-        //Which layer this object is. Exactly one bit
+        // Objenin ne olduğunu söyler.
         uint32_t Layer = CollisionLayer::Default;
-
-        //Which layers this object wants to be told about. Defaults to everything so a component that never sets
-        //it keeps the old behaviour: slower, but never silently missing a collision
         
+        // Objenin hangi tür objeleri dinlediğini söyler.
         uint32_t Mask = CollisionLayer::All;
+
+        //Bu obje icin hangi layerlar KATI - yani en bastan icine girmesine izin verilmeyenler.
+        //Mask'tan farkli bir soru soruyor, fark da sorunun NE ZAMAN cevaplandiginda. Mask gecmis zaman: frame
+        //bitti, cakistik, al sana event. BlockingMask ise gelecek zaman: mover bu frame `delta` kadar yol
+        //gidecek, CollisionSystem::MoveAndSlide o yolu kisaltiyor ve cakisma hic yasanmiyor. Bu yuzden duvar
+        //hicbir event atmaz - rapor edilecek bir sey yok, cunku kimse icine girmedi.
+        //
+        //Varsayilan olarak bos. Yani hicbir sey yazmayan bir obje, bu ozellik hic yokmus gibi aynen eskisi gibi
+        //hareket etmeye devam eder. Buraya bir layer yazmak isin sadece yarisi: mover'in BaseMoveComp'una da
+        //dunyanin durduracagi kutunun collider'i verilmeli (BaseMoveComp::BodyCollider)
+        uint32_t BlockingMask = CollisionLayer::None;
 
         //Radius to expand collision box beyond the texture boundaries
         float CollisionRadius = 0.0f;
@@ -117,6 +139,8 @@ namespace ETG
 
         //Color for collision visualiztion
         ETG::Color CollisionVisualizationColor = ETG::Color::Yellow;
+        
+        std::string Name{}; 
 
         //Get the current collision bounds (including radius)
         ETG::FloatRect GetCollisionBounds() const {return ExpandedBounds;};
@@ -130,7 +154,7 @@ namespace ETG
         void Visualize(ETG::RenderWindow& window);
 
         //Get collision registry (all active collision components)
-        static SafeRegistry<CollisionComponent>& GetRegistry() {return AllCollisionRegistries;}
+        static SafeRegistry<CollisionComponent>& GetAllCollRegistries() {return AllCollisionRegistries;}
 
         void SetCollisionEnabled(bool enabled);
         bool IsCollisionEnabled() const { return CollisionEnabled; }
@@ -144,10 +168,10 @@ namespace ETG
         //Cache the owner's bounds + radius
         ETG::FloatRect ExpandedBounds;
 
-        //Hold which objects we are currently colliding with. A list, not a map: an object touches 0-3 things at
-        //once, and at that size a linear scan beats hashing. The two lists trade buffers through SwapWith in
-        //Update, so after the first few frames neither one allocates again
-        SafeRegistry<CollisionComponent> CurrentCollisions;
+        //collision’ın devam mı ettiğini yoksa bittiğini mi anlamak için kullanılacak.
+        //- DispatchExits: Geçen frame vardı ama bu frame yok mu (Exit)? diye bakacak
+        //
+        SafeRegistry<CollisionComponent> PrevFrameCollisions;
 
         //Scratch list Update fills each frame, then swaps into CurrentCollisions. A member and not a function
         //local so its capacity survives the frame; a member and not a static because Broadcast runs inside the

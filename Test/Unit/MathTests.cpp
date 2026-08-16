@@ -70,6 +70,51 @@ namespace
         EXPECT_FLOAT_EQ(mirrored.y, 5.f);
     }
 
+    TEST(MathProjection, DotIsSignedByTheAngleBetween)
+    {
+        EXPECT_FLOAT_EQ(Math::Dot({1.f, 0.f}, {1.f, 0.f}), 1.f); //ayni yon
+        EXPECT_FLOAT_EQ(Math::Dot({1.f, 0.f}, {0.f, 1.f}), 0.f); //dik - kaymanin butun temeli bu
+        EXPECT_FLOAT_EQ(Math::Dot({1.f, 0.f}, {-1.f, 0.f}), -1.f); //ters yon
+        EXPECT_FLOAT_EQ(Math::Dot({3.f, 4.f}, {2.f, 1.f}), 10.f);
+    }
+
+    //v_kayma = v - (v . A)A. Normali sana dogru asagi bakan bir duvarin icine yukari yurumek: yukari giden yari
+    //siliniyor, yana giden yariya dokunulmuyor. Duvar boyunca kosmak dedigimiz sey bundan ibaret
+    TEST(MathProjection, SlideKeepsTheTangentAndDropsTheNormal)
+    {
+        const ETG::Vector2f slid = Math::SlideAlongSurface({100.f, -140.f}, {0.f, -1.f});
+
+        EXPECT_FLOAT_EQ(slid.x, 100.f);
+        EXPECT_FLOAT_EQ(slid.y, 0.f);
+    }
+
+    //Yuzeyin icine hic yonelmemis bir hareketin kaybedecegi sey yoktur - yuzey boyunca hangi yone gidiyor olursa olsun
+    TEST(MathProjection, SlideLeavesMotionAlongTheSurfaceAlone)
+    {
+        const ETG::Vector2f alongLeft = Math::SlideAlongSurface({-70.f, 0.f}, {0.f, -1.f});
+        EXPECT_FLOAT_EQ(alongLeft.x, -70.f);
+        EXPECT_FLOAT_EQ(alongLeft.y, 0.f);
+
+        //Duvara dosdogru girmekten ise geriye hicbir sey kalmaz - tegeti olmayan bir kayma, durmaktir
+        const ETG::Vector2f headOn = Math::SlideAlongSurface({0.f, -200.f}, {0.f, -1.f});
+        EXPECT_FLOAT_EQ(headOn.x, 0.f);
+        EXPECT_FLOAT_EQ(headOn.y, 0.f);
+    }
+
+    //Sonuc, TANIMI GEREGI normale diktir; ve bu, egik bir yuzeyde de gecerlidir - projeksiyonun "bloklanan ekseni
+    //sifirla" diye degil de formul olarak yazilmasinin sebebi tam olarak budur
+    TEST(MathProjection, SlideResultIsPerpendicularToTheNormalOnADiagonalSurface)
+    {
+        const ETG::Vector2f diagonal = Math::Normalize(ETG::Vector2f{1.f, -1.f});
+        const ETG::Vector2f slid = Math::SlideAlongSurface({0.f, -300.f}, diagonal);
+
+        EXPECT_NEAR(Math::Dot(slid, diagonal), 0.f, 1e-3f);
+
+        //Ve gercekten yol vermis: 45 derecelik bir yuze karsi dosdogru yukari giden 300, her iki yone yarisi olarak cikiyor
+        EXPECT_NEAR(slid.x, -150.f, 1e-3f);
+        EXPECT_NEAR(slid.y, -150.f, 1e-3f);
+    }
+
     //One shot progressions (reload, cooldown, force falloff): saturates at both ends and stays done once done
     TEST(MathTiming, Progress01Saturates)
     {

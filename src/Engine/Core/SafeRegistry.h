@@ -87,7 +87,7 @@ namespace ETG
         //Inside body you may remove from this list, add to it, or destroy something that removes itself - all of
         //it is safe. What you may not do is expect a removal to take effect immediately: it becomes a blank now
         //and is really gone once the walk ends
-        
+        //NOTE:  bir array parametresi almak zorunda deĞil. Verilen type'ın memberlarından bir array'i alabilir 
         template <typename Body>
         void ForEach(Body&& body)
         {

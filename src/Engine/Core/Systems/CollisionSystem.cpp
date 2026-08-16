@@ -1,6 +1,9 @@
 #include "CollisionSystem.h"
+#include <algorithm>
+#include <cmath>
 #include "../Components/CollisionComponent.h"
 #include "../GameObjectBase.h"
+#include "../../../Utils/Math.h"
 
 namespace ETG
 {
@@ -33,20 +36,19 @@ namespace ETG
         }
     }
 
-    //PHASE 1. Who is taking part, and where is everybody
+    //PHASE 1.
     void CollisionSystem::CollectActive()
     {
         Active.clear();
 
-        CollisionComponent::GetRegistry().ForEach([](CollisionComponent* component)
+        CollisionComponent::GetAllCollRegistries().ForEach([](CollisionComponent* component)
         {
             if (!component->IsCollisionEnabled() || !component->Owner) return;
 
             Active.push_back(component);
         });
 
-        //Deliberately outside the walk above: Clear() restructures a list, and SafeRegistry's rule is that nothing
-        //restructures while any walk of the same type is open
+        
         for (CollisionComponent* component : Active)
         {
             //Every collider's bounds are refreshed here, in one pass, before a single test runs below. This is the
@@ -72,9 +74,9 @@ namespace ETG
             {
                 CollisionComponent* b = Active[j];
 
-                //The pair is asked in both directions because the Mask relation is allowed to be one-way, and
-                //asking once would silently drop those. Neither side interested means the bounds are never read:
-                //this test is two loads and an and, everything past it touches both objects' rectangles
+                //> “A objesi, B’nin layer’ıyla gerçekleşen collision event’lerini dinliyor mu?”
+                //“A’nın maskesinde B’nin layer’ı var mı, yani A, B’yi dinliyor mu?” islemi bu
+                //
                 const bool aWatchesB = (a->Mask & b->Layer) != 0;
                 const bool bWatchesA = (b->Mask & a->Layer) != 0;
                 if (!aWatchesB && !bWatchesA) continue;
@@ -126,7 +128,7 @@ namespace ETG
             const CollisionEventData eventData(contact.Self->Owner, contact.Other->Owner, contact.Other, contact.ImpactPoint);
 
             //Enter or Stay is decided against last frame's record, which Commit has not overwritten yet
-            if (contact.Self->CurrentCollisions.Contains(contact.Other))
+            if (contact.Self->PrevFrameCollisions.Contains(contact.Other))
                 contact.Self->OnCollisionStay.Broadcast(eventData);
             else
                 contact.Self->OnCollisionEnter.Broadcast(eventData);
@@ -144,7 +146,7 @@ namespace ETG
             //Comparing against StillColliding rather than re-testing the bounds catches strictly more: a collider
             //that stopped overlapping, but equally one that switched itself off this frame, or one whose Mask no
             //longer names the other. None of them made it into StillColliding, so all of them read as gone
-            component->CurrentCollisions.ForEach([component](CollisionComponent* other)
+            component->PrevFrameCollisions.ForEach([component](CollisionComponent* other)
             {
                 if (!other->Owner || component->StillColliding.Contains(other)) return;
 
@@ -153,6 +155,130 @@ namespace ETG
                 component->OnCollisionExit.Broadcast(eventData);
             });
         }
+    }
+
+  //   - Collision aktif olmalı.
+  // - Owner bulunmalı.
+  // - Layer, verilen solidMask içinde olmalı.
+  // - Hareket alanıyla kesişmeli.Bu da yanlizca karakterin Duvarla overlap oldugu zaman gerceklesiyor 
+    void CollisionSystem::CollectSolids(const ETG::FloatRect& area, const uint32_t solidMask, const CollisionComponent* ignore)
+    {
+        Solids.clear();
+
+        CollisionComponent::GetAllCollRegistries().ForEach([&area, solidMask, ignore](const CollisionComponent* component)
+        {
+            if (component == ignore) return;
+            if (!component->IsCollisionEnabled() || !component->Owner) return;
+
+            //NOTE: Burasi cok onemli Component’ın layer’ı solid maskesiyle eşleşmiyorsa fonksiyondan çık.
+            //SolidMask ile &'in 0 cikabilmesi icin Layer'in Obstacle veya bir ustu olmasi sart. 
+            if ((component->Layer & solidMask) == 0) return;
+
+            //Okunuyor, tazelenmiyor. Bounds herkes icin frame'de bir kez CollectActive'de hesaplaniyor; katı olan
+            //tek sey icin bu yeterli: duvar hareket etmez, dolayisiyla gecen frame'in kutusuyla bu frame'in
+            //kutusu aynidir. Kendi basina HAREKET EDEN bir kati cisim olsaydi bir frame geriden gelirdi
+            const ETG::FloatRect bounds = component->GetCollisionBounds();
+            if (!area.intersects(bounds)) return;
+
+            //NOTE: Karakter duvarla collide olursa sadece bu calisacak 
+            Solids.push_back(bounds);
+        });
+    }
+
+    //Bu fonksiyonu anlamadim ve en sonunda vazgeçtim
+    CollisionSystem::SlideResult CollisionSystem::MoveAndSlide(CollisionComponent* body, const ETG::Vector2f& delta, const ETG::Vector2f& velocity)
+    {
+        constexpr float ContactSkin = 0.01f;
+        
+        SlideResult result{delta, velocity, false};
+
+        if (!body || !body->Owner) return result;
+        if (body->BlockingMask == CollisionLayer::None) return result;
+        if (delta.x == 0.f && delta.y == 0.f) return result;
+
+        //Burada guvenilmiyor, yeniden hesaplaniyor; cunku bu kod frame'in ORTASINDA calisiyor ve sahibi bu tick
+        //icinde baska bir sey tarafindan zaten bir kez hareket ettirilmis olabilir - yurumeden once cozulen bir
+        //knockback, ya da bir dash. CollectActive'in tazelemesine yaslanmak yanlis olur: o, butun bunlardan
+        //SONRA calisiyor
+        body->UpdateBounds();
+        const ETG::FloatRect box = body->GetCollisionBounds();
+        if (box.width <= 0.f || box.height <= 0.f) return result;
+
+        //sweep = box ile box + delta'yı birlikte içine alan en küçük dikdörtgen. Yani "şu an neredeyim" + "gitmek istediğim yer", ikisinin birleşimi.
+        const ETG::FloatRect sweep{
+            std::min(box.left, box.left + delta.x),
+            std::min(box.top, box.top + delta.y),
+            box.width + std::abs(delta.x),
+            box.height + std::abs(delta.y)
+        };
+
+        CollectSolids(sweep, body->BlockingMask, body);
+        if (Solids.empty()) return result;
+
+        //> X ve Y hareketini aynı anda uygulayıp karakter duvarın içine girdikten sonra, yalnızca
+        // > oluşan dikdörtgen çakışmasına bakarak hangi yüzeye çarptığını seçmek bazen belirsiz olabilir.
+        //çözüm şu: Gerçek pozisyonu hemen değiştirme. Önce gitmek istediğin yerde geçici kutuyu dene, duvara giriyorsa izin verilen hareketi kısalt, sonra gerçek pozisyona uygula
+        ETG::FloatRect resolved = box;
+
+        if (delta.x != 0.f)
+        {
+            resolved.left = box.left + delta.x; //X hareketinin tamamını yapsaydım kutum nerede olurdu?
+
+            //Cakisan her kati cismin soz hakki var ve en sikisi kazaniyor. Bunun yerine dongunun ICINDE kirpsaydik,
+            //artik onumuzde olmayan bir duvar (cunku daha onceki biri bizi zaten disari cekmisti) cevabi belirleyebilirdi;
+            //yani listede hangi cismin once geldigi onemli hale gelirdi
+            float limit = resolved.left;
+            for (const ETG::FloatRect& solid : Solids)
+            {
+                if (!resolved.intersects(solid)) continue;
+
+                limit = delta.x > 0.f
+                            ? std::min(limit, solid.left - resolved.width - ContactSkin) //sag kenarimiz onun sol yuzunun kil payi onunde
+                            : std::max(limit, solid.left + solid.width + ContactSkin); //sol kenarimiz onun sag yuzunun kil payi onunde
+            }
+
+            if (limit != resolved.left)
+            {
+                resolved.left = limit;
+                
+                result.Velocity = Math::SlideAlongSurface(result.Velocity, {delta.x > 0.f ? -1.f : 1.f, 0.f});
+                result.Blocked = true;
+            }
+        }
+
+        if (delta.y != 0.f)
+        {
+            //Orijinal kutudan degil, az once cozulen X'ten devam: govdenin buradan yukari cikip cikamayacagi,
+            //yanlamasina nerede kaldigina bagli - ve o, carptigi seyin icinden coktan cikarilmis durumda
+            resolved.top = box.top + delta.y;
+
+            float limit = resolved.top;
+            for (const ETG::FloatRect& solid : Solids)
+            {
+                if (!resolved.intersects(solid)) continue;
+
+                //Aşağı gidiyorsan → duvarın üstündeki güvenli top değerini seç.
+                //Yukarı gidiyorsan → duvarın altındaki güvenli top değerini seç.
+                limit = delta.y > 0.f
+                            ? std::min(limit, solid.top - resolved.height - ContactSkin)
+                            : std::max(limit, solid.top + solid.height + ContactSkin);
+            }
+
+            if (limit != resolved.top)
+            {
+                resolved.top = limit;
+
+                //Ikinci cagri, ikinci birim normal - asla iki ekseni toplayip tek vektor yapmak degil. (-1,-1)
+                //birim uzunlukta degildir; formul olandan iki kat fazlasini cikarir ve govdeyi koseden disari tukurur
+                result.Velocity = Math::SlideAlongSurface(result.Velocity, {0.f, delta.y > 0.f ? -1.f : 1.f});
+                result.Blocked = true;
+            }
+        }
+
+        //Pozisyon olarak degil delta olarak geri veriliyor; boylece cagiran, zaten hareket ettirmekte oldugu seyin
+        //uzerine eklemeye devam ediyor - sahibinin Position'i, yerel bir kopya, ya da bir force'un katkisi
+        result.Delta = {resolved.left - box.left, resolved.top - box.top};
+        return result;
     }
 
     //PHASE 5. This frame's contacts become the record the next frame compares against
@@ -175,7 +301,7 @@ namespace ETG
 
             //A swap and not a copy: the two lists hand buffers back and forth, so neither allocates again after
             //the first few frames
-            component->CurrentCollisions.SwapWith(component->StillColliding);
+            component->PrevFrameCollisions.SwapWith(component->StillColliding);
         }
     }
 }

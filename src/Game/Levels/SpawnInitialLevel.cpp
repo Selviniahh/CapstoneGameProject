@@ -9,10 +9,23 @@
 #include "../Items/Active/DoubleShoot.h"
 #include "../Items/Active/TakeNoDamage.h"
 #include "../Items/Passive/PlatinumBullets.h"
+#include "Block.h"
 
 void ETG::SpawnInitialLevel::Spawn(GameManager& game)
 {
     game.SpawnGameObject<Hero>(Vector2f{10, 10});
+
+    //Elle konmus uc hucre; sira halinde degil L seklinde, cunku sira, kanitlanmaya deger iki seyden sadece
+    //birini kanitlar. Ustteki cift, icine yukari dogru yurunecek YATAY bir yuz veriyor (W, sonra W+A: hero yana
+    //giden hizinin tamamini korumali, yukari giden yarisi ise cope gitmeli). Ucuncusu koseyi donup ayni testin
+    //eksenleri degistirilmis hali icin DIKEY bir yuz veriyor. Bulustuklari yer ise ic kose - iki eksenin ayni
+    //anda bloklandigi durum, ki calisan bir cozumu titreyen bir cozumden ayiran vaka da budur.
+    //
+    //Pozisyonlar hucre MERKEZLERI ve hepsi 16'nin tam kati; harita bu uc satir yerine gercek veri oldugunda bir
+    //grid index'inin TileSize ile carpimi da tam olarak bunlari uretecek
+    game.SpawnGameObject<Block>(Vector2f{0, -32});
+    game.SpawnGameObject<Block>(Vector2f{16, -32});
+    game.SpawnGameObject<Block>(Vector2f{16, -16});
     game.SpawnGameObject<AK47>(Vector2f{-100, 100});
     game.SpawnGameObject<SawedOff>(Vector2f{-150, 100});
     game.SpawnGameObject<Magnum>(Vector2f{-200, 100});

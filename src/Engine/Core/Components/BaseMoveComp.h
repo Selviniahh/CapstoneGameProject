@@ -3,6 +3,7 @@
 #include "../ComponentBase.h"
 #include "../Events/EventDelegate.h"
 #include "../Stats/StatModifier.h"
+#include "CollisionComponent.h"
 
 namespace ETG
 {
@@ -32,7 +33,21 @@ namespace ETG
         void ApplyForce(const ETG::Vector2f& forceDirection, float magnitude, float forceDuration);
         void UpdateForce();
 
-        
+        //<---------- Duvarlar ---------->
+        //hareket eden objenin duvar collision’ında kullanılacak collision component’ını gösterir.
+        //> “Hero’yu temsil eden hangi collision kutusunu duvarlara karşı kontrol etmeliyim?” Cevap BodyColliderdır.
+        CollisionComponent* BodyCollider = nullptr;
+
+        //BU COMPONENT'IN BIR SEYI HAREKET ETTIRDIGI TEK YER. `delta`yi `position`a uygular, onune cikan kati
+        //geometriye gore kisaltir ve Velocity'nin duvara giren kismini da beraberinde siler
+        //(CollisionSystem::MoveAndSlide uzerinden Math::SlideAlongSurface).
+        //
+        //Her tur hareket buradan gecer, hicbiri pozisyona dogrudan ekleme yapamaz: yurume, darbeden gelen
+        //knockback, hero'nun dash'i. Burayi atlayan bir yol, duvarin icinden gecen bir yol demektir - ve bu ancak
+        //biri duvara dash attiginda fark edilir
+        bool MoveAndSlide(ETG::Vector2f& position, const ETG::Vector2f& delta);
+
+
 
         // Force parameters
         float ForceMultiplier = 1;

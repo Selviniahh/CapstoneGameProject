@@ -195,6 +195,9 @@ set(MANAGERS_SOURCES
 set(LEVELS_SOURCES
         src/Game/Levels/SpawnInitialLevel.cpp
         src/Game/Levels/SpawnInitialLevel.h
+        src/Game/Levels/TileType.h
+        src/Game/Levels/Block.cpp
+        src/Game/Levels/Block.h
 )
 
 set(ANIMATION_SOURCES

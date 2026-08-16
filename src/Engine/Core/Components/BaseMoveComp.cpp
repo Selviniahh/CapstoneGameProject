@@ -2,6 +2,7 @@
 #include "BaseMoveComp.h"
 #include "../../Managers/RenderContext.h"
 #include "../../../Utils/Math.h"
+#include "../Systems/CollisionSystem.h"
 
 namespace ETG
 {
@@ -53,8 +54,29 @@ namespace ETG
             }
         }
 
-        // Update the position by velocity.
-        position += Velocity * deltaTime;
+        // Pozisyonu velocity ile guncelle - duvarin gecirmedigi kisim dusulerek
+        MoveAndSlide(position, Velocity * deltaTime);
+    }
+
+    //NOTE: `position` ile Velocity'yi bilerek BIRLIKTE yaziyor. Ikisi tek cevabin iki yarisi: pozisyon duvarin
+    //yuzunde duruyor, velocity de o yone itmeye devam edecegi bileseni kaybediyor. Sadece pozisyonu duzeltmek,
+    //bir frame dogru gorunup sonrasinda yanlis hissettiren versiyondur - mover duvara dayanmis dururken hala
+    //dosdogru duvara nisan almis bir velocity tasir, ve baska yone dondugu anda o birikmis itis yanlamasina disari cikar
+    bool BaseMoveComp::MoveAndSlide(ETG::Vector2f& position, const ETG::Vector2f& delta)
+    {
+        //Kati olarak hicbir sey isimlendirilmemis, dolayisiyla karsi test edilecek bir sey yok ve hareket hic
+        //dokunulmadan gecer. Bu, henuz dahil olmamis her mover'in her frame izledigi yol; yani tek bir if, o kadar
+        if (!BodyCollider || BodyCollider->BlockingMask == CollisionLayer::None || !BodyCollider->IsCollisionEnabled())
+        {
+            position += delta;
+            return false;
+        }
+
+        const CollisionSystem::SlideResult result = CollisionSystem::MoveAndSlide(BodyCollider, delta, Velocity);
+
+        position += result.Delta;
+        Velocity = result.Velocity;
+        return result.Blocked;
     }
 
     void BaseMoveComp::ApplyForce(const ETG::Vector2f& forceDirection, const float magnitude, const float forceDuration)
@@ -83,8 +105,12 @@ namespace ETG
             //Suan uygulanmasi gereken Force
             const float currentForce = Math::IntervalLerp(ForceMagnitude * ForceMultiplier, 0.0f, ForceMaxDuration, ForceTimer);
 
-            // Apply force to position
-            Owner->SetPosition(Owner->GetPosition() + ForceDirection * currentForce * Time::FrameTick);
+            //Force'u pozisyona uygula - diger her hareket turu gibi duvarlardan gecerek. Duvara giren bir
+            //knockback duvarda durur; aciyla geldiyse duvar boyunca kaymaya devam eder: serbest olan eksen hala
+            //serbesttir ve bu, burasi hicbir sey bilmek zorunda kalmadan cozumun kendisinden dogar
+            ETG::Vector2f position = Owner->GetPosition();
+            MoveAndSlide(position, ForceDirection * currentForce * Time::FrameTick);
+            Owner->SetPosition(position);
         }
         else
         {
