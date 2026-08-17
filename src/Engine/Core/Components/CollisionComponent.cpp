@@ -45,11 +45,20 @@ namespace ETG
     {
         if (!Owner) return {};
 
-        if (!UseManualBounds) return Owner->GetBounds();
+        //The offset is a plain translation, so it lands the same way on both branches: slide the finished
+        //rectangle, never resize it. Sizing and placing stay two separate knobs that cannot disturb each other
+        if (!UseManualBounds)
+        {
+            ETG::FloatRect drawn = Owner->GetBounds();
+            drawn.left += BoundsOffset.x;
+            drawn.top += BoundsOffset.y;
+            return drawn;
+        }
 
         //Position is where the owner's Origin lands, so centring on it puts the box on the pivot rather than on
-        //wherever the artwork happens to sit around that pivot - which is the whole reason to type a size by hand
-        const ETG::Vector2f& center = Owner->GetPosition();
+        //wherever the artwork happens to sit around that pivot - which is the whole reason to type a size by hand.
+        //BoundsOffset then moves that centre off the pivot deliberately, for bodies the pivot is not in the middle of
+        const ETG::Vector2f center = Owner->GetPosition() + BoundsOffset;
 
         //Clamped because a negative size reads as inverted to Rect::intersects, and an inverted rect silently
         //never collides. Zero is the same "never collides" but at least it draws as nothing rather than as junk
@@ -104,48 +113,34 @@ namespace ETG
         // it is standing in for
         const ETG::FloatRect baseBounds = GetBaseBounds();
 
-        // Original bounds in white
-        ETG::RectangleShape baseRect;
-        baseRect.setPosition(baseBounds.left, baseBounds.top);
-        baseRect.setSize(ETG::Vector2f(baseBounds.width, baseBounds.height));
-        baseRect.setFillColor(ETG::Color::Transparent);
-        baseRect.setOutlineColor(ETG::Color::White);
-        baseRect.setOutlineThickness(1.0f);
-        window.draw(baseRect);
-
-        // Expanded bounds in configured color
-        ETG::RectangleShape expandedRect;
-        expandedRect.setPosition(ExpandedBounds.left, ExpandedBounds.top);
-        expandedRect.setSize(ETG::Vector2f(ExpandedBounds.width, ExpandedBounds.height));
-        expandedRect.setFillColor(ETG::Color::Transparent);
-        expandedRect.setOutlineColor(CollisionVisualizationColor);
-        expandedRect.setOutlineThickness(1.0f);
-        window.draw(expandedRect);
+        //Both rectangles are queued into the batch at the same depth, so the one queued second draws over the
+        //first - the expanded box on top of the base one, which is the order they came out in before as well
+        GlobSpriteBatch.drawRectOutline(baseBounds, ETG::Color::White, CollisionVisualizationThickness, VisualizationDepth);
+        GlobSpriteBatch.drawRectOutline(ExpandedBounds, CollisionVisualizationColor, CollisionVisualizationThickness, VisualizationDepth);
 
         // Visualize current collisions
-        PrevFrameCollisions.ForEach([this, &window](const CollisionComponent* otherComp)
+        PrevFrameCollisions.ForEach([this](const CollisionComponent* otherComp)
         {
             if (!otherComp->Owner) return;
 
             if (DrawCollisionLineBetweenCenters)
             {
-                DrawCollisionLineBetweenCenter(window, otherComp);
+                DrawCollisionLineBetweenCenter(otherComp);
             }
 
             if (DrawImpactPoint)
             {
-                ETG::CircleShape circle;
-                circle.setOrigin(5.0f, 5.0f);
-                circle.setRadius(5);
-                circle.setPosition(CalculateImpactPoint(otherComp));
-                circle.setFillColor(ETG::Color::Green);
-                if (circle.getPosition() != ETG::Vector2f{0, 0})
-                    RenderContext::Window->draw(circle);
+                //A cross where there used to be a circle, for the same reason the boxes moved: only the batch can
+                //put a marker in front of the sprites it is marking, and the batch draws textured quads. The cross
+                //is the one debug marker already built out of those, and it is drawn at the same overlay depth
+                const ETG::Vector2f impactPoint = CalculateImpactPoint(otherComp);
+                if (impactPoint != ETG::Vector2f{0, 0})
+                    SpriteBatch::DrawDebugCross(impactPoint, ETG::Color::Green, 3.f, VisualizationDepth);
             }
         });
     }
 
-    void CollisionComponent::DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const
+    void CollisionComponent::DrawCollisionLineBetweenCenter(const CollisionComponent* otherComp) const
     {
         // Draw a line connecting the centers
         ETG::Vector2f selfCenter(
@@ -159,7 +154,7 @@ namespace ETG
             otherBounds.top + otherBounds.height / 2
         );
 
-        window.drawLine(selfCenter, otherCenter, ETG::Color::Red);
+        SpriteBatch::DrawDebugLine(selfCenter, otherCenter, ETG::Color::Red, CollisionVisualizationThickness, VisualizationDepth);
     }
 
     //TODO: I am not sure if I should remove this function. For now let's put it bottom of this class to ignore easier 

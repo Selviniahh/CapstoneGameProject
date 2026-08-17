@@ -47,7 +47,7 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
 
     //Collision comp:
     CollisionComp = ETG::CreateGameObjectAttached<CollisionComponent>(this);
-    CollisionComp->CollisionRadius = 1.f;
+    CollisionComp->CollisionRadius = 0.f;
     CollisionComp->Name = "Hero";
 
     //Frame'ler 23x24, ama icine cizilmis rogue yaklasik 15x21 - her iki yanda dorder sutun bos piksel var.
@@ -60,7 +60,8 @@ ETG::Hero::Hero(const ETG::Vector2f Position)
     //ve merminin isabet etmek icin ulasmasi gereken kutu da bu. Onlar da bununla birazcik daraldi; ki bu ayni
     //duzeltmenin parcasi: oncesinde dort piksellik hicligi vuruyorlardi
     CollisionComp->UseManualBounds = true;
-    CollisionComp->ManualBoundsSize = {12.f, 18.f}; //CollisionRadius genislettikten sonra 14x20 - 16'lik tile'in altinda, yani tek hucrelik bosluktan gecilebiliyor
+    CollisionComp->ManualBoundsSize = {12.f, 17.f}; //CollisionRadius genislettikten sonra 14x20 - 16'lik tile'in altinda, yani tek hucrelik bosluktan gecilebiliyor
+    CollisionComp->BoundsOffset = {0,3};
 
     //Vucut temasi icin dusmanlar, vurulmak icin mermiler. Silahlar ve itemlar bilerek yok: uzerlerinden gecince
     //alinmalari o objenin kendi listener'inin isi, dolayisiyla burada calisacak bir sey olmazdi

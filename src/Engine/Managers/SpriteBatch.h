@@ -32,6 +32,14 @@ namespace ETG
         //marker hidden behind the sprite it is annotating tells you nothing
         static void DrawDebugCross(const ETG::Vector2f& Loc, const ETG::Color& color, float armLength = 2.f, float depth = -1000.f);
 
+        //Batched counterpart to RenderWindow::drawLine, and it exists for the two things that one cannot do.
+        //An immediate draw lands on the screen the instant it is called, which for anything inside an object's
+        //Draw() is before the batch flushes - so it ends up underneath every sprite in the frame regardless of
+        //what it was annotating. And its width is a GPU line strip, always one screen pixel no matter the zoom.
+        //This one is a rotated quad instead: it sorts by depth like everything else, and thickness is in world
+        //pixels, so the view's 5x magnification makes it 5x thicker on screen the same way it does for sprites
+        static void DrawDebugLine(const ETG::Vector2f& from, const ETG::Vector2f& to, const ETG::Color& color, float thickness = 1.f, float depth = -1000.f);
+
     private:
         struct Vertex
         {

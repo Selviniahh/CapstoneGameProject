@@ -134,11 +134,30 @@ namespace ETG
         //clamped at zero on the way out - a negative size would be a box nothing can ever intersect
         ETG::Vector2f ManualBoundsSize{16.f, 16.f};
 
+        //Where the box sits relative to where it would otherwise land, in world pixels: +x right, +y down. Sizing
+        //a box by hand answers "how big is the body", this answers "and where on the sprite is it" - the two are
+        //separate questions and a pivot at the feet, at the head or anywhere off centre makes them different
+        //answers. Shrinking ManualBoundsSize alone always eats the box symmetrically around Position, so a hero
+        //whose Origin is not at his middle can never get a box on his actual body without this.
+        //
+        //Applied to the drawn bounds too, not only the manual ones - an animation whose frames carry uneven
+        //padding is the same problem with a different cause, and there is no reason the fix should be limited to
+        //boxes that were typed by hand. Zero by default, so anything that does not set it is untouched.
+        //CollisionRadius still expands whatever comes out of here, exactly as before
+        ETG::Vector2f BoundsOffset{0.f, 0.f};
+
         //Whether to show collision bounds for debugging
         bool ShowCollisionBounds = false;
 
         //Color for collision visualiztion
         ETG::Color CollisionVisualizationColor = ETG::Color::Yellow;
+
+        //Outline width in WORLD pixels, not screen ones - the main view magnifies 5x, so 1.f here lands as five
+        //pixels on screen. It used to be impossible to change at all: the old immediate path threw the thickness
+        //away and drew a GPU line strip, which is one screen pixel wide however far in the world you are zoomed.
+        //Drawn inwards from the bounds, so the rectangle keeps marking the box's true extent however thick the
+        //stroke gets - and sub pixel values like 0.5f are fine when a 12x18 body starts looking swallowed by it
+        float CollisionVisualizationThickness = 1.f;
         
         std::string Name{}; 
 
@@ -151,6 +170,12 @@ namespace ETG
         EventDelegate<CollisionEventData> OnCollisionExit;
 
         //Draw current object, radius expanded borders, impact point, line between collided object's center points.
+        //
+        //Nothing here reaches the screen at the moment it is called any more: it all goes into GlobSpriteBatch,
+        //which is what makes the depth below mean anything. Visualize still runs from inside the owner's Draw(),
+        //and the batch does not flush until every object has drawn - so an immediate draw here was guaranteed to
+        //end up underneath the whole world, however far in front the debug box was supposed to be. The window is
+        //still taken because every call site passes one and the signature is not worth churning
         void Visualize(ETG::RenderWindow& window);
 
         //Get collision registry (all active collision components)
@@ -187,8 +212,9 @@ namespace ETG
         bool DrawImpactPoint{true};
 
         //The box before CollisionRadius is applied: the owner's drawn bounds, or the manual one when
-        //UseManualBounds is set. Both places that used to ask Owner->GetBounds() directly go through here, so the
-        //visualiser cannot end up drawing a different rectangle from the one the sweep is testing
+        //UseManualBounds is set, shifted by BoundsOffset either way. Both places that used to ask Owner->GetBounds()
+        //directly go through here, so the visualiser cannot end up drawing a different rectangle from the one the
+        //sweep is testing
         [[nodiscard]] ETG::FloatRect GetBaseBounds() const;
 
         //In Update before starting collision check, update the Owner's bounds including CollisionRadius
@@ -203,9 +229,15 @@ namespace ETG
         //already has the overlap from CheckCollision - so this is left for the two callers that hold no overlap
         //of their own: the debug visualiser and SetCollisionEnabled
         ETG::Vector2f CalculateImpactPoint(const CollisionComponent* other) const;
-        void DrawCollisionLineBetweenCenter(ETG::RenderWindow& window, const CollisionComponent* otherComp) const;
+        void DrawCollisionLineBetweenCenter(const CollisionComponent* otherComp) const;
 
-        BOOST_DESCRIBE_CLASS(CollisionComponent, (ComponentBase), (CollisionEnabled, ShowCollisionBounds, CollisionRadius, UseManualBounds, ManualBoundsSize, DrawImpactPoint,DrawCollisionLineBetweenCenters, CollisionVisualizationColor), (), ())
+        //Depth the whole visualization is queued at. The batch sorts descending and draws in that order, so the
+        //most negative depth is the last thing painted and therefore the topmost - a debug box that a wall can
+        //hide is a debug box that lies to you exactly when you most need it. Matches the default DrawDebugCross
+        //already uses for the same reason; nothing in the game draws anywhere near this far forward
+        static constexpr float VisualizationDepth = -1000.f;
+
+        BOOST_DESCRIBE_CLASS(CollisionComponent, (ComponentBase), (CollisionEnabled, ShowCollisionBounds, CollisionRadius, UseManualBounds, ManualBoundsSize, BoundsOffset, CollisionVisualizationThickness, DrawImpactPoint,DrawCollisionLineBetweenCenters, CollisionVisualizationColor), (), ())
     };
 
     struct CollisionEventData

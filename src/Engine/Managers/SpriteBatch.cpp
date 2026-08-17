@@ -282,3 +282,26 @@ void ETG::SpriteBatch::DrawDebugCross(const ETG::Vector2f& Loc, const ETG::Color
     vertical.setColor(color);
     GlobSpriteBatch.Draw(vertical, depth);
 }
+
+void ETG::SpriteBatch::DrawDebugLine(const ETG::Vector2f& from, const ETG::Vector2f& to, const ETG::Color& color, const float thickness, const float depth)
+{
+    static std::shared_ptr<ETG::Texture> pixelTex = GetPixelTexture();
+
+    const ETG::Vector2f delta = to - from;
+    const float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+
+    //Two points on top of each other have no direction to rotate towards, and atan2(0,0) would hand back a
+    //perfectly valid looking zero for a quad with nothing to draw anyway
+    if (length <= 0.f) return;
+
+    //Origin on the left edge at half height, so the quad grows away from `from` along its length and straddles
+    //the line across its thickness - a thicker line then stays centred on the path instead of drifting off it
+    ETG::Sprite line;
+    line.setTexture(*pixelTex);
+    line.setOrigin(0.f, 0.5f);
+    line.setScale(length, thickness);
+    line.setPosition(from);
+    line.setRotation(std::atan2(delta.y, delta.x) * (180.f / std::numbers::pi_v<float>));
+    line.setColor(color);
+    GlobSpriteBatch.Draw(line, depth);
+}
